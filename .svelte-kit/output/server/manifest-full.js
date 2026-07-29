@@ -10,7 +10,7 @@ return {
 	assets: new Set([]),
 	mimeTypes: {},
 	_: {
-		client: {start:"_app/immutable/entry/start.DXNHPDim.js",app:"_app/immutable/entry/app.CD6TMakM.js",imports:["_app/immutable/entry/start.DXNHPDim.js","_app/immutable/chunks/ziqaoY4P.js","_app/immutable/chunks/CTIVt5C_.js","_app/immutable/chunks/9yC9SZLj.js","_app/immutable/entry/app.CD6TMakM.js","_app/immutable/chunks/CTIVt5C_.js","_app/immutable/chunks/rxd-JZLx.js","_app/immutable/chunks/BPn_M1Y6.js","_app/immutable/chunks/DdNXQ8MV.js","_app/immutable/chunks/9yC9SZLj.js","_app/immutable/chunks/ffz5pQkz.js","_app/immutable/chunks/CkTAXp9s.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.LPFGm1Gf.js",app:"_app/immutable/entry/app.CEVy82Y8.js",imports:["_app/immutable/entry/start.LPFGm1Gf.js","_app/immutable/chunks/DTT9CE4u.js","_app/immutable/chunks/DfOrqLGW.js","_app/immutable/chunks/CoJRVpV3.js","_app/immutable/entry/app.CEVy82Y8.js","_app/immutable/chunks/DfOrqLGW.js","_app/immutable/chunks/QNJ5kBQP.js","_app/immutable/chunks/BwpxttFb.js","_app/immutable/chunks/CoJRVpV3.js","_app/immutable/chunks/CaZpg5yG.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js')),
@@ -24,7 +24,10 @@ return {
 			__memo(() => import('./nodes/9.js')),
 			__memo(() => import('./nodes/10.js')),
 			__memo(() => import('./nodes/11.js')),
-			__memo(() => import('./nodes/12.js'))
+			__memo(() => import('./nodes/12.js')),
+			__memo(() => import('./nodes/13.js')),
+			__memo(() => import('./nodes/14.js')),
+			__memo(() => import('./nodes/15.js'))
 		],
 		remotes: {
 			
@@ -52,17 +55,31 @@ return {
 				endpoint: null
 			},
 			{
+				id: "/admin/departments",
+				pattern: /^\/admin\/departments\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 5 },
+				endpoint: null
+			},
+			{
+				id: "/admin/faculty",
+				pattern: /^\/admin\/faculty\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 6 },
+				endpoint: null
+			},
+			{
 				id: "/admin/reports",
 				pattern: /^\/admin\/reports\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 5 },
+				page: { layouts: [0,], errors: [1,], leaf: 7 },
 				endpoint: null
 			},
 			{
 				id: "/admin/settings",
 				pattern: /^\/admin\/settings\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 6 },
+				page: { layouts: [0,], errors: [1,], leaf: 8 },
 				endpoint: null
 			},
 			{
@@ -71,6 +88,13 @@ return {
 				params: [],
 				page: null,
 				endpoint: __memo(() => import('./entries/endpoints/api/attachments/_server.ts.js'))
+			},
+			{
+				id: "/api/attachments/[id]",
+				pattern: /^\/api\/attachments\/([^/]+?)\/?$/,
+				params: [{"name":"id","optional":false,"rest":false,"chained":false}],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/attachments/_id_/_server.ts.js'))
 			},
 			{
 				id: "/api/audit",
@@ -87,6 +111,27 @@ return {
 				endpoint: __memo(() => import('./entries/endpoints/api/dashboard/_server.ts.js'))
 			},
 			{
+				id: "/api/dashboard/trends",
+				pattern: /^\/api\/dashboard\/trends\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/dashboard/trends/_server.ts.js'))
+			},
+			{
+				id: "/api/departments",
+				pattern: /^\/api\/departments\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/departments/_server.ts.js'))
+			},
+			{
+				id: "/api/duties",
+				pattern: /^\/api\/duties\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/duties/_server.ts.js'))
+			},
+			{
 				id: "/api/exceptions",
 				pattern: /^\/api\/exceptions\/?$/,
 				params: [],
@@ -99,6 +144,27 @@ return {
 				params: [],
 				page: null,
 				endpoint: __memo(() => import('./entries/endpoints/api/notifications/_server.ts.js'))
+			},
+			{
+				id: "/api/outreach",
+				pattern: /^\/api\/outreach\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/outreach/_server.ts.js'))
+			},
+			{
+				id: "/api/periods",
+				pattern: /^\/api\/periods\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/periods/_server.ts.js'))
+			},
+			{
+				id: "/api/report-calendar",
+				pattern: /^\/api\/report-calendar\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/report-calendar/_server.ts.js'))
 			},
 			{
 				id: "/api/reports",
@@ -115,6 +181,27 @@ return {
 				endpoint: __memo(() => import('./entries/endpoints/api/reports/current/export/_server.ts.js'))
 			},
 			{
+				id: "/api/reports/missing",
+				pattern: /^\/api\/reports\/missing\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/reports/missing/_server.ts.js'))
+			},
+			{
+				id: "/api/reports/[id]",
+				pattern: /^\/api\/reports\/([^/]+?)\/?$/,
+				params: [{"name":"id","optional":false,"rest":false,"chained":false}],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/reports/_id_/_server.ts.js'))
+			},
+			{
+				id: "/api/research",
+				pattern: /^\/api\/research\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/research/_server.ts.js'))
+			},
+			{
 				id: "/api/reviews",
 				pattern: /^\/api\/reviews\/?$/,
 				params: [],
@@ -122,17 +209,31 @@ return {
 				endpoint: __memo(() => import('./entries/endpoints/api/reviews/_server.ts.js'))
 			},
 			{
+				id: "/api/users",
+				pattern: /^\/api\/users\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/users/_server.ts.js'))
+			},
+			{
+				id: "/calendar",
+				pattern: /^\/calendar\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 9 },
+				endpoint: null
+			},
+			{
 				id: "/dashboard",
 				pattern: /^\/dashboard\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 7 },
+				page: { layouts: [0,], errors: [1,], leaf: 10 },
 				endpoint: null
 			},
 			{
 				id: "/login",
 				pattern: /^\/login\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 8 },
+				page: { layouts: [0,], errors: [1,], leaf: 11 },
 				endpoint: null
 			},
 			{
@@ -146,28 +247,28 @@ return {
 				id: "/notifications",
 				pattern: /^\/notifications\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 9 },
+				page: { layouts: [0,], errors: [1,], leaf: 12 },
 				endpoint: null
 			},
 			{
 				id: "/reports",
 				pattern: /^\/reports\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 10 },
+				page: { layouts: [0,], errors: [1,], leaf: 13 },
 				endpoint: null
 			},
 			{
 				id: "/reports/current",
 				pattern: /^\/reports\/current\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 11 },
+				page: { layouts: [0,], errors: [1,], leaf: 14 },
 				endpoint: null
 			},
 			{
 				id: "/reports/current/print",
 				pattern: /^\/reports\/current\/print\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 12 },
+				page: { layouts: [0,], errors: [1,], leaf: 15 },
 				endpoint: null
 			}
 		],

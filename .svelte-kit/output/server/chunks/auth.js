@@ -1,5 +1,9 @@
-import { scryptSync, timingSafeEqual, randomUUID } from "node:crypto";
+import { randomBytes, scryptSync, timingSafeEqual, randomUUID } from "node:crypto";
 import { s as sqlite } from "./local-db.js";
+function hashPassword(password) {
+  const salt = randomBytes(16).toString("hex");
+  return `${salt}:${scryptSync(password, salt, 64).toString("hex")}`;
+}
 function verifyPassword(password, stored) {
   const [salt, key] = stored.split(":");
   if (!salt || !key) return false;
@@ -24,5 +28,6 @@ export {
   createSession as c,
   deleteSession as d,
   getUserFromSession as g,
+  hashPassword as h,
   verifyPassword as v
 };

@@ -19,6 +19,13 @@
   let saving = $state(false);
   let confirmSubmit = $state(false);
   let reviews: { decision: string; remarks: string; created_at: string; reviewer_name: string }[] = $state([]);
+  let attachments: { id: string; filename: string; mime_type: string; size: number; created_at: string }[] = $state([]);
+  let researchRecords: any[] = $state([]);
+  let dutiesRecords: any[] = $state([]);
+  let outreachRecords: any[] = $state([]);
+  let additionalSaving = $state(false);
+  let activeExtraSection = $state('attachments');
+  let deadlineDate = $state('');
 
   let scheduled = $derived(teaching.reduce((sum, item) => sum + Number(item.scheduled || 0), 0));
   let conducted = $derived(teaching.reduce((sum, item) => sum + Number(item.conducted || 0), 0));
@@ -38,9 +45,15 @@
     canEdit = d.policy?.canEdit ?? true;
     if (reportId) {
       try { const r = await fetch(`/api/reports/${reportId}`); const rd = await r.json(); reviews = rd.reviews ?? []; } catch {}
+      loadAttachments();
     }
     savedAt = 'Loaded';
   });
+  async function loadAttachments() { try { const r = await fetch(`/api/attachments?reportId=${reportId}`); const d = await r.json(); attachments = d.attachments ?? []; } catch {} }
+  async function uploadEvidence(event: Event) { const input = event.currentTarget as HTMLInputElement; const file = input.files?.[0]; if (!file || !reportId) return; const fd = new FormData(); fd.set('reportId', reportId); fd.set('file', file); const response = await fetch('/api/attachments', { method: 'POST', body: fd }); attachmentMessage = response.ok ? `${file.name} uploaded` : 'Upload failed'; input.value = ''; if (response.ok) loadAttachments(); }
+  async function deleteAttachment(id: string) { await fetch(`/api/attachments/${id}`, { method: 'DELETE' }); loadAttachments(); }
+  function formatSize(bytes: number) { if (bytes < 1024) return bytes + ' B'; if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'; return (bytes / 1048576).toFixed(1) + ' MB'; }
+  const fileName = (n: string) => n.length > 40 ? n.slice(0, 37) + '…' : n;
 
   async function saveDraft(_event?: unknown, status = 'DRAFT') {
     if (!canEdit || saving) return false;
@@ -54,7 +67,6 @@
   }
   function addTeaching() { teaching = [...teaching, { courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0 }]; saveDraft(); }
   function removeTeaching(index: number) { teaching = teaching.filter((_, i) => i !== index); saveDraft(); }
-  async function uploadEvidence(event: Event) { const input = event.currentTarget as HTMLInputElement; const file = input.files?.[0]; if (!file || !reportId) return; const fd = new FormData(); fd.set('reportId', reportId); fd.set('file', file); const response = await fetch('/api/attachments', { method: 'POST', body: fd }); attachmentMessage = response.ok ? `${file.name} uploaded` : 'Upload failed'; input.value = ''; }
   async function handleSubmit() { confirmSubmit = false; const ok = await saveDraft(undefined, 'SUBMITTED'); if (ok) { submitted = true; reportStatus = 'SUBMITTED'; canEdit = false; } }
   function handleKeydown(e: KeyboardEvent) { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveDraft(); } }
 </script>
@@ -129,7 +141,7 @@
         <div><span>Report completion</span><strong>{completion}%</strong></div>
         <div class="track"><i style="width:{completion}%"></i></div>
       </div>
-      {#each [{ id: 'teaching', label: 'Teaching & delivery', count: teaching.length }, { id: 'summary', label: 'Weekly summary', count: weeklySummary ? 1 : 0 }] as section, index}
+      {#each [{ id: 'teaching', label: 'Teaching & delivery', count: teaching.length }, { id: 'summary', label: 'Weekly summary', count: weeklySummary ? 1 : 0 }, { id: 'additional', label: 'Evidence & records', count: attachments.length }] as section, index}
         <button class:active={activeSection === section.id} onclick={() => activeSection = section.id}>
           <span class="nav-number">0{index + 1}</span>
           <span>{section.label}</span>
@@ -223,16 +235,28 @@
           </div>
         </div>
         <textarea bind:value={weeklySummary} oninput={saveDraft} rows="6" placeholder="Summarise the week's teaching, student engagement, and any notable academic events…" style="width:100%;border:1px solid #cbd7de;border-radius:6px;padding:11px;font:inherit;background:#fbfcfc;resize:vertical"></textarea>
+      {:else if activeSection === 'additional'}
+        <div class="additional-tabs"><button class:active={activeExtraSection === 'attachments'} onclick={() => activeExtraSection = 'attachments'}><span>📎</span>Files ({attachments.length})</button><button class:active={activeExtraSection === 'research'} onclick={() => activeExtraSection = 'research'}><span>📄</span>Research</button><button class:active={activeExtraSection === 'duties'} onclick={() => activeExtraSection = 'duties'}><span>🏛</span>Duties</button><button class:active={activeExtraSection === 'outreach'} onclick={() => activeExtraSection = 'outreach'}><span>🤝</span>Outreach</button></div>
+        <div class="extra-panel">
+          {#if activeExtraSection === 'attachments'}
+            <div class="section-intro"><div><div class="eyebrow">Evidence</div><h2>Supporting files</h2><p>Upload PDF, PNG or JPEG files (max 10 MB each) to support your report.</p></div></div>
+            <div class="attachment-grid">{#each attachments as a}<div class="attachment-card"><div class="attach-icon">{a.mime_type.includes('pdf') ? '📄' : '🖼'}</div><div class="attach-info"><strong>{fileName(a.filename)}</strong><small>{formatSize(a.size)} · {new Date(a.created_at).toLocaleDateString()}</small></div><div class="attach-actions"><a class="dl-link" href="/api/attachments/{a.id}" download>Download</a>{#if canEdit}<button class="remove-attach" onclick={() => deleteAttachment(a.id)}>Delete</button>{/if}</div></div>{:else}<div class="empty-section">No files uploaded yet.</div>{/each}</div>
+            {#if canEdit}<div class="upload-area"><label class="upload-control">+ Upload file<input disabled={!canEdit} type="file" accept="application/pdf,image/png,image/jpeg" onchange={uploadEvidence} /></label>{#if attachmentMessage}<span class="attachment-message">{attachmentMessage}</span>{/if}</div>{/if}
+          {:else if activeExtraSection === 'research'}
+            <div class="section-intro"><div><div class="eyebrow">Scholarly activity</div><h2>Research & publications</h2><p>Journal papers, patents, grants, conferences and FDPs tracked outside the weekly submission.</p></div></div><p class="extra-note">Research, institutional duties and outreach records are available for the longer academic cycle and are not part of the weekly teaching report submission. These records will be managed through a separate periodic workflow.</p>
+          {:else if activeExtraSection === 'duties'}
+            <div class="section-intro"><div><div class="eyebrow">Service</div><h2>Institutional duties</h2><p>Club and committee memberships, administrative responsibilities and departmental roles.</p></div></div><p class="extra-note">Institutional duties are tracked outside the weekly submission and will be managed through a separate periodic workflow.</p>
+          {:else if activeExtraSection === 'outreach'}
+            <div class="section-intro"><div><div class="eyebrow">Engagement</div><h2>Outreach & admissions</h2><p>Student outreach, admission-related activities and community engagement.</p></div></div><p class="extra-note">Outreach activities are tracked outside the weekly submission and will be managed through a separate periodic workflow.</p>
+          {/if}
+        </div>
       {/if}
     </section>
   </div>
   {#if !isReadonly}
   <section class="evidence-panel">
-    <div><strong>Supporting evidence</strong><p>Optional PDF, PNG, or JPEG files up to 10 MB.</p></div>
-    <label class="upload-control" class:disabled={!canEdit}>
-      Upload file<input disabled={!canEdit} type="file" accept="application/pdf,image/png,image/jpeg" onchange={uploadEvidence} />
-    </label>
-    {#if attachmentMessage}<span class="attachment-message">{attachmentMessage}</span>{/if}
+    <div><strong>Supporting evidence</strong><p>{attachments.length} file{attachments.length === 1 ? '' : 's'} attached{attachments.length ? ` · ${attachments.map(a => fileName(a.filename)).join(', ')}` : ''}.</p></div>
+    <div class="panel-mini-actions"><button class="quiet" onclick={() => { activeSection = 'additional'; activeExtraSection = 'attachments'; }}>Manage files</button></div>
   </section>
   {/if}
 </main>
@@ -259,4 +283,5 @@
   .paper-status{display:inline-block;background:#e2e8ec;color:#536871;padding:3px 9px;border-radius:99px;font-size:.65rem;font-weight:800;margin-bottom:12px}
   .summary-block{background:#f7f9fa;border-radius:6px;padding:14px;font-size:.82rem;line-height:1.55;color:#2b3d47;white-space:pre-wrap}
   .empty-section{color:#87969c;font-size:.78rem;font-style:italic;margin:6px 0}
+  .additional-tabs{display:flex;gap:2px;background:#f1f5f6;border-radius:6px;padding:3px;margin-bottom:18px}.additional-tabs button{flex:1;border:0;background:transparent;padding:9px 10px;border-radius:4px;font:inherit;font-size:.76rem;color:#61727d;cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:6px;justify-content:center}.additional-tabs button.active{background:#fdfcf9;color:#1b2b36;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.06)}.extra-panel{min-height:120px}.extra-note{background:#f7f9fa;border:1px solid #dbe3e7;border-radius:7px;padding:16px;color:#6b7e88;font-size:.8rem;line-height:1.5;margin:0}.attachment-grid{display:grid;gap:8px;margin-bottom:16px}.attachment-card{display:flex;align-items:center;gap:10px;padding:11px 13px;background:#f7f9fa;border:1px solid #e6ecee;border-radius:6px}.attach-icon{font-size:1.2rem}.attach-info{flex:1;min-width:0}.attach-info strong{display:block;font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.attach-info small{color:#87969c;font-size:.68rem}.attach-actions{display:flex;gap:8px;flex:none}.dl-link{color:#087f73;text-decoration:none;font-size:.72rem;font-weight:700}.remove-attach{border:0;background:transparent;color:#a24e45;font:inherit;font-size:.72rem;font-weight:700;cursor:pointer;padding:0}.upload-area{margin-top:12px}.upload-control{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:1px dashed #b5c9cf;border-radius:6px;color:#61727d;font-size:.8rem;font-weight:700;cursor:pointer;transition:background .12s}.upload-control:hover{background:#f1f5f6}.upload-control input{display:none}.attachment-message{margin-left:12px;color:#87969c;font-size:.74rem}.panel-mini-actions a{color:#087f73;text-decoration:none;font-size:.75rem;font-weight:750}
 </style>

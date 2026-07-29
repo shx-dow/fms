@@ -1190,24 +1190,6 @@ function attr_style(value, directives) {
   var result = to_style(value, directives);
   return result ? ` style="${escape_html(result, true)}"` : "";
 }
-function slot(renderer, $$props, name, slot_props, fallback_fn) {
-  var slot_fn = $$props.$$slots?.[name];
-  if (slot_fn === true) {
-    slot_fn = $$props["children"];
-  }
-  if (slot_fn !== void 0) {
-    slot_fn(renderer, slot_props);
-  }
-}
-function bind_props(props_parent, props_now) {
-  for (const key of Object.keys(props_now)) {
-    const initial_value = props_parent[key];
-    const value = props_now[key];
-    if (initial_value === void 0 && value !== void 0 && Object.getOwnPropertyDescriptor(props_parent, key)?.set) {
-      props_parent[key] = value;
-    }
-  }
-}
 function ensure_array_like(array_like_or_iterator) {
   if (array_like_or_iterator) {
     return array_like_or_iterator.length !== void 0 ? array_like_or_iterator : Array.from(array_like_or_iterator);
@@ -1272,31 +1254,29 @@ export {
   LEGACY_PROPS as a2,
   render as a3,
   setContext as a4,
-  derived as a5,
-  head as a6,
-  ensure_array_like as a7,
+  head as a5,
+  ensure_array_like as a6,
+  stringify as a7,
   attr as a8,
   attr_style as a9,
-  stringify as aa,
-  bind_props as ab,
   HYDRATION_END as b,
   HYDRATION_START as c,
-  HYDRATION_START_ELSE as d,
+  derived as d,
   escape_html as e,
-  array_prototype as f,
+  HYDRATION_START_ELSE as f,
   getContext as g,
-  get_descriptor as h,
-  get_prototype_of as i,
-  is_array as j,
-  is_extensible as k,
-  CLASS_CACHE as l,
-  STYLE_CACHE as m,
+  array_prototype as h,
+  get_descriptor as i,
+  get_prototype_of as j,
+  is_array as k,
+  is_extensible as l,
+  CLASS_CACHE as m,
   noop as n,
   object_prototype as o,
-  EFFECT as p,
-  CONNECTED as q,
+  STYLE_CACHE as p,
+  EFFECT as q,
   run_all as r,
-  slot as s,
+  CONNECTED as s,
   CLEAN as t,
   DIRTY as u,
   DERIVED as v,

@@ -24,20 +24,32 @@
 	"/api/attachments": [
 		"src/routes/api/attachments/+server.ts"
 	],
+	"/api/attachments/[id]": [
+		"src/routes/api/attachments/[id]/+server.ts"
+	],
 	"/api/audit": [
 		"src/routes/api/audit/+server.ts"
 	],
 	"/api/dashboard": [
 		"src/routes/api/dashboard/+server.ts"
 	],
+	"/api/dashboard/trends": [
+		"src/routes/api/dashboard/trends/+server.ts"
+	],
 	"/api/departments": [
 		"src/routes/api/departments/+server.ts"
+	],
+	"/api/duties": [
+		"src/routes/api/duties/+server.ts"
 	],
 	"/api/exceptions": [
 		"src/routes/api/exceptions/+server.ts"
 	],
 	"/api/notifications": [
 		"src/routes/api/notifications/+server.ts"
+	],
+	"/api/outreach": [
+		"src/routes/api/outreach/+server.ts"
 	],
 	"/api/periods": [
 		"src/routes/api/periods/+server.ts"
@@ -51,8 +63,14 @@
 	"/api/reports/current/export": [
 		"src/routes/api/reports/current/export/+server.ts"
 	],
+	"/api/reports/missing": [
+		"src/routes/api/reports/missing/+server.ts"
+	],
 	"/api/reports/[id]": [
 		"src/routes/api/reports/[id]/+server.ts"
+	],
+	"/api/research": [
+		"src/routes/api/research/+server.ts"
 	],
 	"/api/reviews": [
 		"src/routes/api/reviews/+server.ts"

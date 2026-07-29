@@ -130,6 +130,12 @@
       "_auth.js"
     ]
   },
+  "src/routes/+layout.server.ts": {
+    "file": "entries/pages/_layout.server.ts.js",
+    "name": "entries/pages/_layout.server.ts",
+    "src": "src/routes/+layout.server.ts",
+    "isEntry": true
+  },
   "src/routes/+layout.svelte": {
     "file": "entries/pages/_layout.svelte.js",
     "name": "entries/pages/_layout.svelte",
@@ -140,7 +146,7 @@
       "_index2.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.p_BNthQI.css"
+      "_app/immutable/assets/_layout.Dx9UlJbc.css"
     ]
   },
   "src/routes/+page.svelte": {
@@ -159,6 +165,9 @@
     "isEntry": true,
     "imports": [
       "_index.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.BDhZt61H.css"
     ]
   },
   "src/routes/admin/audit/+page.svelte": {
@@ -170,7 +179,31 @@
       "_index.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.CekIyqsv.css"
+      "_app/immutable/assets/_page.BYJx2JEY.css"
+    ]
+  },
+  "src/routes/admin/departments/+page.svelte": {
+    "file": "entries/pages/admin/departments/_page.svelte.js",
+    "name": "entries/pages/admin/departments/_page.svelte",
+    "src": "src/routes/admin/departments/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.q-btiXwM.css"
+    ]
+  },
+  "src/routes/admin/faculty/+page.svelte": {
+    "file": "entries/pages/admin/faculty/_page.svelte.js",
+    "name": "entries/pages/admin/faculty/_page.svelte",
+    "src": "src/routes/admin/faculty/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.DehJC-N4.css"
     ]
   },
   "src/routes/admin/reports/+page.svelte": {
@@ -182,7 +215,7 @@
       "_index.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.Cuhrg93U.css"
+      "_app/immutable/assets/_page.Dfn1s_kN.css"
     ]
   },
   "src/routes/admin/settings/+page.svelte": {
@@ -194,13 +227,23 @@
       "_index.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.Bj9mJ4CX.css"
+      "_app/immutable/assets/_page.Bs0JzJ_q.css"
     ]
   },
   "src/routes/api/attachments/+server.ts": {
     "file": "entries/endpoints/api/attachments/_server.ts.js",
     "name": "entries/endpoints/api/attachments/_server.ts",
     "src": "src/routes/api/attachments/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_shared-server.js",
+      "_local-db.js"
+    ]
+  },
+  "src/routes/api/attachments/[id]/+server.ts": {
+    "file": "entries/endpoints/api/attachments/_id_/_server.ts.js",
+    "name": "entries/endpoints/api/attachments/_id_/_server.ts",
+    "src": "src/routes/api/attachments/[id]/+server.ts",
     "isEntry": true,
     "imports": [
       "_shared-server.js",
@@ -225,6 +268,33 @@
       "_local-db.js"
     ]
   },
+  "src/routes/api/dashboard/trends/+server.ts": {
+    "file": "entries/endpoints/api/dashboard/trends/_server.ts.js",
+    "name": "entries/endpoints/api/dashboard/trends/_server.ts",
+    "src": "src/routes/api/dashboard/trends/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_local-db.js"
+    ]
+  },
+  "src/routes/api/departments/+server.ts": {
+    "file": "entries/endpoints/api/departments/_server.ts.js",
+    "name": "entries/endpoints/api/departments/_server.ts",
+    "src": "src/routes/api/departments/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_local-db.js"
+    ]
+  },
+  "src/routes/api/duties/+server.ts": {
+    "file": "entries/endpoints/api/duties/_server.ts.js",
+    "name": "entries/endpoints/api/duties/_server.ts",
+    "src": "src/routes/api/duties/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_local-db.js"
+    ]
+  },
   "src/routes/api/exceptions/+server.ts": {
     "file": "entries/endpoints/api/exceptions/_server.ts.js",
     "name": "entries/endpoints/api/exceptions/_server.ts",
@@ -243,10 +313,46 @@
       "_local-db.js"
     ]
   },
+  "src/routes/api/outreach/+server.ts": {
+    "file": "entries/endpoints/api/outreach/_server.ts.js",
+    "name": "entries/endpoints/api/outreach/_server.ts",
+    "src": "src/routes/api/outreach/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_local-db.js"
+    ]
+  },
+  "src/routes/api/periods/+server.ts": {
+    "file": "entries/endpoints/api/periods/_server.ts.js",
+    "name": "entries/endpoints/api/periods/_server.ts",
+    "src": "src/routes/api/periods/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_local-db.js"
+    ]
+  },
+  "src/routes/api/report-calendar/+server.ts": {
+    "file": "entries/endpoints/api/report-calendar/_server.ts.js",
+    "name": "entries/endpoints/api/report-calendar/_server.ts",
+    "src": "src/routes/api/report-calendar/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_local-db.js"
+    ]
+  },
   "src/routes/api/reports/+server.ts": {
     "file": "entries/endpoints/api/reports/_server.ts.js",
     "name": "entries/endpoints/api/reports/_server.ts",
     "src": "src/routes/api/reports/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_local-db.js"
+    ]
+  },
+  "src/routes/api/reports/[id]/+server.ts": {
+    "file": "entries/endpoints/api/reports/_id_/_server.ts.js",
+    "name": "entries/endpoints/api/reports/_id_/_server.ts",
+    "src": "src/routes/api/reports/[id]/+server.ts",
     "isEntry": true,
     "imports": [
       "_local-db.js"
@@ -261,6 +367,24 @@
       "_local-db.js"
     ]
   },
+  "src/routes/api/reports/missing/+server.ts": {
+    "file": "entries/endpoints/api/reports/missing/_server.ts.js",
+    "name": "entries/endpoints/api/reports/missing/_server.ts",
+    "src": "src/routes/api/reports/missing/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_local-db.js"
+    ]
+  },
+  "src/routes/api/research/+server.ts": {
+    "file": "entries/endpoints/api/research/_server.ts.js",
+    "name": "entries/endpoints/api/research/_server.ts",
+    "src": "src/routes/api/research/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_local-db.js"
+    ]
+  },
   "src/routes/api/reviews/+server.ts": {
     "file": "entries/endpoints/api/reviews/_server.ts.js",
     "name": "entries/endpoints/api/reviews/_server.ts",
@@ -268,6 +392,28 @@
     "isEntry": true,
     "imports": [
       "_local-db.js"
+    ]
+  },
+  "src/routes/api/users/+server.ts": {
+    "file": "entries/endpoints/api/users/_server.ts.js",
+    "name": "entries/endpoints/api/users/_server.ts",
+    "src": "src/routes/api/users/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_local-db.js",
+      "_auth.js"
+    ]
+  },
+  "src/routes/calendar/+page.svelte": {
+    "file": "entries/pages/calendar/_page.svelte.js",
+    "name": "entries/pages/calendar/_page.svelte",
+    "src": "src/routes/calendar/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.Bhmbbqbc.css"
     ]
   },
   "src/routes/dashboard/+page.svelte": {
@@ -279,7 +425,7 @@
       "_index.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.DPqKsFmv.css"
+      "_app/immutable/assets/_page.CR9dM0mL.css"
     ]
   },
   "src/routes/login/+page.server.ts": {
@@ -301,7 +447,7 @@
       "_index.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.CcdQzO9_.css"
+      "_app/immutable/assets/_page.n4L_UOeH.css"
     ]
   },
   "src/routes/logout/+server.ts": {
@@ -322,7 +468,7 @@
       "_index.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.D7HtsfmE.css"
+      "_app/immutable/assets/_page.BldwdDwN.css"
     ]
   },
   "src/routes/reports/+page.svelte": {
@@ -332,6 +478,9 @@
     "isEntry": true,
     "imports": [
       "_index.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.1bHAmciZ.css"
     ]
   },
   "src/routes/reports/current/+page.svelte": {
@@ -343,7 +492,7 @@
       "_index.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.D6n5dlVu.css"
+      "_app/immutable/assets/_page.Css5tEH9.css"
     ]
   },
   "src/routes/reports/current/print/+page.server.ts": {
@@ -364,7 +513,7 @@
       "_index.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.1VettZuQ.css"
+      "_app/immutable/assets/_page.2WN1NEY7.css"
     ]
   },
   "virtual:__sveltekit/env": {

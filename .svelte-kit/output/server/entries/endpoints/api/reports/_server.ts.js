@@ -9,26 +9,32 @@ function policyFor(report, now = /* @__PURE__ */ new Date()) {
   const deadline = period ? new Date(period.due_on) : now;
   const reopened = report.reopened_until ? new Date(report.reopened_until) > now : false;
   const open = Boolean(period?.is_open) && now <= deadline;
-  const locked = report.status !== "DRAFT" && !reopened;
+  const locked = !["DRAFT", "CHANGES_REQUIRED"].includes(report.status) && !reopened;
   return { period, open, locked, canEdit: open && !locked || reopened, deadline };
 }
 const GET = ({ locals }) => {
-  const userId = locals.user?.id ?? "dev-faculty-1";
-  let report = sqlite.prepare("SELECT * FROM reports WHERE faculty_id = ? AND period_id = ? LIMIT 1").get(userId, "week-2026-07-27");
+  if (!locals.user) return json({ error: "Unauthorized" }, { status: 401 });
+  const userId = locals.user.id;
+  const period = currentPeriod();
+  if (!period) return json({ error: "No open reporting period." }, { status: 409 });
+  let report = sqlite.prepare("SELECT * FROM reports WHERE faculty_id = ? AND period_id = ? LIMIT 1").get(userId, period.id);
   if (!report) {
     const now = (/* @__PURE__ */ new Date()).toISOString();
     const id = randomUUID();
-    sqlite.prepare("INSERT INTO reports (id, faculty_id, period_id, status, completion, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)").run(id, userId, "week-2026-07-27", "DRAFT", 0, now, now);
+    sqlite.prepare("INSERT INTO reports (id, faculty_id, period_id, status, completion, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)").run(id, userId, period.id, "DRAFT", 0, now, now);
     report = sqlite.prepare("SELECT * FROM reports WHERE id = ?").get(id);
   }
   return json({ report, policy: policyFor(report), teaching: sqlite.prepare("SELECT * FROM teaching_records WHERE report_id = ?").all(report.id), research: sqlite.prepare("SELECT * FROM research_records WHERE report_id = ?").all(report.id), duties: sqlite.prepare("SELECT * FROM institutional_duties WHERE report_id = ?").all(report.id), outreach: sqlite.prepare("SELECT * FROM outreach_records WHERE report_id = ?").all(report.id) });
 };
 const POST = async ({ request, locals }) => {
   const payload = await request.json();
-  const userId = locals.user?.id ?? "dev-faculty-1";
+  if (!locals.user) return json({ error: "Unauthorized" }, { status: 401 });
+  const userId = locals.user.id;
+  const period = currentPeriod();
+  if (!period) return json({ ok: false, error: "No open reporting period." }, { status: 409 });
   const reportId = String(payload.reportId || randomUUID());
   const now = (/* @__PURE__ */ new Date()).toISOString();
-  sqlite.prepare("INSERT OR IGNORE INTO reports (id, faculty_id, period_id, status, completion, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)").run(reportId, userId, "week-2026-07-27", "DRAFT", 0, now, now);
+  sqlite.prepare("INSERT OR IGNORE INTO reports (id, faculty_id, period_id, status, completion, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)").run(reportId, userId, period.id, "DRAFT", 0, now, now);
   const existing = sqlite.prepare("SELECT status, reopened_until FROM reports WHERE id = ? AND faculty_id = ?").get(reportId, userId);
   if (!existing) return json({ ok: false, error: "Report not found" }, { status: 404 });
   const policy = policyFor(existing, new Date(now));
@@ -49,7 +55,10 @@ const POST = async ({ request, locals }) => {
   const replace = (table, rows, columns) => {
     sqlite.prepare(`DELETE FROM ${table} WHERE report_id = ?`).run(reportId);
     for (const row of rows ?? []) {
-      const values = columns.map((column) => row[column] ?? row[aliases[column]] ?? null);
+      const values = columns.map((column) => {
+        const value = row[column] ?? row[aliases[column]];
+        return ["scheduled", "conducted", "missed"].includes(column) ? Number(value ?? 0) : value ?? null;
+      });
       sqlite.prepare(`INSERT INTO ${table} (id, report_id, ${columns.join(", ")}) VALUES (?, ?, ${columns.map(() => "?").join(", ")})`).run(randomUUID(), reportId, ...values);
     }
   };
