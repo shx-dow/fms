@@ -1,13 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  type ReviewItem = {
-    id: string;
-    status: string;
-    updated_at: string;
-    faculty_name: string;
-    period_label: string;
-    completion: number;
-  };
+  type ReviewItem = { id: string; status: string; updated_at: string; faculty_name: string; period_label: string; completion: number };
   let loading = $state(true);
   let facultyCount = $state(0);
   let submittedCount = $state(0);
@@ -18,199 +11,114 @@
   let error = $state('');
   onMount(async () => {
     try {
-      const [reviewsRes, deptsRes, missingRes] = await Promise.all([
-        fetch('/api/reviews'),
-        fetch('/api/departments'),
-        fetch('/api/reports/missing'),
-      ]);
+      const [reviewsRes, deptsRes, missingRes] = await Promise.all([fetch('/api/reviews'), fetch('/api/departments'), fetch('/api/reports/missing')]);
       const reviews = await reviewsRes.json();
       const depts = await deptsRes.json();
       const missing = await missingRes.json();
       items = reviews.reports ?? [];
-      reviewNeeded = items.filter(
-        (r: ReviewItem) => r.status === 'SUBMITTED' || r.status === 'CHANGES_REQUIRED',
-      ).length;
+      reviewNeeded = items.filter((r: ReviewItem) => r.status === 'SUBMITTED' || r.status === 'CHANGES_REQUIRED').length;
       submittedCount = items.filter((r: ReviewItem) => r.status === 'SUBMITTED' || r.status === 'APPROVED').length;
       const dept = (depts.departments ?? []).find((d: any) => d.code === 'CSE');
       facultyCount = dept?.member_count ?? 0;
       missingReports = missing.missing ?? [];
       missingPeriod = missing.periodLabel ?? '';
-    } catch {
-      error = 'Unable to load department data.';
-    } finally {
-      loading = false;
-    }
+    } catch { error = 'Unable to load department data.'; }
+    finally { loading = false; }
   });
 </script>
 
-<svelte:head><title>Review workspace · Faculty Reporting System</title></svelte:head>
-<main class="shell app-shell">
-  {#if loading}<div class="loading-panel">
-      <span class="spinner"></span><span>Loading department overview…</span>
-    </div>{:else if error}<div class="error-panel">{error}</div>{:else}<div class="breadcrumb">
-      Administration <span>/</span> Department overview
-    </div>
-    <div class="page-heading">
+<svelte:head><title>Department overview · Faculty Reporting System</title></svelte:head>
+<main class="shell">
+  {#if loading}
+    <div class="dash-loading"><span class="spinner"></span><span>Loading overview…</span></div>
+  {:else if error}
+    <div class="dash-error">{error}</div>
+  {:else}
+    <header class="dash-header">
       <div>
-        <div class="eyebrow">Review workspace · CSE</div>
         <h1>Department overview</h1>
-        <p>Keep the reporting cycle moving.</p>
+        <span class="dash-period">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
       </div>
-      <span class="period-chip">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+    </header>
+    <div class="dash-metrics">
+      <div><span>Faculty</span><strong>{facultyCount}</strong><small>in department</small></div>
+      <div><span>Submitted</span><strong>{submittedCount}</strong><small>{facultyCount ? Math.round((submittedCount / facultyCount) * 100) : 0}% rate</small></div>
+      <div><span>Review needed</span><strong>{reviewNeeded}</strong><small>awaiting attention</small></div>
     </div>
-    <section class="metrics">
-      <div><small>Faculty</small><strong>{facultyCount}</strong><span>in department</span></div>
-      <div>
-        <small>Submitted</small><strong>{submittedCount}</strong><span
-          >{facultyCount ? Math.round((submittedCount / facultyCount) * 100) : 0}% submission rate</span
-        >
-      </div>
-      <div><small>Review needed</small><strong>{reviewNeeded}</strong><span>awaiting your attention</span></div>
-    </section>
     <div class="admin-grid">
-      <section class="history">
-        <div class="section-heading">
-          <h2>Needs attention</h2>
-          <a href="/admin/reports">Open queue <span>→</span></a>
-        </div>
-        {#if !items.length}<div class="empty-state">
-            No reports requiring attention.
-          </div>{:else}{#each items.slice(0, 5) as item}<div class="report-row">
-              <span>{item.faculty_name}</span><span
-                class="status {item.status === 'SUBMITTED'
-                  ? 'submitted'
-                  : item.status === 'CHANGES_REQUIRED'
-                    ? 'changes'
-                    : item.status === 'APPROVED'
-                      ? 'approved'
-                      : ''}"
-                >{item.status === 'CHANGES_REQUIRED'
-                  ? 'Changes required'
-                  : item.status[0] + item.status.slice(1).toLowerCase()}</span
-              ><span>Due {new Date(item.updated_at).toLocaleDateString()}</span><a href="/admin/reports">Review →</a>
-            </div>{/each}{/if}
+      <section class="admin-card">
+        <div class="panel-head"><h2>Needs attention</h2><a href="/admin/reports">Open queue →</a></div>
+        {#if !items.length}
+          <div class="empty-state">No reports requiring attention.</div>
+        {:else}
+          {#each items.slice(0, 5) as item}
+            <a class="admin-row" href="/admin/reports">
+              <span class="row-name">{item.faculty_name}</span>
+              <span class="report-pill" class:r-sub={item.status === 'SUBMITTED'} class:r-chg={item.status === 'CHANGES_REQUIRED'} class:r-ok={item.status === 'APPROVED'}>
+                {item.status === 'CHANGES_REQUIRED' ? 'Changes required' : item.status[0] + item.status.slice(1).toLowerCase()}
+              </span>
+              <span class="row-date">{new Date(item.updated_at).toLocaleDateString()}</span>
+              <span class="row-act">Review →</span>
+            </a>
+          {/each}
+        {/if}
       </section>
-      <section class="missing-panel">
-        <div class="section-heading">
-          <h2>Missing reports</h2>
-          <span class="period-badge">{missingPeriod}</span>
-        </div>
-        {#if !missingReports.length}<div class="empty-state">
-            All faculty have submitted for this period.
-          </div>{:else}{#each missingReports as m}<div class="missing-row">
-              <strong>{m.name}</strong><span>{m.email}</span>
-            </div>{/each}
-          <p class="missing-note">
-            {missingReports.length} faculty {missingReports.length === 1 ? 'has' : 'have'} not yet submitted for {missingPeriod}.
-          </p>{/if}
+      <section class="admin-card">
+        <div class="panel-head"><h2>Missing reports</h2><span class="head-tag">{missingPeriod}</span></div>
+        {#if !missingReports.length}
+          <div class="empty-state">All faculty have submitted for this period.</div>
+        {:else}
+          {#each missingReports as m}
+            <div class="admin-row static">
+              <div class="row-name"><strong>{m.name}</strong><span class="row-email">{m.email}</span></div>
+            </div>
+          {/each}
+          <p class="missing-note">{missingReports.length} faculty {missingReports.length === 1 ? 'has' : 'have'} not yet submitted for {missingPeriod}.</p>
+        {/if}
       </section>
-    </div>{/if}
+    </div>
+  {/if}
 </main>
 
 <style>
-  .loading-panel {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 24px;
-    color: #71818a;
-    font-size: 0.88rem;
+  .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: #71818a; font-size: 0.88rem; }
+  .spinner { width: 18px; height: 18px; border: 2px solid #dbe3e7; border-top-color: #145b78; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .dash-error { padding: 16px 20px; background: #f9e9e7; color: #8f413b; border-radius: 7px; font-size: 0.88rem; }
+  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 28px; }
+  .dash-header h1 { font-size: 1.65rem; letter-spacing: -0.03em; margin: 0 0 3px; }
+  .dash-period { font-size: 0.82rem; color: #667477; }
+  .dash-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #dbe3e7; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+  .dash-metrics > div { background: #fdfcf9; padding: 18px 20px; }
+  .dash-metrics span:first-child { display: block; color: #71818a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; margin-bottom: 8px; }
+  .dash-metrics strong { display: block; font-size: 1.7rem; letter-spacing: -0.04em; line-height: 1.1; color: #1b2b36; }
+  .dash-metrics small { display: block; color: #71818a; font-size: 0.7rem; margin-top: 5px; }
+  .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .admin-card { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #dbe3e7; }
+  .panel-head h2 { font-size: 0.9rem; margin: 0; letter-spacing: -0.01em; }
+  .panel-head a { color: #145b78; text-decoration: none; font-size: 0.73rem; font-weight: 700; }
+  .head-tag { font-size: 0.66rem; color: #87969c; background: #eef3f5; padding: 3px 7px; border-radius: 4px; font-weight: 700; }
+  .admin-row { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #e8eeec; text-decoration: none; transition: background 0.1s; }
+  .admin-row:last-child { border-bottom: 0; }
+  .admin-row:hover { background: #f4f6f5; }
+  .admin-row.static:hover { background: transparent; }
+  .row-name { min-width: 0; flex: 1; font-size: 0.82rem; color: #1b2b36; }
+  .row-name strong { display: block; }
+  .row-email { display: block; color: #87969c; font-size: 0.7rem; margin-top: 2px; }
+  .row-date { flex: none; color: #87969c; font-size: 0.7rem; }
+  .row-act { flex: none; font-size: 0.73rem; font-weight: 700; color: #145b78; }
+  .report-pill { flex: none; font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; letter-spacing: 0.02em; }
+  .r-sub { background: #e5f0f4; color: #145b78; }
+  .r-ok { background: #e4f1eb; color: #24745b; }
+  .r-chg { background: #f4eddd; color: #8a681d; }
+  .empty-state { padding: 24px 20px; color: #87969c; font-size: 0.8rem; }
+  .missing-note { padding: 12px 20px; margin: 0; color: #87969c; font-size: 0.74rem; }
+  @media (max-width: 800px) {
+    .dash-header { flex-direction: column; align-items: start; }
+    .admin-grid { grid-template-columns: 1fr; }
   }
-  .spinner {
-    width: 18px;
-    height: 18px;
-    border: 2px solid #dbe3e7;
-    border-top-color: #087f73;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  .error-panel {
-    padding: 16px 20px;
-    background: #f9e9e7;
-    color: #8f413b;
-    border-radius: 7px;
-    margin-bottom: 18px;
-    font-size: 0.88rem;
-  }
-  .breadcrumb {
-    font-size: 0.73rem;
-    color: #71818a;
-    margin-bottom: 8px;
-  }
-  .breadcrumb span {
-    padding: 0 8px;
-    color: #b2bdc1;
-  }
-  .empty-state {
-    padding: 24px 0;
-    color: #87969c;
-    font-size: 0.82rem;
-  }
-  .admin-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-    margin-top: 24px;
-  }
-  .missing-panel {
-    background: #fdfcf9;
-    border: 1px solid #dbe3e7;
-    border-radius: 7px;
-    padding: 0 20px;
-  }
-  .section-heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 18px 0;
-    border-bottom: 1px solid #dbe3e7;
-  }
-  .section-heading h2 {
-    font-size: 1rem;
-    margin: 0;
-  }
-  .section-heading a {
-    color: #087f73;
-    text-decoration: none;
-    font-weight: 750;
-    font-size: 0.8rem;
-  }
-  .period-badge {
-    font-size: 0.68rem;
-    color: #87969c;
-    background: #edf3f5;
-    padding: 4px 9px;
-    border-radius: 99px;
-    white-space: nowrap;
-  }
-  .missing-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid #eef3f5;
-    font-size: 0.82rem;
-  }
-  .missing-row strong {
-    color: #1b2b36;
-  }
-  .missing-row span {
-    color: #71818a;
-  }
-  .missing-note {
-    color: #87969c;
-    font-size: 0.74rem;
-    padding: 10px 0;
-    margin: 0;
-  }
-  @media (max-width: 750px) {
-    .admin-grid {
-      grid-template-columns: 1fr;
-    }
+  @media (max-width: 600px) {
+    .dash-metrics { grid-template-columns: 1fr; }
   }
 </style>

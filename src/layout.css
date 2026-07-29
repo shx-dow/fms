@@ -4,13 +4,12 @@
   --blue: #145b78;
   --blue-soft: #e5f0f4;
   --paper: #f4f6f5;
-  --panel: #fff;
-  --line: #d9e2df;
-  --muted: #64747a;
+  --panel: #fdfcf9;
+  --line: #dbe3e7;
+  --muted: #667477;
   --ink: #17252d;
-  --gold: #b48632;
   --green: #24745b;
-  --red: #a84f42;
+  --red: #8f413b;
 }
 body {
   background: var(--paper);
@@ -189,111 +188,6 @@ body {
   max-width: 1240px;
   padding: 30px 42px 64px;
 }
-.app-main .page-heading h1,
-.app-main .editor-head h1 {
-  font-size: 2.25rem;
-  letter-spacing: -0.045em;
-}
-.app-main .page-heading p,
-.app-main .editor-head p {
-  font-size: 0.9rem;
-}
-.app-main .current-report,
-.app-main .review-panel {
-  box-shadow: 0 1px 2px rgba(23, 37, 45, 0.04);
-  border: 1px solid #cfdcde;
-}
-.app-main .metrics strong {
-  font-size: 2rem;
-}
-.app-main .history,
-.app-main .record {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding-left: 18px;
-  padding-right: 18px;
-}
-.app-main .history {
-  padding-bottom: 8px;
-}
-.app-main .history .section-heading {
-  padding: 0 0 5px;
-}
-.app-main .report-row {
-  padding: 15px 0;
-}
-.app-main .section-nav button.active {
-  background: var(--blue-soft);
-}
-.app-main .button,
-.app-main .submit {
-  background: var(--navy);
-}
-.app-main .button:hover,
-.app-main .submit:hover {
-  background: #294a5a;
-}
-.app-main .add-record {
-  background: var(--blue-soft);
-}
-.app-main .period-chip {
-  background: var(--blue-soft);
-  border-color: #c5d9df;
-}
-.app-main .avatar {
-  background: var(--blue-soft);
-  color: var(--blue);
-}
-.app-main .topbar-user {
-  font-size: 0.8rem;
-}
-.sidebar-collapsed .app-sidebar {
-  width: 76px;
-  overflow-x: hidden;
-}
-.sidebar-collapsed .app-main {
-  margin-left: 76px;
-}
-.sidebar-collapsed .institution-brand {
-  justify-content: center;
-  padding-inline: 0;
-}
-.sidebar-collapsed .institution-brand > span:last-child,
-.sidebar-collapsed .sidebar-label,
-.sidebar-collapsed .sidebar-nav a .nav-label,
-.sidebar-collapsed .sidebar-user-info,
-.sidebar-collapsed .sidebar-footer .logout-link {
-  display: none;
-}
-.sidebar-collapsed .sidebar-nav a {
-  justify-content: center;
-  padding-inline: 0;
-}
-.sidebar-collapsed .sidebar-footer {
-  padding-inline: 0;
-  display: flex;
-  justify-content: center;
-}
-.sidebar-collapsed .sidebar-user {
-  justify-content: center;
-  margin-bottom: 0;
-}
-.app-main label {
-  font-size: 0.75rem;
-}
-.app-main input,
-.app-main select,
-.app-main textarea {
-  border-color: #c8d5d7;
-  background: #fbfcfc;
-}
-.app-main input:focus,
-.app-main select:focus,
-.app-main textarea:focus {
-  outline: 3px solid #d4eaf0;
-  border-color: var(--blue);
-}
 @media (max-width: 850px) {
   .app-sidebar {
     width: 214px;
@@ -315,11 +209,49 @@ body {
   .app-main > .shell {
     padding: 24px 16px 48px;
   }
-  .app-main .topbar {
-    display: none;
-  }
-  .app-main .page-heading h1,
-  .app-main .editor-head h1 {
-    font-size: 1.9rem;
-  }
+}
+
+.sidebar-collapsed .app-sidebar {
+  width: 76px;
+  overflow-x: hidden;
+}
+.sidebar-collapsed .app-main {
+  margin-left: 76px;
+}
+.sidebar-collapsed .institution-brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+.sidebar-collapsed .institution-brand > span:last-child,
+.sidebar-collapsed .sidebar-nav a .nav-label,
+.sidebar-collapsed .sidebar-user-info {
+  display: none;
+}
+.sidebar-collapsed .sidebar-label {
+  height: 1px;
+  margin: 16px 14px;
+  padding: 0;
+  background: #2a4554;
+  overflow: hidden;
+  text-indent: -999px;
+}
+.sidebar-collapsed .sidebar-label-admin {
+  margin-top: 16px;
+}
+.sidebar-collapsed .sidebar-nav a {
+  justify-content: center;
+  padding-inline: 0;
+}
+.sidebar-collapsed .sidebar-footer {
+  padding-inline: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.sidebar-collapsed .sidebar-user {
+  justify-content: center;
+  margin-bottom: 0;
+}
+.sidebar-collapsed .logout-link {
+  padding: 7px;
 }

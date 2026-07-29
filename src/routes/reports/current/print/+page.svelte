@@ -79,7 +79,7 @@
     margin: 0 auto;
   }
   .kicker {
-    color: #087f73;
+    color: #145b78;
     text-transform: uppercase;
     letter-spacing: 0.13em;
     font-size: 9px;
@@ -116,7 +116,7 @@
   }
   .print-page h2 {
     font-size: 14px;
-    border-bottom: 2px solid #0f766e;
+    border-bottom: 2px solid #145b78;
     padding-bottom: 5px;
     margin: 0 0 10px;
   }

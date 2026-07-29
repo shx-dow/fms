@@ -10,7 +10,7 @@ return {
 	assets: new Set([]),
 	mimeTypes: {},
 	_: {
-		client: {start:"_app/immutable/entry/start.DFG66SuW.js",app:"_app/immutable/entry/app.DQ-h-uEJ.js",imports:["_app/immutable/entry/start.DFG66SuW.js","_app/immutable/chunks/B5PATZA1.js","_app/immutable/chunks/CoS3lE0R.js","_app/immutable/chunks/OA8UcISh.js","_app/immutable/chunks/CJdaaa5S.js","_app/immutable/entry/app.DQ-h-uEJ.js","_app/immutable/chunks/CoS3lE0R.js","_app/immutable/chunks/BiWaX3KG.js","_app/immutable/chunks/Bzak7iHL.js","_app/immutable/chunks/CJdaaa5S.js","_app/immutable/chunks/BKYKkfB3.js","_app/immutable/chunks/DJ_iecmg.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.BPcUKxGO.js",app:"_app/immutable/entry/app.DKQgCWIw.js",imports:["_app/immutable/entry/start.BPcUKxGO.js","_app/immutable/chunks/CAmykaYa.js","_app/immutable/chunks/xRLw6aK5.js","_app/immutable/chunks/OA8UcISh.js","_app/immutable/chunks/_mIV5EeQ.js","_app/immutable/entry/app.DKQgCWIw.js","_app/immutable/chunks/xRLw6aK5.js","_app/immutable/chunks/DTUAfcr0.js","_app/immutable/chunks/Bzak7iHL.js","_app/immutable/chunks/_mIV5EeQ.js","_app/immutable/chunks/DPtC-Vx6.js","_app/immutable/chunks/DD_tHwjj.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js')),
@@ -26,8 +26,7 @@ return {
 			__memo(() => import('./nodes/11.js')),
 			__memo(() => import('./nodes/12.js')),
 			__memo(() => import('./nodes/13.js')),
-			__memo(() => import('./nodes/14.js')),
-			__memo(() => import('./nodes/15.js'))
+			__memo(() => import('./nodes/14.js'))
 		],
 		remotes: {
 			
@@ -251,31 +250,24 @@ return {
 				endpoint: __memo(() => import('./entries/endpoints/logout/_server.ts.js'))
 			},
 			{
-				id: "/notifications",
-				pattern: /^\/notifications\/?$/,
-				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 12 },
-				endpoint: null
-			},
-			{
 				id: "/reports",
 				pattern: /^\/reports\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 13 },
+				page: { layouts: [0,], errors: [1,], leaf: 12 },
 				endpoint: null
 			},
 			{
 				id: "/reports/current",
 				pattern: /^\/reports\/current\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 14 },
+				page: { layouts: [0,], errors: [1,], leaf: 13 },
 				endpoint: null
 			},
 			{
 				id: "/reports/current/print",
 				pattern: /^\/reports\/current\/print\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 15 },
+				page: { layouts: [0,], errors: [1,], leaf: 14 },
 				endpoint: null
 			}
 		],

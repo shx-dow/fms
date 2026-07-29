@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { show } from '$lib/stores/toast.svelte.ts';
   let { data } = $props();
   type Report = {
     id: string;
@@ -16,432 +17,158 @@
   let selectedDate = $state(new Date().toISOString().slice(0, 10));
   let reports: Report[] = $state([]);
   let loading = $state(false);
-  let error = $state('');
-  const monthNames = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-  const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dayHeaders = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const firstDay = $derived(new Date(currentYear, currentMonth, 1).getDay());
   const daysInMonth = $derived(new Date(currentYear, currentMonth + 1, 0).getDate());
-  const days = $derived.by(() => {
-    const d: number[] = [];
-    for (let i = 1; i <= daysInMonth; i++) d.push(i);
-    return d;
-  });
+  const days = $derived.by(() => { const d: number[] = []; for (let i = 1; i <= daysInMonth; i++) d.push(i); return d; });
   const today = $derived(new Date().toISOString().slice(0, 10));
   function isToday(day: number) {
-    const ds = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return ds === today;
+    return `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}` === today;
   }
   function isSelected(day: number) {
-    const ds = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return ds === selectedDate;
+    return `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}` === selectedDate;
   }
   const user = $derived(data.user);
   const isFaculty = $derived(user?.role === 'FACULTY');
-  const statusClass = (s: string) =>
-    s === 'SUBMITTED'
-      ? 'submitted'
-      : s === 'APPROVED'
-        ? 'approved'
-        : s === 'CHANGES_REQUIRED'
-          ? 'changes_required'
-          : '';
+  const statusPillClass = (s: string) =>
+    s === 'SUBMITTED' ? 'r-sub' : s === 'APPROVED' ? 'r-ok' : s === 'CHANGES_REQUIRED' ? 'r-chg' : '';
   const statusLabel = (s: string) =>
-    s === 'CHANGES_REQUIRED' ? 'Changes required' : s.charAt(0) + s.slice(1).toLowerCase();
+    s === 'CHANGES_REQUIRED' ? 'Changes requested' : s.charAt(0) + s.slice(1).toLowerCase();
   function prevMonth() {
-    if (currentMonth === 0) {
-      currentMonth = 11;
-      currentYear--;
-    } else {
-      currentMonth--;
-    }
+    if (currentMonth === 0) { currentMonth = 11; currentYear--; }
+    else { currentMonth--; }
     selectDate(1);
   }
   function nextMonth() {
-    if (currentMonth === 11) {
-      currentMonth = 0;
-      currentYear++;
-    } else {
-      currentMonth++;
-    }
+    if (currentMonth === 11) { currentMonth = 0; currentYear++; }
+    else { currentMonth++; }
     selectDate(1);
   }
   function selectDate(day: number) {
-    selectedDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    selectedDate = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     loadReports();
   }
   async function loadReports() {
     loading = true;
-    error = '';
     try {
-      const response = await fetch(`/api/report-calendar?date=${selectedDate}`);
-      const d = await response.json();
-      if (!response.ok) {
-        error = d.error ?? 'Unable to load reports.';
-        reports = [];
-      } else reports = d.reports ?? [];
-    } catch {
-      error = 'Unable to load reports.';
-      reports = [];
-    } finally {
-      loading = false;
-    }
+      const res = await fetch(`/api/report-calendar?date=${selectedDate}`);
+      const d = await res.json();
+      if (!res.ok) { show(d.error ?? 'Unable to load reports.', 'err'); reports = []; }
+      else reports = d.reports ?? [];
+    } catch { show('Unable to load reports.', 'err'); reports = []; }
+    finally { loading = false; }
   }
   onMount(loadReports);
+  const fmtDate = $derived(new Date(selectedDate).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
 </script>
 
-<svelte:head><title>Report calendar · Faculty Reporting System</title></svelte:head>
+<svelte:head><title>Calendar · Faculty Reporting System</title></svelte:head>
 <main class="shell app-shell">
-  <div class="breadcrumb">Workspace <span>/</span> Report calendar</div>
-  <section class="page-head">
+  <header class="dash-header">
     <div>
-      <div class="eyebrow">Reports by date</div>
-      <h1>Report calendar</h1>
-      <p>Click a date on the calendar to view reports submitted or updated on that day.</p>
+      <h1>Calendar</h1>
+      <span class="dash-period">Reports by date</span>
     </div>
-  </section>
-  <div class="calendar-layout">
-    <div class="calendar-widget">
-      <div class="cal-header">
-        <button class="cal-nav" onclick={prevMonth}>←</button><span class="cal-month-label"
-          >{monthNames[currentMonth]} {currentYear}</span
-        ><button class="cal-nav" onclick={nextMonth}>→</button>
+  </header>
+
+  <div class="cal-layout">
+    <div class="cal-widget">
+      <div class="cal-head">
+        <button class="cal-nav" onclick={prevMonth}>←</button>
+        <span class="cal-label">{monthNames[currentMonth]} {currentYear}</span>
+        <button class="cal-nav" onclick={nextMonth}>→</button>
       </div>
       <div class="cal-grid">
-        <div class="cal-day-header">Sun</div>
-        <div class="cal-day-header">Mon</div>
-        <div class="cal-day-header">Tue</div>
-        <div class="cal-day-header">Wed</div>
-        <div class="cal-day-header">Thu</div>
-        <div class="cal-day-header">Fri</div>
-        <div class="cal-day-header">Sat</div>
-        {#each Array(firstDay) as _}<div class="cal-day cal-day-empty"></div>{/each}{#each days as day}<button
-            class="cal-day {isToday(day) ? 'cal-today' : ''} {isSelected(day) ? 'cal-selected' : ''}"
-            onclick={() => selectDate(day)}>{day}</button
-          >{/each}
+        {#each dayHeaders as h}<div class="cal-dh">{h}</div>{/each}
+        {#each Array(firstDay) as _}<div class="cal-day empty"></div>{/each}
+        {#each days as day}
+          <button class="cal-day" class:today={isToday(day)} class:sel={isSelected(day)} onclick={() => selectDate(day)}>{day}</button>
+        {/each}
       </div>
     </div>
-    <div class="calendar-reports">
-      <div class="panel-title">
-        <h2>{selectedDate}</h2>
-        <p>
-          {loading ? 'Loading reports…' : `${reports.length} report${reports.length === 1 ? '' : 's'} on this date`}
-        </p>
+
+    <section class="cal-reports">
+      <div class="panel-head">
+        <h2>{fmtDate}</h2>
+        <span class="cal-count">{loading ? 'Loading…' : `${reports.length} report${reports.length === 1 ? '' : 's'}`}</span>
       </div>
-      <div class="reports-list">
-        {#if loading}<div class="loading-inline"><span class="spinner"></span></div>{:else if error}<div
-            class="notice error"
-          >
-            {error}
-          </div>{:else if !reports.length}<div class="empty-state">
-            <div class="empty-icon">📅</div>
-            <p>No submitted reports found for this date.</p>
-          </div>{:else}{#each reports as report}<a
-              class="report-card {statusClass(report.status)}"
-              href={isFaculty
-                ? report.status === 'SUBMITTED' || report.status === 'APPROVED' || report.status === 'CHANGES_REQUIRED'
-                  ? '/reports'
-                  : '/reports/current'
-                : `/admin/reports?report=${report.id}`}
-              ><div class="card-left">
-                {#if !isFaculty}<span class="faculty-avatar">{report.faculty_name.charAt(0).toUpperCase()}</span>{/if}
+      <div class="cal-list">
+        {#if loading}
+          <div class="cal-empty"><span class="spinner"></span></div>
+        {:else if !reports.length}
+          <div class="cal-empty">No reports found for this date.</div>
+        {:else}
+          {#each reports as report}
+            <a class="cal-row" href={isFaculty ? '/reports' : `/admin/reports?report=${report.id}`}>
+              <div class="cal-row-left">
+                {#if !isFaculty}
+                  <span class="cal-avatar">{report.faculty_name.charAt(0)}</span>
+                {/if}
                 <div>
-                  <strong>{report.faculty_name}</strong>{#if !isFaculty}<small>{report.faculty_email}</small>{/if}<small
-                    class="period-label">{report.period_label}</small
-                  >
+                  <strong>{report.faculty_name}</strong>
+                  {#if !isFaculty}<small>{report.faculty_email}</small>{/if}
+                  <span class="cal-period">{report.period_label}</span>
                 </div>
               </div>
-              <div class="card-right">
-                <span class="status-pill {statusClass(report.status)}">{statusLabel(report.status)}</span><span
-                  class="completion">{report.completion}%</span
-                >
-              </div></a
-            >{/each}{/if}
+              <div class="cal-row-right">
+                <span class="report-pill {statusPillClass(report.status)}">{statusLabel(report.status)}</span>
+                <span class="cal-completion">{report.completion}%</span>
+              </div>
+            </a>
+          {/each}
+        {/if}
       </div>
-    </div>
+    </section>
   </div>
 </main>
 
 <style>
-  .shell {
-    padding-top: 24px;
-  }
-  .breadcrumb {
-    font-size: 0.73rem;
-    color: #71818a;
-    margin-bottom: 28px;
-  }
-  .breadcrumb span {
-    padding: 0 8px;
-    color: #b2bdc1;
-  }
-  .page-head {
-    margin-bottom: 32px;
-  }
-  .page-head h1 {
-    font-size: 2.35rem;
-    letter-spacing: -0.045em;
-    margin: 6px 0 6px;
-  }
-  .page-head p {
-    margin: 0;
-    color: #667477;
-    font-size: 0.92rem;
-  }
-  .calendar-layout {
-    display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: 28px;
-    align-items: start;
-  }
-  .calendar-widget {
-    background: #fdfcf9;
-    border: 1px solid #dbe3e7;
-    border-radius: 10px;
-    padding: 22px;
-    position: sticky;
-    top: 24px;
-  }
-  .cal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 22px;
-  }
-  .cal-month-label {
-    font-weight: 800;
-    font-size: 1rem;
-    color: #1b2b36;
-  }
-  .cal-nav {
-    border: 0;
-    background: 0;
-    color: #61727d;
-    font-size: 1.1rem;
-    cursor: pointer;
-    padding: 6px 12px;
-    border-radius: 5px;
-    font-weight: 700;
-  }
-  .cal-nav:hover {
-    background: #eef3f5;
-    color: #1b2b36;
-  }
-  .cal-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-  }
-  .cal-day-header {
-    font-size: 0.66rem;
-    font-weight: 800;
-    color: #71818a;
-    text-align: center;
-    padding: 6px 0;
-  }
-  .cal-day {
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.79rem;
-    border-radius: 6px;
-    color: #1b2b36;
-    border: 0;
-    background: 0;
-    cursor: pointer;
-    transition: all 0.12s;
-  }
-  .cal-day:hover {
-    background: #eef3f5;
-  }
-  .cal-day-empty {
-    cursor: default;
-  }
-  .cal-today {
-    font-weight: 800;
-    background: #e4f3ef;
-    color: #087f73;
-  }
-  .cal-selected {
-    background: #172a3a;
-    color: #f6f9fa;
-    font-weight: 700;
-  }
-  .cal-selected:hover {
-    background: #223d52;
-  }
-  .calendar-reports {
-    background: #fdfcf9;
-    border: 1px solid #dbe3e7;
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  .panel-title {
-    padding: 20px 22px;
-    border-bottom: 1px solid #dbe3e7;
-  }
-  .panel-title h2 {
-    margin: 0;
-    font-size: 1.04rem;
-    font-weight: 800;
-  }
-  .panel-title p {
-    margin: 4px 0 0;
-    color: #71818a;
-    font-size: 0.76rem;
-  }
-  .reports-list {
-    min-height: 180px;
-  }
-  .loading-inline {
-    padding: 44px;
-    display: flex;
-    justify-content: center;
-  }
-  .spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #dbe3e7;
-    border-top-color: #087f73;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  .report-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 22px;
-    border-bottom: 1px solid #eef3f5;
-    text-decoration: none;
-    color: #1b2b36;
-    transition: background 0.12s;
-  }
-  .report-card:last-child {
-    border-bottom: 0;
-  }
-  .report-card:hover {
-    background: #f7fafb;
-  }
-  .card-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .card-left strong {
-    display: block;
-    font-size: 0.9rem;
-  }
-  .card-left small {
-    display: block;
-    color: #71818a;
-    font-size: 0.71rem;
-    margin-top: 2px;
-  }
-  .period-label {
-    color: #a5b4b9 !important;
-    font-size: 0.65rem !important;
-    margin-top: 3px !important;
-  }
-  .card-right {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    flex: none;
-  }
-  .faculty-avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #e4f3ef;
-    color: #087f73;
-    display: grid;
-    place-items: center;
-    font-size: 0.7rem;
-    font-weight: 800;
-    flex: none;
-  }
-  .status-pill {
-    padding: 4px 8px;
-    border-radius: 3px;
-    font-size: 0.65rem;
-    font-weight: 800;
-  }
-  .status-pill.submitted {
-    background: #e6f0f4;
-    color: #3a7083;
-  }
-  .status-pill.approved {
-    background: #e4f3ef;
-    color: #167166;
-  }
-  .status-pill.changes_required {
-    background: #fff2d9;
-    color: #896015;
-  }
-  .completion {
-    color: #87969c;
-    font-size: 0.78rem;
-    font-weight: 700;
-  }
-  .empty-state {
-    text-align: center;
-    padding: 44px 22px;
-    color: #87969c;
-  }
-  .empty-icon {
-    font-size: 1.8rem;
-    margin-bottom: 10px;
-  }
-  .empty-state p {
-    margin: 0;
-    font-size: 0.88rem;
-  }
-  .notice {
-    padding: 44px 22px;
-    color: #87969c;
-  }
-  .error {
-    color: #8f413b;
-  }
+  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 28px; }
+  .dash-header h1 { font-size: 1.65rem; letter-spacing: -0.03em; margin: 0 0 3px; }
+  .dash-period { font-size: 0.82rem; color: #667477; }
+  .cal-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+  .cal-widget { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; padding: 20px; position: sticky; top: 20px; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .cal-label { font-weight: 800; font-size: 0.95rem; color: #1b2b36; }
+  .cal-nav { border: 0; background: 0; color: #71818a; font-size: 1rem; cursor: pointer; padding: 6px 10px; border-radius: 5px; font-weight: 700; }
+  .cal-nav:hover { background: #eef3f5; color: #1b2b36; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-dh { font-size: 0.62rem; font-weight: 800; color: #87969c; text-align: center; padding: 6px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+  .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 0.76rem; border-radius: 6px; color: #1b2b36; border: 0; background: 0; cursor: pointer; transition: all 0.12s; }
+  .cal-day:hover { background: #eef3f5; }
+  .cal-day.empty { cursor: default; }
+  .cal-day.today { font-weight: 800; background: #e5f0f4; color: #145b78; }
+  .cal-day.sel { background: #17252d; color: #f4f6f5; font-weight: 700; }
+  .cal-day.sel:hover { background: #294a5a; }
+  .cal-reports { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #dbe3e7; }
+  .panel-head h2 { font-size: 0.82rem; margin: 0; font-weight: 800; color: #1b2b36; }
+  .cal-count { font-size: 0.72rem; color: #87969c; }
+  .cal-list { min-height: 140px; }
+  .cal-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #e8eeec; text-decoration: none; color: #1b2b36; transition: background 0.1s; }
+  .cal-row:last-child { border-bottom: 0; }
+  .cal-row:hover { background: #f4f6f5; }
+  .cal-row-left { display: flex; align-items: center; gap: 11px; min-width: 0; flex: 1; }
+  .cal-row-left strong { display: block; font-size: 0.82rem; }
+  .cal-row-left small { display: block; color: #71818a; font-size: 0.68rem; margin-top: 1px; }
+  .cal-period { display: block; color: #a5b4b9; font-size: 0.64rem; margin-top: 2px; }
+  .cal-avatar { width: 26px; height: 26px; border-radius: 50%; background: #e5f0f4; color: #145b78; display: grid; place-items: center; font-size: 0.68rem; font-weight: 800; flex: none; }
+  .cal-row-right { display: flex; align-items: center; gap: 12px; flex: none; }
+  .report-pill { font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; letter-spacing: 0.02em; }
+  .r-sub { background: #e5f0f4; color: #145b78; }
+  .r-ok { background: #e4f1eb; color: #24745b; }
+  .r-chg { background: #f4eddd; color: #8a681d; }
+  .cal-completion { color: #87969c; font-size: 0.76rem; font-weight: 700; }
+  .cal-empty { padding: 44px 20px; text-align: center; color: #87969c; font-size: 0.8rem; }
+  .spinner { width: 18px; height: 18px; border: 2px solid #dbe3e7; border-top-color: #145b78; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   @media (max-width: 850px) {
-    .calendar-layout {
-      grid-template-columns: 1fr;
-    }
-    .calendar-widget {
-      position: static;
-      max-width: 340px;
-      margin-bottom: 0;
-    }
-    .page-head h1 {
-      font-size: 1.9rem;
-    }
+    .cal-layout { grid-template-columns: 1fr; }
+    .cal-widget { position: static; max-width: 320px; }
   }
   @media (max-width: 620px) {
-    .report-card {
-      flex-direction: column;
-      align-items: start;
-      gap: 10px;
-    }
-    .card-right {
-      align-self: end;
-    }
+    .cal-row { flex-direction: column; align-items: start; gap: 8px; }
+    .cal-row-right { align-self: end; }
   }
 </style>

@@ -1,6 +1,29 @@
-import { g as getContext, a as attributes, c as clsx, b as ensure_array_like, d as element, f as derived, s as spread_props, h as attr_class, e as escape_html, i as attr } from "../../chunks/index.js";
+import { a as ensure_array_like, b as attr_class, e as escape_html, d as derived, g as getContext, c as attributes, f as clsx, h as element, s as spread_props, i as attr } from "../../chunks/index.js";
 import { p as page } from "../../chunks/index2.js";
+import { g as getToasts, o as onDestroy } from "../../chunks/toast.svelte.js";
 import "clsx";
+function Toast($$renderer, $$props) {
+  $$renderer.component(($$renderer2) => {
+    let toasts = derived(getToasts);
+    if (toasts().length) {
+      $$renderer2.push("<!--[0-->");
+      $$renderer2.push(`<div class="toast-stack svelte-1cpok13" role="status" aria-live="polite"><!--[-->`);
+      const each_array = ensure_array_like(toasts());
+      for (let $$index = 0, $$length = each_array.length; $$index < $$length; $$index++) {
+        let t = each_array[$$index];
+        $$renderer2.push(`<div${attr_class("toast svelte-1cpok13", void 0, {
+          "toast-ok": t.type === "ok",
+          "toast-err": t.type === "err",
+          "leaving": t.leaving
+        })}>${escape_html(t.text)}</div>`);
+      }
+      $$renderer2.push(`<!--]--></div>`);
+    } else {
+      $$renderer2.push("<!--[-1-->");
+    }
+    $$renderer2.push(`<!--]-->`);
+  });
+}
 /**
  * @file
  * @license @lucide/svelte v1.27.0 - ISC
@@ -265,6 +288,15 @@ function Bell($$renderer, $$props) {
   ];
   Icon($$renderer, spread_props([{ name: "bell" }, props, { iconNode }]));
 }
+function Log_out($$renderer, $$props) {
+  let { $$slots, $$events, ...props } = $$props;
+  const iconNode = [
+    ["path", { "d": "m16 17 5-5-5-5" }],
+    ["path", { "d": "M21 12H9" }],
+    ["path", { "d": "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" }]
+  ];
+  Icon($$renderer, spread_props([{ name: "log-out" }, props, { iconNode }]));
+}
 function _layout($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
     let { data, children } = $$props;
@@ -272,19 +304,28 @@ function _layout($$renderer, $$props) {
     const user = derived(() => data.user);
     const roleLabel = derived(() => user()?.role === "ADMIN" ? "Administrator" : user()?.role === "HOD" ? "HOD" : "Faculty");
     const avatarLetter = derived(() => user()?.name?.charAt(0)?.toUpperCase() ?? "U");
+    onDestroy(() => {
+    });
     if (page.url.pathname === "/login" || page.url.pathname.includes("/print")) {
       $$renderer2.push("<!--[0-->");
       children($$renderer2);
       $$renderer2.push(`<!---->`);
     } else {
       $$renderer2.push("<!--[-1-->");
-      $$renderer2.push(`<div${attr_class("app-frame svelte-12qhfyh", void 0, { "sidebar-collapsed": sidebarCollapsed })}><aside class="app-sidebar svelte-12qhfyh"><a class="institution-brand" href="/dashboard"><span class="crest">I</span><span><strong>ICFAI University</strong><small>Faculty Reporting · Jaipur</small></span></a> <div class="sidebar-body"><div class="sidebar-label">Workspace</div> <nav class="sidebar-nav"><a href="/dashboard"${attr_class("", void 0, { "active": page.url.pathname === "/dashboard" })}>`);
-      Layout_dashboard($$renderer2, { size: 18 });
-      $$renderer2.push(`<!----><span class="nav-label">Dashboard</span></a> <a href="/reports"${attr_class("", void 0, { "active": page.url.pathname.startsWith("/reports") })}>`);
-      File_text($$renderer2, { size: 18 });
-      $$renderer2.push(`<!----><span class="nav-label">My reports</span></a> <a href="/calendar"${attr_class("", void 0, { "active": page.url.pathname.startsWith("/calendar") })}>`);
-      Calendar_days($$renderer2, { size: 18 });
-      $$renderer2.push(`<!----><span class="nav-label">Report calendar</span></a></nav> `);
+      $$renderer2.push(`<div${attr_class("app-frame svelte-12qhfyh", void 0, { "sidebar-collapsed": sidebarCollapsed })}><aside class="app-sidebar svelte-12qhfyh"><a class="institution-brand" href="/dashboard"><span class="crest">I</span><span><strong>ICFAI University</strong><small>Faculty Reporting · Jaipur</small></span></a> <div class="sidebar-body">`);
+      if (user()?.role !== "ADMIN") {
+        $$renderer2.push("<!--[0-->");
+        $$renderer2.push(`<div class="sidebar-label">Workspace</div> <nav class="sidebar-nav"><a href="/dashboard"${attr_class("", void 0, { "active": page.url.pathname === "/dashboard" })}>`);
+        Layout_dashboard($$renderer2, { size: 18 });
+        $$renderer2.push(`<!----><span class="nav-label">Dashboard</span></a> <a href="/reports"${attr_class("", void 0, { "active": page.url.pathname.startsWith("/reports") })}>`);
+        File_text($$renderer2, { size: 18 });
+        $$renderer2.push(`<!----><span class="nav-label">My reports</span></a> <a href="/calendar"${attr_class("", void 0, { "active": page.url.pathname.startsWith("/calendar") })}>`);
+        Calendar_days($$renderer2, { size: 18 });
+        $$renderer2.push(`<!----><span class="nav-label">Calendar</span></a></nav>`);
+      } else {
+        $$renderer2.push("<!--[-1-->");
+      }
+      $$renderer2.push(`<!--]--> `);
       if (user()?.role === "HOD" || user()?.role === "ADMIN") {
         $$renderer2.push("<!--[0-->");
         $$renderer2.push(`<div class="sidebar-label sidebar-label-admin">Administration</div> <nav class="sidebar-nav"><a href="/admin"${attr_class("", void 0, { "active": page.url.pathname === "/admin" })}>`);
@@ -303,7 +344,9 @@ function _layout($$renderer, $$props) {
       } else {
         $$renderer2.push("<!--[-1-->");
       }
-      $$renderer2.push(`<!--]--></div> <div class="sidebar-footer"><div class="sidebar-user"><span class="sidebar-user-avatar">${escape_html(avatarLetter())}</span> <span class="sidebar-user-info"><strong>${escape_html(user()?.name ?? "User")}</strong><small>${escape_html(roleLabel())}${escape_html(user()?.role === "FACULTY" ? "" : " · " + (user()?.role === "HOD" ? user()?.departmentId : "All departments"))}</small></span></div> <a class="logout-link" href="/logout">Sign out</a></div> <button class="sidebar-toggle svelte-12qhfyh"${attr("aria-label", "Collapse sidebar")}>`);
+      $$renderer2.push(`<!--]--></div> <div class="sidebar-footer"><div class="sidebar-user"><span class="sidebar-user-avatar">${escape_html(avatarLetter())}</span> <span class="sidebar-user-info"><strong>${escape_html(user()?.name ?? "User")}</strong><small>${escape_html(roleLabel())}${escape_html(user()?.role === "FACULTY" ? "" : " · " + (user()?.role === "HOD" ? user()?.departmentId : "All departments"))}</small></span></div> <a class="logout-link" href="/logout">`);
+      Log_out($$renderer2, { size: 16 });
+      $$renderer2.push(`<!----><span class="nav-label">Sign out</span></a></div> <button class="sidebar-toggle svelte-12qhfyh"${attr("aria-label", "Collapse sidebar")}>`);
       {
         $$renderer2.push("<!--[-1-->");
         Panel_left_close($$renderer2, { size: 16 });
@@ -320,7 +363,9 @@ function _layout($$renderer, $$props) {
       }
       $$renderer2.push(`<!--]--></div> `);
       children($$renderer2);
-      $$renderer2.push(`<!----></div></div>`);
+      $$renderer2.push(`<!----></div></div> `);
+      Toast($$renderer2);
+      $$renderer2.push(`<!---->`);
     }
     $$renderer2.push(`<!--]-->`);
   });

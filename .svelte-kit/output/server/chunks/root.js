@@ -1,5 +1,5 @@
-import { r as run_all, H as HYDRATION_ERROR, C as COMMENT_NODE, j as HYDRATION_END, k as HYDRATION_START, l as HYDRATION_START_ELSE, S as STATE_SYMBOL, o as object_prototype, m as array_prototype, U as UNINITIALIZED, p as get_descriptor, q as get_prototype_of, t as is_array, u as is_extensible, v as CLASS_CACHE, A as ATTRIBUTES_CACHE, w as STYLE_CACHE, T as TEXT_CACHE, D as DESTROYED, B as BOUNDARY_EFFECT, R as REACTION_RAN, E as ERROR_VALUE, x as EFFECT, y as CONNECTED, z as CLEAN, M as MAYBE_DIRTY, F as DIRTY, G as DERIVED, W as WAS_MARKED, I as HYDRATION_START_FAILED, J as EFFECT_TRANSPARENT, K as EFFECT_PRESERVED, L as INERT, N as STALE_REACTION, n as noop, O as BLOCK_EFFECT, P as ASYNC, Q as EAGER_EFFECT, V as deferred, X as RENDER_EFFECT, Y as MANAGED_EFFECT, Z as ROOT_EFFECT, _ as BRANCH_EFFECT, $ as includes, a0 as REACTION_IS_UPDATING, a1 as index_of, a2 as HEAD_EFFECT, a3 as DESTROYING, a4 as USER_EFFECT, a5 as define_property, a6 as array_from, a7 as is_passive_event, a8 as LEGACY_PROPS, a9 as render, aa as setContext, f as derived } from "./index.js";
-const DEV = false;
+import { r as run_all, H as HYDRATION_ERROR, C as COMMENT_NODE, j as HYDRATION_END, k as HYDRATION_START, l as HYDRATION_START_ELSE, S as STATE_SYMBOL, o as object_prototype, m as array_prototype, U as UNINITIALIZED, p as get_descriptor, q as get_prototype_of, t as is_array, u as is_extensible, v as CLASS_CACHE, A as ATTRIBUTES_CACHE, w as STYLE_CACHE, T as TEXT_CACHE, D as DESTROYED, B as BOUNDARY_EFFECT, R as REACTION_RAN, E as ERROR_VALUE, x as EFFECT, y as CONNECTED, z as CLEAN, M as MAYBE_DIRTY, F as DIRTY, G as DERIVED, W as WAS_MARKED, I as HYDRATION_START_FAILED, J as EFFECT_TRANSPARENT, K as EFFECT_PRESERVED, L as INERT, N as STALE_REACTION, n as noop, O as BLOCK_EFFECT, P as ASYNC, Q as EAGER_EFFECT, V as deferred, X as RENDER_EFFECT, Y as MANAGED_EFFECT, Z as ROOT_EFFECT, _ as BRANCH_EFFECT, $ as includes, a0 as REACTION_IS_UPDATING, a1 as index_of, a2 as HEAD_EFFECT, a3 as DESTROYING, a4 as USER_EFFECT, a5 as define_property, a6 as array_from, a7 as is_passive_event, a8 as LEGACY_PROPS, a9 as render, aa as setContext, d as derived } from "./index.js";
+const browser = false;
 function equals(value) {
   return value === this.v;
 }
@@ -1379,7 +1379,7 @@ class Batch {
   }
   flush() {
     try {
-      if (DEV) ;
+      if (browser) ;
       is_processing = true;
       current_batch = this;
       this.#process();
@@ -2164,7 +2164,7 @@ function update_effect(effect) {
     effect.teardown = typeof teardown === "function" ? teardown : null;
     effect.wv = write_version;
     var dep;
-    if (DEV && tracing_mode_flag && (effect.f & DIRTY) !== 0 && effect.deps !== null) ;
+    if (browser && tracing_mode_flag && (effect.f & DIRTY) !== 0 && effect.deps !== null) ;
   } finally {
     is_updating_effect = was_updating_effect;
     active_effect = previous_effect;
@@ -2990,7 +2990,7 @@ function Root($$renderer, $$props) {
 }
 const root = asClassComponent(Root);
 export {
-  DEV as D,
+  browser as b,
   root as r,
   safe_not_equal as s
 };

@@ -32,9 +32,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   const payload = await request.json().catch(() => ({}));
   const now = new Date().toISOString();
   if (payload.eventId) {
-    sqlite
-      .prepare('INSERT OR REPLACE INTO notification_reads (user_id, event_id, read_at) VALUES (?, ?, ?)')
-      .run(locals.user.id, String(payload.eventId), now);
+    if (payload.unread) {
+      sqlite.prepare('DELETE FROM notification_reads WHERE user_id = ? AND event_id = ?').run(locals.user.id, String(payload.eventId));
+    } else {
+      sqlite
+        .prepare('INSERT OR REPLACE INTO notification_reads (user_id, event_id, read_at) VALUES (?, ?, ?)')
+        .run(locals.user.id, String(payload.eventId), now);
+    }
   } else {
     const events = sqlite.prepare('SELECT id FROM audit_events').all() as {
       id: string;

@@ -95,9 +95,6 @@
 	"/logout": [
 		"src/routes/logout/+server.ts"
 	],
-	"/notifications": [
-		"src/routes/+layout.server.ts"
-	],
 	"/reports": [
 		"src/routes/+layout.server.ts"
 	],

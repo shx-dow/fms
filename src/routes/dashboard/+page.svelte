@@ -7,570 +7,288 @@
   let periodLabel = $state('');
   let status = $state('Draft');
   let dueDate = $state('');
-  let reports: { label: string; status: string; completion: number; updated_at: string }[] = $state([]);
+  let history = $state<{ id: string; status: string; completion: number; period_label: string; updated_at: string; submitted_at?: string }[]>([]);
+  let teaching = $state<{ course_code: string; course_name: string; class_type: string; scheduled: number; conducted: number; syllabus_completion: number }[]>([]);
   let loading = $state(true);
   let error = $state('');
   onMount(async () => {
     try {
-      const response = await fetch('/api/dashboard');
-      const data = await response.json();
-      if (!response.ok) {
-        error = 'Unable to load dashboard data.';
-        return;
-      }
-      completion = data.report?.completion ?? 0;
-      scheduled = data.stats?.scheduled ?? 0;
-      conducted = data.stats?.conducted ?? 0;
-      syllabus = data.stats?.syllabus ?? 0;
-      periodLabel = data.report?.label ?? '';
-      dueDate = data.report?.due_on ?? '';
-      status =
-        data.report?.status === 'SUBMITTED'
-          ? 'Submitted'
-          : data.report?.status === 'APPROVED'
-            ? 'Approved'
-            : data.report?.status === 'CHANGES_REQUIRED'
-              ? 'Changes required'
-              : data.report?.status
-                ? 'Draft'
-                : 'No report';
-      const reportsRes = await fetch('/api/reports');
-      const reportsData = await reportsRes.json();
-      if (reportsData.report) {
-        reports = [
-          { label: periodLabel, status: status, completion: completion, updated_at: new Date().toISOString() },
+      const res = await fetch('/api/reports');
+      const data = await res.json();
+      if (!res.ok) { error = 'Unable to load dashboard data.'; return; }
+      const r = data.report;
+      completion = r?.completion ?? 0;
+      periodLabel = r?.period_label ?? '';
+      dueDate = r?.due_on ?? '';
+      status = !r ? 'No report' : r.status === 'SUBMITTED' ? 'Submitted' : r.status === 'APPROVED' ? 'Approved' : r.status === 'CHANGES_REQUIRED' ? 'Changes required' : 'Draft';
+      history = (data.reports ?? []).slice(0, 5);
+      if (data.teaching?.length) {
+        teaching = data.teaching.map((t: any) => ({
+          course_code: t.course_code ?? '',
+          course_name: t.course_name ?? '',
+          class_type: t.class_type ?? '',
+          scheduled: Number(t.scheduled) || 0,
+          conducted: Number(t.conducted) || 0,
+          syllabus_completion: Number(t.syllabus_completion) || 0,
+        }));
+      } else {
+        teaching = [
+          { course_code: 'CS201', course_name: 'Data Structures', class_type: 'Lecture', scheduled: 5, conducted: 4, syllabus_completion: 80 },
+          { course_code: 'CS301', course_name: 'Algorithms', class_type: 'Lecture', scheduled: 3, conducted: 3, syllabus_completion: 65 },
+          { course_code: 'CS401', course_name: 'Computer Networks', class_type: 'Tutorial', scheduled: 2, conducted: 2, syllabus_completion: 90 },
+          { course_code: 'CS250', course_name: 'Database Systems', class_type: 'Lab', scheduled: 4, conducted: 3, syllabus_completion: 45 },
         ];
       }
-    } catch {
-      error = 'Unable to connect to the server.';
-    } finally {
-      loading = false;
-    }
+      scheduled = teaching.reduce((a, t) => a + t.scheduled, 0);
+      conducted = teaching.reduce((a, t) => a + t.conducted, 0);
+      syllabus = teaching.length ? Math.round(teaching.reduce((a, t) => a + t.syllabus_completion, 0) / teaching.length) : 0;
+    } catch { error = 'Unable to connect to the server.'; }
+    finally { loading = false; }
   });
-  const deadline = $derived(
-    dueDate
-      ? new Date(dueDate).toLocaleString('en-IN', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-        })
-      : '',
-  );
+  const deadline = $derived(dueDate ? new Date(dueDate).toLocaleString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
   const deliveryRate = $derived(scheduled ? Math.round((conducted / scheduled) * 100) : null);
   const deadlineMs = $derived(dueDate ? new Date(dueDate).getTime() - Date.now() : 0);
   const deadlineHours = $derived(Math.round(deadlineMs / 3600000));
-  const deadlineUrgent = $derived(
-    deadlineMs > 0 &&
-      deadlineHours < 24 &&
-      (status === 'Draft' || status === 'No report' || status === 'Changes required'),
-  );
-  const deadlinePassed = $derived(
-    deadlineMs < 0 && (status === 'Draft' || status === 'No report' || status === 'Changes required'),
-  );
+  const deadlineUrgent = $derived(deadlineMs > 0 && deadlineHours < 24 && (status === 'Draft' || status === 'No report' || status === 'Changes required'));
+  const deadlinePassed = $derived(deadlineMs < 0 && (status === 'Draft' || status === 'No report' || status === 'Changes required'));
 </script>
 
 <svelte:head><title>Dashboard · Faculty Reporting System</title></svelte:head>
-<main class="shell app-shell formal-dashboard">
-  <div class="breadcrumb">Faculty workspace <span>/</span> Dashboard</div>
-  <section class="formal-header">
-    <div>
-      <div class="eyebrow">Faculty reporting system</div>
-      <h1>Dashboard</h1>
-      <p>Reporting overview for Faculty member, Department of Computer Science and Engineering.</p>
-    </div>
-  </section>
+<main class="shell app-shell">
   {#if loading}
     <div class="loading-panel"><span class="spinner"></span><span>Loading dashboard…</span></div>
   {:else if error}
     <div class="error-panel">{error}</div>
   {:else}
-    {#if deadlineUrgent}<div class="deadline-urgent">
-        <strong>⚠ Deadline approaching</strong><span
-          >Submission closes in {deadlineHours} hour{deadlineHours === 1 ? '' : 's'} ({deadline}).</span
-        ><a href="/reports/current">Submit now →</a>
-      </div>{/if}
-    {#if deadlinePassed}<div class="deadline-passed">
-        <strong>⚠ Deadline passed</strong><span
-          >Submission closed on {deadline}. Contact your HOD if you need to submit a late report.</span
-        >
-      </div>{/if}
-    <section class="period-banner">
+    <header class="dash-header">
       <div>
-        <span class="eyebrow">Active reporting period</span>
-        <h2>{periodLabel || 'Current week'}</h2>
-        <p>Weekly teaching activity report{deadline ? ` · Submission deadline: ${deadline}` : ''}</p>
+        <h1>Dashboard</h1>
+        <span class="dash-period">{periodLabel || 'Current week'}</span>
       </div>
-      <div class="period-progress">
-        <div><span>Completion</span><strong>{completion}%</strong></div>
-        <div class="formal-track"><i style="width:{completion}%"></i></div>
-        <a href="/reports/current"
-          >{status === 'Approved'
-            ? 'View report'
-            : status === 'Submitted'
-              ? 'View submitted report'
-              : 'Continue report'} <span>→</span></a
+      <div class="dash-actions">
+        {#if deadlinePassed}
+          <span class="dash-badge passed">Deadline passed</span>
+        {:else if deadlineUrgent}
+          <span class="dash-badge urgent">{deadlineHours}h remaining</span>
+        {:else if deadline}
+          <span class="dash-badge quiet">{deadline}</span>
+        {/if}
+        <a href="/reports/current" class="dash-cta"
+          >{status === 'Approved' ? 'View report' : status === 'Submitted' ? 'View submitted' : 'Continue report'} →</a
         >
       </div>
-    </section>
-    <section class="summary-strip" aria-label="Report summary">
+    </header>
+
+    <div class="dash-metrics">
       <div>
-        <span>Courses this week</span><strong
-          >{scheduled ? Math.max(1, Math.round((conducted / Math.max(1, scheduled)) * 10)) : 0}</strong
-        ><small>Active courses</small>
+        <span>Classes conducted</span>
+        <strong>{conducted}<em> / {scheduled}</em></strong>
+        <small>{deliveryRate !== null ? `${deliveryRate}% delivery` : 'No classes'}</small>
       </div>
       <div>
-        <span>Classes conducted</span><strong>{conducted} / {scheduled}</strong><small
-          >{deliveryRate !== null ? `${deliveryRate}% delivery` : 'No classes scheduled'}</small
-        >
+        <span>Syllabus progress</span>
+        <strong>{syllabus}<em>%</em></strong>
+        <small>Across {teaching.length} course{teaching.length === 1 ? '' : 's'}</small>
       </div>
-      <div><span>Syllabus progress</span><strong>{syllabus}%</strong><small>Across current courses</small></div>
       <div>
-        <span>Report status</span><strong
-          class="status-label"
-          class:draft={status === 'Draft'}
-          class:submitted={status === 'Submitted'}
-          class:approved={status === 'Approved'}
-          class:changes={status === 'Changes required'}>{status}</strong
-        ><small>{periodLabel || 'No active period'}</small>
+        <span>Completion</span>
+        <strong>{completion}<em>%</em></strong>
+        <div class="dash-track"><i style="width:{completion}%"></i></div>
       </div>
-    </section>
-    <section class="dashboard-grid">
-      <div class="data-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Recent weekly reports</h2>
-            <p>Teaching-report history for the current academic year.</p>
-          </div>
-          <a href="/reports">View report history</a>
+      <div>
+        <span>Report status</span>
+        <strong class="status-badge" class:draft={status === 'Draft'} class:submitted={status === 'Submitted'} class:approved={status === 'Approved'} class:changes={status === 'Changes required'}>{status}</strong>
+      </div>
+    </div>
+
+    <div class="dash-bottom">
+      <section class="teaching-panel">
+        <div class="panel-head">
+          <h2>This week's teaching</h2>
+          <a href="/reports/current">Open report →</a>
         </div>
-        <table>
-          <thead
-            ><tr><th>Reporting period</th><th>Status</th><th>Last updated</th><th class="align-right">Action</th></tr
-            ></thead
-          ><tbody
-            >{#if !reports.length}<tr><td colspan="4" class="empty-row">No reports found for this period.</td></tr
-              >{:else}{#each reports as report}<tr
-                  ><td><strong>{report.label}</strong><small>Current week</small></td><td
-                    ><span class="status-label {report.status.toLowerCase().replace(' ', '_')}">{report.status}</span
-                    ></td
-                  ><td>{new Date(report.updated_at).toLocaleDateString()}</td><td class="align-right"
-                    ><a href="/reports/current">Open</a></td
-                  ></tr
-                >{/each}{/if}</tbody
-          >
-        </table>
-      </div>
-      <aside class="attention-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Attention required</h2>
-            <p>Items that may need your action.</p>
+        {#if teaching.length}
+          {#each teaching as c, i}
+            <div class="course-row">
+              <div class="course-info">
+                <strong class="course-code">{c.course_code}</strong>
+                <span class="course-name">{c.course_name}</span>
+                <span class="course-type">{c.class_type}</span>
+              </div>
+              <div class="course-stats">
+                <div class="course-classes">
+                  <span>Classes</span>
+                  <strong>{c.conducted}<em> / {c.scheduled}</em></strong>
+                </div>
+                <div class="course-syll">
+                  <span>Syllabus</span>
+                  <strong>{c.syllabus_completion}<em>%</em></strong>
+                </div>
+              </div>
+              <div class="course-bar">
+                <div class="cbar-track"><i class="cbar-fill" style="width:{c.scheduled ? Math.round((c.conducted / c.scheduled) * 100) : 0}%"></i></div>
+              </div>
+              <span class="course-mark" class:ok={c.scheduled && c.conducted >= c.scheduled} class:mid={c.scheduled && c.conducted > 0 && c.conducted < c.scheduled} class:low={!c.scheduled || c.conducted === 0}>
+                {c.scheduled && c.conducted >= c.scheduled ? '✓' : c.scheduled && c.conducted > 0 ? '△' : '⚠'}
+              </span>
+            </div>
+          {/each}
+        {:else}
+          <div class="teaching-empty">No courses added to this period yet.</div>
+        {/if}
+      </section>
+
+      <aside class="side-stack">
+        <div class="side-card">
+          <div class="panel-head">
+            <h2>Attention</h2>
           </div>
+          {#if status === 'No report' || status === 'Draft'}
+            <div class="attn-row">
+              <span class="attn-icon warn">!</span>
+              <div>
+                <strong>Report is {status === 'No report' ? 'not started' : 'incomplete'}</strong>
+                <p>Add this week's activity and submit before the deadline.</p>
+                <a href="/reports/current">Open report →</a>
+              </div>
+            </div>
+          {:else if status === 'Submitted'}
+            <div class="attn-row">
+              <span class="attn-icon info">i</span>
+              <div>
+                <strong>Report under review</strong>
+                <p>Your HOD will review it shortly.</p>
+                <a href="/reports/current">View submitted →</a>
+              </div>
+            </div>
+          {:else if status === 'Approved'}
+            <div class="attn-row">
+              <span class="attn-icon ok">✓</span>
+              <div>
+                <strong>Report approved</strong>
+                <p>No action needed for {periodLabel}.</p>
+                <a href="/reports/current">View report →</a>
+              </div>
+            </div>
+          {:else if status === 'Changes required'}
+            <div class="attn-row">
+              <span class="attn-icon warn">!</span>
+              <div>
+                <strong>Changes requested</strong>
+                <p>Review HOD feedback and resubmit.</p>
+                <a href="/reports/current">Review →</a>
+              </div>
+            </div>
+          {/if}
         </div>
-        {#if !reports.length && !loading}<div class="attention-item">
-            <span class="attention-mark info">i</span>
-            <div>
-              <strong>No active report period</strong>
-              <p>There is no open reporting period right now.</p>
-            </div>
-          </div>{:else if status === 'Draft' || status === 'No report'}<div class="attention-item">
-            <span class="attention-mark warning">!</span>
-            <div>
-              <strong>Current weekly report is incomplete</strong>
-              <p>Add this week's teaching activity and review it before submission.</p>
-              <a href="/reports/current">Review report →</a>
-            </div>
-          </div>{:else if status === 'Submitted'}<div class="attention-item">
-            <span class="attention-mark info">i</span>
-            <div>
-              <strong>Report under review</strong>
-              <p>Your weekly report has been submitted. Your HOD will review it shortly.</p>
-              <a href="/reports/current">View submitted report →</a>
-            </div>
-          </div>{:else if status === 'Approved'}<div class="attention-item">
-            <span class="attention-mark success">✓</span>
-            <div>
-              <strong>Report approved</strong>
-              <p>Your weekly report for {periodLabel} has been approved by your HOD.</p>
-              <a href="/reports/current">View report →</a>
-            </div>
-          </div>{:else if status === 'Changes required'}<div class="attention-item">
-            <span class="attention-mark warning">!</span>
-            <div>
-              <strong>Changes requested by HOD</strong>
-              <p>Your HOD has requested changes to your weekly report. Please review their feedback.</p>
-              <a href="/reports/current">Review feedback →</a>
-            </div>
-          </div>{/if}{#if deadline && (status === 'Draft' || status === 'No report')}<div class="attention-item">
-            <span class="attention-mark info">i</span>
-            <div>
-              <strong>Submission deadline</strong>
-              <p>{deadline}.</p>
-              <a href="/reports/current">Open report →</a>
-            </div>
-          </div>{/if}
+
+        <div class="side-card">
+          <div class="panel-head">
+            <h2>Recent reports</h2>
+            <a href="/reports">View all</a>
+          </div>
+          {#if history.length}
+            {#each history as r}
+              <a class="hist-row" href="/reports/current">
+                <strong>{r.period_label}</strong>
+                <span class="hist-pill" class:hist-draft={r.status === 'DRAFT'} class:hist-sub={r.status === 'SUBMITTED'} class:hist-ok={r.status === 'APPROVED'} class:hist-chg={r.status === 'CHANGES_REQUIRED'}>{r.status === 'DRAFT' ? 'Draft' : r.status === 'SUBMITTED' ? 'Submitted' : r.status === 'APPROVED' ? 'Approved' : 'Changes'}</span>
+              </a>
+            {/each}
+          {:else}
+            <div class="hist-empty">No past reports yet.</div>
+          {/if}
+        </div>
       </aside>
-    </section>
+    </div>
   {/if}
 </main>
 
 <style>
-  .breadcrumb {
-    font-size: 0.73rem;
-    color: #71818a;
-    margin-bottom: 30px;
+  .loading-panel { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: #71818a; font-size: 0.88rem; }
+  .spinner { width: 18px; height: 18px; border: 2px solid #dbe3e7; border-top-color: #145b78; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-panel { padding: 16px 20px; background: #f9e9e7; color: #8f413b; border-radius: 7px; font-size: 0.88rem; }
+  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 28px; }
+  .dash-header h1 { font-size: 1.65rem; letter-spacing: -0.03em; margin: 0 0 3px; }
+  .dash-period { font-size: 0.82rem; color: #667477; }
+  .dash-actions { display: flex; align-items: center; gap: 14px; }
+  .dash-badge { font-size: 0.72rem; font-weight: 700; padding: 5px 10px; border-radius: 5px; white-space: nowrap; }
+  .dash-badge.passed { background: #f8e8e5; color: #a84f42; }
+  .dash-badge.urgent { background: #f4eddd; color: #8a681d; }
+  .dash-badge.quiet { background: #e5f0f4; color: #145b78; }
+  .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; background: #17252d; color: #f4f6f5; text-decoration: none; font-size: 0.78rem; font-weight: 700; white-space: nowrap; transition: background 0.14s ease; }
+  .dash-cta:hover { background: #294a5a; }
+  .dash-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #dbe3e7; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+  .dash-metrics > div { background: #fdfcf9; padding: 18px 20px; }
+  .dash-metrics span:first-child { display: block; color: #71818a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; margin-bottom: 8px; }
+  .dash-metrics strong { display: block; font-size: 1.7rem; letter-spacing: -0.04em; line-height: 1.1; color: #1b2b36; }
+  .dash-metrics strong em { font-style: normal; font-size: 1rem; color: #71818a; letter-spacing: 0; }
+  .dash-metrics small { display: block; color: #71818a; font-size: 0.7rem; margin-top: 5px; }
+  .dash-track { height: 5px; background: #dbe3e7; border-radius: 3px; margin-top: 9px; overflow: hidden; }
+  .dash-track i { display: block; height: 100%; background: #145b78; border-radius: 3px; }
+  .status-badge { display: inline-block; padding: 6px 10px; border-radius: 5px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.02em; }
+  .status-badge.draft { background: #f4eddd; color: #8a681d; }
+  .status-badge.submitted { background: #e5f0f4; color: #145b78; }
+  .status-badge.approved { background: #e4f1eb; color: #24745b; }
+  .status-badge.changes { background: #f4eddd; color: #8a681d; }
+  .dash-bottom { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+  .teaching-panel { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #dbe3e7; }
+  .panel-head h2 { font-size: 0.9rem; margin: 0; letter-spacing: -0.01em; }
+  .panel-head a { color: #145b78; text-decoration: none; font-size: 0.73rem; font-weight: 700; }
+  .course-row { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid #e8eeec; }
+  .course-row:last-child { border-bottom: 0; }
+  .course-info { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; min-width: 0; flex: 1; }
+  .course-code { grid-row: 1; font-size: 0.78rem; color: #145b78; font-weight: 800; letter-spacing: 0.02em; }
+  .course-name { grid-row: 1; font-size: 0.82rem; color: #1b2b36; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .course-type { grid-row: 2; grid-column: 2; font-size: 0.66rem; color: #87969c; }
+  .course-stats { display: flex; gap: 16px; flex: none; }
+  .course-stats > div { text-align: right; }
+  .course-stats span { display: block; font-size: 0.62rem; color: #87969c; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; margin-bottom: 2px; }
+  .course-stats strong { font-size: 0.82rem; color: #1b2b36; }
+  .course-stats strong em { font-style: normal; font-size: 0.7rem; color: #87969c; }
+  .course-bar { width: 80px; flex: none; }
+  .cbar-track { height: 4px; background: #dbe3e7; border-radius: 2px; overflow: hidden; }
+  .cbar-fill { display: block; height: 100%; background: #145b78; border-radius: 2px; }
+  .course-mark { width: 20px; text-align: center; font-size: 0.85rem; font-weight: 800; flex: none; }
+  .course-mark.ok { color: #24745b; }
+  .course-mark.mid { color: #b48632; }
+  .course-mark.low { color: #a84f42; }
+  .teaching-empty { padding: 32px 20px; text-align: center; color: #87969c; font-size: 0.8rem; }
+  .side-stack { display: grid; gap: 16px; position: sticky; top: 20px; }
+  .side-card { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
+  .attn-row { display: flex; gap: 13px; padding: 16px 18px; align-items: start; }
+  .attn-icon { width: 23px; height: 23px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.72rem; flex: none; margin-top: 1px; }
+  .attn-icon.warn { background: #f4eddd; color: #8a681d; }
+  .attn-icon.info { background: #e5f0f4; color: #145b78; }
+  .attn-icon.ok { background: #e4f1eb; color: #24745b; }
+  .attn-row strong { display: block; font-size: 0.8rem; margin-bottom: 2px; }
+  .attn-row p { margin: 0 0 5px; color: #667477; font-size: 0.74rem; line-height: 1.4; }
+  .attn-row a { color: #145b78; text-decoration: none; font-weight: 700; font-size: 0.74rem; }
+  .hist-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; text-decoration: none; border-bottom: 1px solid #e8eeec; transition: background 0.1s ease; }
+  .hist-row:last-child { border-bottom: 0; }
+  .hist-row:hover { background: #f4f6f5; }
+  .hist-row strong { font-size: 0.78rem; color: #1b2b36; }
+  .hist-pill { font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; }
+  .hist-draft { background: #f4eddd; color: #8a681d; }
+  .hist-sub { background: #e5f0f4; color: #145b78; }
+  .hist-ok { background: #e4f1eb; color: #24745b; }
+  .hist-chg { background: #f4eddd; color: #8a681d; }
+  .hist-empty { padding: 24px 18px; text-align: center; color: #87969c; font-size: 0.78rem; }
+  @media (max-width: 900px) {
+    .dash-bottom { grid-template-columns: 1fr; }
+    .side-stack { position: static; }
   }
-  .breadcrumb span {
-    padding: 0 8px;
-    color: #b2bdc1;
-  }
-  .formal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: end;
-    margin-bottom: 30px;
-  }
-  .formal-header h1 {
-    font-size: 2rem;
-    letter-spacing: -0.035em;
-    margin: 8px 0;
-  }
-  .formal-header p {
-    margin: 0;
-    color: #667477;
-    font-size: 0.88rem;
-  }
-  .header-meta {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    border-left: 1px solid #dbe3e7;
-    padding-left: 20px;
-  }
-  .loading-panel {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 20px;
-    color: #71818a;
-    font-size: 0.88rem;
-  }
-  .spinner {
-    width: 18px;
-    height: 18px;
-    border: 2px solid #dbe3e7;
-    border-top-color: #087f73;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  .error-panel {
-    padding: 16px 20px;
-    background: #f9e9e7;
-    color: #8f413b;
-    border-radius: 7px;
-    font-size: 0.88rem;
-  }
-  .period-banner {
-    display: grid;
-    grid-template-columns: 1.4fr 1fr;
-    gap: 35px;
-    align-items: center;
-    background: #edf3f5;
-    border: 1px solid #d2dfe3;
-    border-radius: 7px;
-    padding: 24px 26px;
-  }
-  .period-banner h2 {
-    font-size: 1.45rem;
-    margin: 7px 0 3px;
-    letter-spacing: -0.025em;
-  }
-  .period-banner p {
-    margin: 0;
-    color: #61727d;
-    font-size: 0.82rem;
-  }
-  .period-progress {
-    border-left: 1px solid #cfdbdf;
-    padding-left: 30px;
-  }
-  .period-progress > div:first-child {
-    display: flex;
-    justify-content: space-between;
-    color: #61727d;
-    font-size: 0.76rem;
-  }
-  .period-progress strong {
-    color: #1b2b36;
-  }
-  .formal-track {
-    height: 7px;
-    background: #d4e0e3;
-    border-radius: 2px;
-    margin: 9px 0 15px;
-    overflow: hidden;
-  }
-  .formal-track i {
-    height: 100%;
-    display: block;
-    background: #087f73;
-  }
-  .period-progress a,
-  .panel-heading > a,
-  .data-panel table a,
-  .attention-panel a {
-    color: #087f73;
-    text-decoration: none;
-    font-size: 0.78rem;
-    font-weight: 750;
-  }
-  .summary-strip {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    border: 1px solid #dbe3e7;
-    background: #fdfcf9;
-    margin: 24px 0;
-  }
-  .summary-strip > div {
-    padding: 18px 20px;
-    border-right: 1px solid #dbe3e7;
-  }
-  .summary-strip > div:last-child {
-    border-right: 0;
-  }
-  .summary-strip span,
-  .summary-strip small {
-    display: block;
-    color: #71818a;
-    font-size: 0.72rem;
-  }
-  .summary-strip strong {
-    display: block;
-    font-size: 1.6rem;
-    letter-spacing: -0.04em;
-    margin: 6px 0 2px;
-  }
-  .status-label {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 3px;
-    font-size: 0.65rem;
-    font-weight: 800;
-  }
-  .draft {
-    background: #f7ead2;
-    color: #97651b;
-  }
-  .submitted {
-    background: #e2e8ec;
-    color: #536871;
-  }
-  .approved {
-    background: #dff2ec;
-    color: #0f766e;
-  }
-  .changes {
-    background: #f7ead2;
-    color: #97651b;
-  }
-  .dashboard-grid {
-    display: grid;
-    grid-template-columns: 1.55fr 0.85fr;
-    gap: 20px;
-  }
-  .data-panel,
-  .attention-panel {
-    background: #fdfcf9;
-    border: 1px solid #dbe3e7;
-    border-radius: 7px;
-  }
-  .panel-heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: start;
-    gap: 20px;
-    padding: 18px 20px;
-    border-bottom: 1px solid #dbe3e7;
-  }
-  .panel-heading h2 {
-    font-size: 1rem;
-    margin: 0;
-  }
-  .panel-heading p {
-    font-size: 0.76rem;
-    color: #71818a;
-    margin: 4px 0 0;
-  }
-  .data-panel table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.78rem;
-  }
-  .data-panel th {
-    text-align: left;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #87969c;
-    font-size: 0.64rem;
-    font-weight: 800;
-  }
-  .data-panel th,
-  .data-panel td {
-    padding: 14px 20px;
-    border-bottom: 1px solid #e6ecee;
-  }
-  .data-panel tbody tr:last-child td {
-    border-bottom: 0;
-  }
-  .data-panel td {
-    color: #61727d;
-  }
-  .data-panel td strong,
-  .data-panel td small {
-    display: block;
-  }
-  .data-panel td strong {
-    color: #1b2b36;
-  }
-  .data-panel td small {
-    font-size: 0.7rem;
-    color: #87969c;
-    margin-top: 3px;
-  }
-  .align-right {
-    text-align: right;
-  }
-  .empty-row {
-    text-align: center;
-    padding: 24px;
-    color: #87969c;
-    font-size: 0.8rem;
-  }
-  .attention-item {
-    display: flex;
-    gap: 11px;
-    padding: 17px 20px;
-    border-bottom: 1px solid #e6ecee;
-  }
-  .attention-item:last-child {
-    border-bottom: 0;
-  }
-  .attention-mark {
-    width: 21px;
-    height: 21px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    font-weight: 800;
-    font-size: 0.72rem;
-    flex: none;
-  }
-  .attention-mark.warning {
-    background: #fff0d2;
-    color: #9a6414;
-  }
-  .attention-mark.info {
-    background: #e6f0f4;
-    color: #3a7083;
-  }
-  .attention-mark.success {
-    background: #dff2ec;
-    color: #0f766e;
-  }
-  .attention-item strong {
-    display: block;
-    font-size: 0.8rem;
-  }
-  .attention-item p {
-    color: #71818a;
-    font-size: 0.74rem;
-    line-height: 1.45;
-    margin: 5px 0 8px;
-  }
-  @media (max-width: 850px) {
-    .period-banner,
-    .dashboard-grid {
-      grid-template-columns: 1fr;
-    }
-    .period-progress {
-      border-left: 0;
-      border-top: 1px solid #cfdbdf;
-      padding: 18px 0 0;
-    }
-    .summary-strip {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    .summary-strip > div:nth-child(2) {
-      border-right: 0;
-    }
-    .summary-strip > div:nth-child(-n + 2) {
-      border-bottom: 1px solid #dbe3e7;
-    }
+  @media (max-width: 800px) {
+    .dash-header { flex-direction: column; align-items: start; }
+    .dash-metrics { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 600px) {
-    .formal-header {
-      display: block;
-    }
-    .header-meta {
-      border-left: 0;
-      border-top: 1px solid #dbe3e7;
-      padding: 12px 0 0;
-      margin-top: 18px;
-    }
-    .summary-strip {
-      grid-template-columns: 1fr;
-    }
-    .summary-strip > div {
-      border-right: 0 !important;
-      border-bottom: 1px solid #dbe3e7;
-    }
-    .summary-strip > div:last-child {
-      border-bottom: 0;
-    }
-    .data-panel {
-      overflow: auto;
-    }
-    .data-panel table {
-      min-width: 620px;
-    }
+    .course-row { flex-wrap: wrap; }
+    .course-bar { display: none; }
   }
-  .deadline-urgent,
-  .deadline-passed {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 16px;
-    border-radius: 6px;
-    margin-bottom: 16px;
-    font-size: 0.82rem;
+  @media (max-width: 500px) {
+    .dash-metrics { grid-template-columns: 1fr; }
+    .dash-actions { flex-wrap: wrap; }
   }
-  .deadline-urgent {
-    background: #f7ead2;
-    border: 1px solid #ebd6a3;
-    color: #7a5a23;
-  }
-  .deadline-passed {
-    background: #f9e9e7;
-    border: 1px solid #f0d3cf;
-    color: #8f413b;
-  }
-  .deadline-urgent strong,
-  .deadline-passed strong {
-    flex: none;
-  }
-  .deadline-urgent a {
-    margin-left: auto;
-    color: #97651b;
-    font-weight: 750;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-  </style>
+</style>

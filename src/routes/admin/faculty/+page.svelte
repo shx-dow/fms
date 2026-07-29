@@ -1,445 +1,139 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { show } from '$lib/stores/toast.svelte.ts';
   let { data } = $props();
-  type User = {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    department_name?: string;
-    is_active: number;
-    department_id?: string;
-  };
+  type User = { id: string; name: string; email: string; role: string; department_name?: string; is_active: number; department_id?: string };
   let users: User[] = $state([]);
   let departments: { id: string; name: string }[] = $state([]);
   let search = $state('');
-  let error = $state('');
   let loading = $state(true);
   let confirmId = $state<string | null>(null);
   let showForm = $state(false);
   let editUser: User | null = $state(null);
-  let formName = $state('');
-  let formEmail = $state('');
-  let formRole = $state('FACULTY');
-  let formDept = $state('');
-  let formPass = $state('');
+  let formName = $state(''); let formEmail = $state(''); let formRole = $state('FACULTY'); let formDept = $state(''); let formPass = $state('');
   onMount(async () => {
     try {
       const [userRes, deptRes] = await Promise.all([fetch('/api/users'), fetch('/api/departments')]);
-      const userData = await userRes.json();
-      const deptData = await deptRes.json();
-      users = userData.users ?? [];
-      departments = deptData.departments ?? [];
-    } catch {
-      error = 'Unable to load data.';
-    } finally {
-      loading = false;
-    }
+      users = (await userRes.json()).users ?? [];
+      departments = (await deptRes.json()).departments ?? [];
+    } catch { show('Unable to load data.', 'err'); }
+    finally { loading = false; }
   });
-  let filtered = $derived(
-    users.filter(
-      (u) =>
-        !search ||
-        u.name.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase()),
-    ),
-  );
+  let filtered = $derived(users.filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase())));
   async function toggle(user: User) {
     confirmId = null;
-    const response = await fetch('/api/users', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ userId: user.id, isActive: !user.is_active }),
-    });
-    if (response.ok) {
-      user.is_active = user.is_active ? 0 : 1;
-    } else {
-      error = 'Unable to update user status.';
-    }
+    const res = await fetch('/api/users', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId: user.id, isActive: !user.is_active }) });
+    if (res.ok) user.is_active = user.is_active ? 0 : 1; else show('Unable to update user status.', 'err');
   }
-  function openCreate() {
-    editUser = null;
-    formName = '';
-    formEmail = '';
-    formRole = 'FACULTY';
-    formDept = '';
-    formPass = '';
-    showForm = true;
-  }
-  function openEdit(u: User) {
-    editUser = u;
-    formName = u.name;
-    formEmail = u.email;
-    formRole = u.role;
-    formDept = u.department_id ?? '';
-    formPass = '';
-    showForm = true;
-  }
+  function openCreate() { editUser = null; formName = ''; formEmail = ''; formRole = 'FACULTY'; formDept = ''; formPass = ''; showForm = true; }
+  function openEdit(u: User) { editUser = u; formName = u.name; formEmail = u.email; formRole = u.role; formDept = u.department_id ?? ''; formPass = ''; showForm = true; }
   async function saveUser() {
-    error = '';
-    if (!formName || !formEmail) {
-      error = 'Name and email are required.';
-      return;
-    }
-    if (!editUser && !formPass) {
-      error = 'Password is required for new users.';
-      return;
-    }
-    const payload: any = editUser
-      ? {
-          action: 'UPDATE',
-          userId: editUser.id,
-          name: formName,
-          email: formEmail,
-          role: formRole,
-          departmentId: formDept || null,
-        }
-      : {
-          action: 'CREATE',
-          name: formName,
-          email: formEmail,
-          role: formRole,
-          password: formPass,
-          departmentId: formDept || null,
-        };
+    if (!formName || !formEmail) { show('Name and email are required.', 'err'); return; }
+    if (!editUser && !formPass) { show('Password is required for new users.', 'err'); return; }
+    const payload: any = editUser ? { action: 'UPDATE', userId: editUser.id, name: formName, email: formEmail, role: formRole, departmentId: formDept || null } : { action: 'CREATE', name: formName, email: formEmail, role: formRole, password: formPass, departmentId: formDept || null };
     if (editUser && formPass) payload.password = formPass;
-    const response = await fetch('/api/users', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const d = await response.json();
-    if (!response.ok) {
-      error = d.error ?? 'Save failed.';
-      return;
-    }
-    showForm = false;
-    editUser = null;
-    const res = await fetch('/api/users');
-    const data = await res.json();
-    users = data.users ?? [];
+    const res = await fetch('/api/users', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+    const d = await res.json();
+    if (!res.ok) { show(d.error ?? 'Save failed.', 'err'); return; }
+    show('User saved.');
+    showForm = false; editUser = null;
+    users = (await (await fetch('/api/users')).json()).users ?? [];
   }
 </script>
 
 <svelte:head><title>Faculty directory · Faculty Reporting System</title></svelte:head>
-<main class="shell app-shell">
-  <div class="breadcrumb">Administration <span>/</span> Faculty directory</div>
-  <div class="page-heading">
+<main class="shell">
+  <header class="dash-header">
     <div>
-      <div class="eyebrow">Administration</div>
       <h1>Faculty directory</h1>
-      <p>Manage reporting access and department assignments.</p>
+      <span class="dash-period">{users.length} account{users.length === 1 ? '' : 's'}</span>
     </div>
-    <span class="period-chip">{users.length} account{users.length === 1 ? '' : 's'}</span>
-  </div>
-  {#if error}<div class="error">{error}</div>{/if}{#if loading}<div class="loading-panel">
-      <span class="spinner"></span><span>Loading faculty directory…</span>
-    </div>{:else}<div class="toolbar">
-      <div class="search-bar"><input type="search" placeholder="Search by name or email…" bind:value={search} /></div>
-      <button class="add-user-btn" onclick={openCreate}>+ Add user</button>
-    </div>
-    <section class="user-panel">
+    <div class="dash-actions"><button class="dash-cta" onclick={openCreate}>+ Add user</button></div>
+  </header>
+  {#if loading}
+    <div class="dash-loading"><span class="spinner"></span><span>Loading…</span></div>
+  {:else}
+    <div class="search-bar"><input type="search" placeholder="Search by name or email…" bind:value={search} /></div>
+    <section class="table-card">
       <table>
-        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Status</th><th></th></tr></thead
-        ><tbody
-          >{#if !filtered.length}<tr
-              ><td colspan="6" class="empty-row">{search ? 'No users match your search.' : 'No users found.'}</td></tr
-            >{:else}{#each filtered as user}<tr
-                ><td><strong>{user.name}</strong></td><td>{user.email}</td><td>{user.role}</td><td
-                  >{user.department_name ?? 'Institution-wide'}</td
-                ><td
-                  ><span class="status-pill {user.is_active ? 'active' : 'inactive'}"
-                    >{user.is_active ? 'Active' : 'Inactive'}</span
-                  ></td
-                ><td class="action"
-                  >{#if confirmId === user.id}<span class="confirm-group"
-                      ><button class="confirm-yes" onclick={() => toggle(user)}>Confirm</button><button
-                        class="confirm-no"
-                        onclick={() => (confirmId = null)}>Cancel</button
-                      ></span
-                    >{:else}<button class="toggle-btn" onclick={() => (confirmId = user.id)}
-                      >{user.is_active ? 'Deactivate' : 'Activate'}</button
-                    ><button class="edit-btn" onclick={() => openEdit(user)}>Edit</button>{/if}</td
-                ></tr
-              >{/each}{/if}</tbody
-        >
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {#if !filtered.length}
+            <tr><td colspan="6" class="empty-row">{search ? 'No users match your search.' : 'No users found.'}</td></tr>
+          {:else}
+            {#each filtered as user}
+              <tr>
+                <td><strong>{user.name}</strong></td>
+                <td>{user.email}</td>
+                <td>{user.role}</td>
+                <td>{user.department_name ?? 'Institution-wide'}</td>
+                <td><span class="pill" class:active={user.is_active} class:inactive={!user.is_active}>{user.is_active ? 'Active' : 'Inactive'}</span></td>
+                <td class="td-acts">
+                  {#if confirmId === user.id}
+                    <span class="confirm-group"><button class="btn-confirm" onclick={() => toggle(user)}>Confirm</button><button class="btn-cancel" onclick={() => (confirmId = null)}>Cancel</button></span>
+                  {:else}
+                    <button class="btn-ghost" onclick={() => (confirmId = user.id)}>{user.is_active ? 'Deactivate' : 'Activate'}</button>
+                    <button class="btn-ghost" onclick={() => openEdit(user)}>Edit</button>
+                  {/if}
+                </td>
+              </tr>
+            {/each}
+          {/if}
+        </tbody>
       </table>
-    </section>{/if}{#if showForm}<div class="overlay" onclick={() => (showForm = false)}>
-      <div class="user-form" onclick={(e) => e.stopPropagation()}>
+    </section>
+  {/if}
+  {#if showForm}
+    <div class="overlay" onclick={() => (showForm = false)}>
+      <div class="modal" onclick={(e) => e.stopPropagation()}>
         <h3>{editUser ? 'Edit user' : 'Add user'}</h3>
-        <div class="form-fields">
-          <label>Full name<input bind:value={formName} placeholder="e.g. Jane Smith" /></label><label
-            >Email<input bind:value={formEmail} type="email" placeholder="jane@example.edu" /></label
-          ><label
-            >Role<select bind:value={formRole}
-              ><option value="FACULTY">Faculty</option><option value="HOD">HOD</option><option value="ADMIN"
-                >Admin</option
-              ></select
-            ></label
-          ><label
-            >Department<select bind:value={formDept}
-              ><option value="">Institution-wide</option>{#each departments as d}<option value={d.id}>{d.name}</option
-                >{/each}</select
-            ></label
-          ><label
-            >Password{editUser ? ' (leave blank to keep current)' : ''}<input
-              bind:value={formPass}
-              type="password"
-              placeholder="Password"
-            /></label
-          >
+        <div class="modal-fields">
+          <label>Full name<input bind:value={formName} placeholder="e.g. Jane Smith" /></label>
+          <label>Email<input bind:value={formEmail} type="email" placeholder="jane@example.edu" /></label>
+          <label>Role<select bind:value={formRole}><option value="FACULTY">Faculty</option><option value="HOD">HOD</option><option value="ADMIN">Admin</option></select></label>
+          <label>Department<select bind:value={formDept}><option value="">Institution-wide</option>{#each departments as d}<option value={d.id}>{d.name}</option>{/each}</select></label>
+          <label>Password{editUser ? ' (leave blank to keep current)' : ''}<input bind:value={formPass} type="password" placeholder="Password" /></label>
         </div>
-        {#if error}<div class="form-error">{error}</div>{/if}
-        <div class="form-actions">
-          <button class="quiet" onclick={() => (showForm = false)}>Cancel</button><button
-            class="submit"
-            onclick={saveUser}>{editUser ? 'Save changes' : 'Create user'} <span>→</span></button
-          >
-        </div>
+        <div class="modal-acts"><button class="btn-ghost" onclick={() => (showForm = false)}>Cancel</button><button class="dash-cta" onclick={saveUser}>{editUser ? 'Save changes' : 'Create user'}</button></div>
       </div>
-    </div>{/if}
+    </div>
+  {/if}
 </main>
 
 <style>
-  .breadcrumb {
-    font-size: 0.73rem;
-    color: #71818a;
-    margin-bottom: 8px;
-  }
-  .breadcrumb span {
-    padding: 0 8px;
-    color: #b2bdc1;
-  }
-  .loading-panel {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 24px;
-    color: #71818a;
-    font-size: 0.88rem;
-  }
-  .spinner {
-    width: 18px;
-    height: 18px;
-    border: 2px solid #dbe3e7;
-    border-top-color: #087f73;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  .toolbar {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-  .search-bar {
-    flex: 1;
-  }
-  .search-bar input {
-    width: 100%;
-    max-width: 380px;
-    padding: 10px 12px;
-    border: 1px solid #c8d5da;
-    border-radius: 6px;
-    font: inherit;
-    background: #fdfcf9;
-  }
-  .add-user-btn {
-    border: 0;
-    border-radius: 6px;
-    padding: 10px 16px;
-    background: #087f73;
-    color: #fdfcf9;
-    font: inherit;
-    font-size: 0.78rem;
-    font-weight: 750;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .user-panel {
-    background: #fdfcf9;
-    border: 1px solid #dbe3e7;
-    border-radius: 7px;
-    overflow: auto;
-  }
-  .user-panel table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 720px;
-    font-size: 0.76rem;
-  }
-  .user-panel th,
-  .user-panel td {
-    padding: 14px 16px;
-    text-align: left;
-    border-bottom: 1px solid #e6ecee;
-  }
-  .user-panel th {
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #87969c;
-    font-size: 0.63rem;
-  }
-  .user-panel td {
-    color: #61727d;
-  }
-  .user-panel td strong {
-    color: #1b2b36;
-  }
-  .status-pill {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 3px;
-    font-size: 0.65rem;
-    font-weight: 800;
-  }
-  .status-pill.active {
-    background: #e4f3ef;
-    color: #167166;
-  }
-  .status-pill.inactive {
-    background: #f1f3f4;
-    color: #71818a;
-  }
-  .action {
-    text-align: right;
-    white-space: nowrap;
-  }
-  .toggle-btn,
-  .edit-btn {
-    border: 0;
-    background: transparent;
-    font: inherit;
-    font-size: 0.74rem;
-    font-weight: 800;
-    cursor: pointer;
-    margin-left: 6px;
-  }
-  .toggle-btn {
-    color: #087f73;
-  }
-  .edit-btn {
-    color: #61727d;
-  }
-  .confirm-group {
-    display: inline-flex;
-    gap: 6px;
-  }
-  .confirm-yes,
-  .confirm-no {
-    border: 0;
-    border-radius: 4px;
-    padding: 5px 9px;
-    font: inherit;
-    font-size: 0.7rem;
-    font-weight: 800;
-    cursor: pointer;
-  }
-  .confirm-yes {
-    background: #a24e45;
-    color: #fdfcf9;
-  }
-  .confirm-no {
-    background: #e6ecee;
-    color: #61727d;
-  }
-  .error {
-    padding: 11px 14px;
-    background: #f9e9e7;
-    color: #8f413b;
-    border-radius: 5px;
-    margin-bottom: 18px;
-    font-size: 0.78rem;
-  }
-  .empty-row {
-    text-align: center;
-    padding: 24px;
-    color: #87969c;
-    font-size: 0.8rem;
-  }
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(27, 43, 54, 0.35);
-    display: grid;
-    place-items: center;
-    z-index: 100;
-  }
-  .user-form {
-    background: #fdfcf9;
-    border: 1px solid #dbe3e7;
-    border-radius: 10px;
-    padding: 28px;
-    max-width: 460px;
-    width: 90%;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-  .user-form h3 {
-    margin: 0 0 18px;
-    font-size: 1.15rem;
-    color: #1b2b36;
-  }
-  .form-fields {
-    display: grid;
-    gap: 14px;
-  }
-  .form-fields label {
-    display: grid;
-    gap: 5px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #61727d;
-  }
-  .form-fields input,
-  .form-fields select {
-    border: 1px solid #cbd7de;
-    border-radius: 5px;
-    padding: 9px 10px;
-    font: inherit;
-    background: #fbfcfc;
-    color: #1b2b36;
-  }
-  .form-error {
-    padding: 10px 14px;
-    background: #f9e9e7;
-    color: #8f413b;
-    border-radius: 5px;
-    margin-top: 14px;
-    font-size: 0.78rem;
-  }
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-  }
-  .form-actions .quiet {
-    border: 0;
-    background: transparent;
-    font: inherit;
-    font-size: 0.8rem;
-    color: #61727d;
-    cursor: pointer;
-  }
-  .form-actions .submit {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 18px;
-    border: 0;
-    border-radius: 6px;
-    background: #172a3a;
-    color: #f5f4ef;
-    font: inherit;
-    font-size: 0.8rem;
-    font-weight: 750;
-    cursor: pointer;
-  }
+  .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: #71818a; font-size: 0.88rem; }
+  .spinner { width: 18px; height: 18px; border: 2px solid #dbe3e7; border-top-color: #145b78; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 28px; }
+  .dash-header h1 { font-size: 1.65rem; letter-spacing: -0.03em; margin: 0 0 3px; }
+  .dash-period { font-size: 0.82rem; color: #667477; }
+  .dash-actions { display: flex; align-items: center; gap: 14px; }
+  .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; background: #17252d; color: #f4f6f5; text-decoration: none; font-size: 0.78rem; font-weight: 700; white-space: nowrap; border: 0; cursor: pointer; transition: background 0.14s ease; }
+  .dash-cta:hover { background: #294a5a; }
+  .search-bar { margin-bottom: 16px; }
+  .search-bar input { width: 100%; max-width: 380px; padding: 10px 12px; border: 1px solid #dbe3e7; border-radius: 6px; font: inherit; background: #fdfcf9; color: #1b2b36; }
+  .table-card { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: auto; }
+  .table-card table { width: 100%; border-collapse: collapse; min-width: 720px; font-size: 0.78rem; }
+  .table-card th, .table-card td { padding: 13px 16px; text-align: left; border-bottom: 1px solid #e8eeec; }
+  .table-card th { text-transform: uppercase; letter-spacing: 0.08em; color: #87969c; font-size: 0.62rem; font-weight: 800; }
+  .table-card td { color: #667477; }
+  .table-card td strong { color: #1b2b36; }
+  .pill { display: inline-block; padding: 3px 7px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; }
+  .pill.active { background: #e4f1eb; color: #24745b; }
+  .pill.inactive { background: #eef3f5; color: #71818a; }
+  .td-acts { text-align: right; white-space: nowrap; }
+  .btn-ghost { border: 0; background: transparent; font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; margin-left: 6px; color: #145b78; }
+  .confirm-group { display: inline-flex; gap: 6px; }
+  .btn-confirm { border: 0; border-radius: 4px; padding: 5px 9px; font: inherit; font-size: 0.68rem; font-weight: 800; cursor: pointer; background: #a84f42; color: #fdfcf9; }
+  .btn-cancel { border: 0; border-radius: 4px; padding: 5px 9px; font: inherit; font-size: 0.68rem; font-weight: 800; cursor: pointer; background: #eef3f5; color: #667477; }
+  .empty-row { text-align: center; padding: 24px; color: #87969c; font-size: 0.8rem; }
+  .overlay { position: fixed; inset: 0; background: rgba(23, 37, 45, 0.35); display: grid; place-items: center; z-index: 100; }
+  .modal { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 10px; padding: 28px; max-width: 440px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.12); max-height: 90vh; overflow-y: auto; }
+  .modal h3 { margin: 0 0 18px; font-size: 1.1rem; color: #1b2b36; }
+  .modal-fields { display: grid; gap: 14px; }
+  .modal-fields label { display: grid; gap: 5px; font-size: 0.74rem; font-weight: 700; color: #667477; }
+  .modal-fields input, .modal-fields select { border: 1px solid #dbe3e7; border-radius: 5px; padding: 9px 10px; font: inherit; background: #fbfcfc; color: #1b2b36; }
+  .modal-acts { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .modal-acts .btn-ghost { border: 0; background: transparent; font: inherit; font-size: 0.8rem; color: #667477; cursor: pointer; padding: 8px 12px; }
+  @media (max-width: 800px) { .dash-header { flex-direction: column; align-items: start; } }
 </style>

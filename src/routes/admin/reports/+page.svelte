@@ -1,31 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  type ReviewRow = {
-    id: string;
-    status: string;
-    updated_at: string;
-    completion: number;
-    faculty_name: string;
-    period_label: string;
-  };
-  type TeachingRow = {
-    course_code: string;
-    course_name: string;
-    program_level: string;
-    class_type: string;
-    scheduled: number;
-    conducted: number;
-    missed: number;
-    missed_action: string;
-    syllabus_completion: number;
-  };
+  import { show } from '$lib/stores/toast.svelte.ts';
+  type ReviewRow = { id: string; status: string; updated_at: string; completion: number; faculty_name: string; period_label: string };
+  type TeachingRow = { course_code: string; course_name: string; program_level: string; class_type: string; scheduled: number; conducted: number; missed: number; missed_action: string; syllabus_completion: number };
   type ReviewHistoryRow = { decision: string; remarks: string; created_at: string; reviewer_name: string };
   let reports: ReviewRow[] = $state([]);
   let selected: ReviewRow | null = $state(null);
-  let decision = $state('');
   let comment = $state('');
   let error = $state('');
-  let saved = $state('');
   let reason = $state('');
   let allowedUntil = $state('');
   let loading = $state(true);
@@ -34,214 +16,151 @@
   let showReport = $state(false);
   onMount(async () => {
     try {
-      const response = await fetch('/api/reviews');
-      const data = await response.json();
-      reports = data.reports ?? [];
+      const res = await fetch('/api/reviews');
+      const d = await res.json();
+      reports = d.reports ?? [];
       selected = reports[0] ?? null;
       if (selected) loadContent(selected.id);
-    } catch {
-      error = 'Unable to load reviews.';
-    } finally {
-      loading = false;
-    }
+    } catch { error = 'Unable to load reviews.'; }
+    finally { loading = false; }
   });
   async function loadContent(reportId: string) {
-    contentLoading = true;
-    reportContent = null;
-    try {
-      const res = await fetch(`/api/reports/${reportId}`);
-      const d = await res.json();
-      reportContent = { teaching: d.teaching ?? [], summary: d.report?.summary ?? '', reviews: d.reviews ?? [] };
-    } catch {
-    } finally {
-      contentLoading = false;
-    }
+    contentLoading = true; reportContent = null;
+    try { const res = await fetch(`/api/reports/${reportId}`); const d = await res.json(); reportContent = { teaching: d.teaching ?? [], summary: d.report?.summary ?? '', reviews: d.reviews ?? [] }; } catch {}
+    finally { contentLoading = false; }
   }
   async function review(next: 'APPROVED' | 'CHANGES_REQUIRED') {
-    if (!selected) return;
-    error = '';
-    saved = '';
-    const response = await fetch('/api/reviews', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ reportId: selected.id, decision: next, remarks: comment }),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) error = data.error ?? 'Unable to save review.';
-    else {
-      saved = 'Review decision saved';
-      selected = { ...selected, status: next };
-      reports = reports.map((row) => (row.id === selected?.id ? { ...row, status: next } : row));
-      loadContent(selected.id);
-    }
+    if (!selected) return; error = '';
+    const res = await fetch('/api/reviews', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportId: selected.id, decision: next, remarks: comment }) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { error = d.error ?? 'Unable to save review.'; return; }
+    show('Review saved.');
+    selected = { ...selected, status: next };
+    reports = reports.map(r => r.id === selected?.id ? { ...r, status: next } : r);
+    loadContent(selected.id);
   }
   async function reopen() {
-    if (!selected) return;
-    error = '';
-    saved = '';
-    const response = await fetch('/api/exceptions', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ reportId: selected.id, reason, allowedUntil }),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) error = data.error ?? 'Unable to reopen report.';
-    else saved = 'Report reopened for editing';
+    if (!selected) return; error = '';
+    const res = await fetch('/api/exceptions', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportId: selected.id, reason, allowedUntil }) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { error = d.error ?? 'Unable to reopen report.'; return; }
+    show('Report reopened for editing.');
   }
-  function selectReport(report: ReviewRow) {
-    selected = report;
-    decision = '';
-    saved = '';
-    error = '';
-    showReport = false;
-    loadContent(report.id);
-  }
+  function selectReport(r: ReviewRow) { selected = r; comment = ''; error = ''; showReport = false; loadContent(r.id); }
+  function pillClass(s: string) { return s === 'SUBMITTED' ? 'r-sub' : s === 'APPROVED' ? 'r-ok' : 'r-chg'; }
+  function pillLabel(s: string) { return s === 'CHANGES_REQUIRED' ? 'Changes required' : s[0] + s.slice(1).toLowerCase(); }
 </script>
 
 <svelte:head><title>Review queue · Faculty Reporting System</title></svelte:head>
-<main class="shell app-shell review-shell">
-  {#if loading}
-    <div class="loading-panel"><span class="spinner"></span><span>Loading review queue…</span></div>
-  {:else}
-    <div class="breadcrumb">Administration <span>/</span> Review queue</div>
-    <div class="page-heading">
-      <div>
-        <h1>Review queue</h1>
-        <p>Review submitted weekly reports for the assigned department.</p>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <span class="period-chip">{reports.length} report{reports.length === 1 ? '' : 's'}</span><a
-          href="/api/reviews?format=csv"
-          target="_blank"
-          class="period-chip export-chip"
-          style="text-decoration:none;cursor:pointer">CSV</a
-        >{#if selected}<a
-          href="/api/reports/{selected.id}/pdf"
-          target="_blank"
-          class="period-chip export-chip"
-          style="text-decoration:none;cursor:pointer">PDF</a
-        >{/if}
-      </div>
+<main class="shell">
+  <header class="dash-header">
+    <div>
+      <h1>Review queue</h1>
+      <span class="dash-period">{reports.length} report{reports.length === 1 ? '' : 's'}</span>
     </div>
+    <div class="dash-actions">
+      <a class="act-link" href="/api/reviews?format=csv" target="_blank">CSV</a>
+      {#if selected}<a class="act-link" href="/api/reports/{selected.id}/pdf" target="_blank">PDF</a>{/if}
+    </div>
+  </header>
+  {#if error}<div class="msg err">{error}</div>{/if}
+  {#if loading}
+    <div class="dash-loading"><span class="spinner"></span><span>Loading…</span></div>
+  {:else}
     <div class="review-layout">
-      <section class="queue">
-        <div class="queue-heading">Reports requiring attention</div>
-        {#if !reports.length}<div class="queue-empty">No submitted reports are available yet.</div>{/if}
-        {#each reports as report}
-          <button class:chosen={selected?.id === report.id} onclick={() => selectReport(report)}>
-            <span
-              ><strong>{report.faculty_name}</strong><small
-                >{report.period_label} · Updated {new Date(report.updated_at).toLocaleDateString()}</small
-              ></span
-            >
-            <span
-              class="status {report.status === 'SUBMITTED'
-                ? 'submitted'
-                : report.status === 'APPROVED'
-                  ? 'approved'
-                  : 'changes'}"
-              >{report.status === 'CHANGES_REQUIRED'
-                ? 'Changes required'
-                : report.status[0] + report.status.slice(1).toLowerCase()}</span
-            >
-          </button>
-        {/each}
+      <section class="queue-panel">
+        <div class="queue-head">Reports requiring attention</div>
+        {#if !reports.length}
+          <div class="q-empty">No submitted reports available yet.</div>
+        {:else}
+          {#each reports as r}
+            <button class="q-row" class:chosen={selected?.id === r.id} onclick={() => selectReport(r)}>
+              <div class="q-info">
+                <strong>{r.faculty_name}</strong>
+                <small>{r.period_label} — Updated {new Date(r.updated_at).toLocaleDateString()}</small>
+              </div>
+              <span class="report-pill {pillClass(r.status)}">{pillLabel(r.status)}</span>
+            </button>
+          {/each}
+        {/if}
       </section>
       {#if selected}
         <section class="review-panel">
-          <div class="review-panel-head">
+          <div class="rp-head">
             <div>
-              <div class="eyebrow">Selected report</div>
               <h2>{selected.faculty_name}</h2>
               <p>{selected.period_label} · {selected.completion}% complete</p>
             </div>
-            <span class="status submitted">{selected.status}</span>
+            <span class="report-pill {pillClass(selected.status)}">{pillLabel(selected.status)}</span>
           </div>
-          <div class="review-metrics">
-            <div><small>Report status</small><strong>{selected.status}</strong></div>
-            <div><small>Last updated</small><strong>{new Date(selected.updated_at).toLocaleDateString()}</strong></div>
-            <div><small>Completion</small><strong>{selected.completion}%</strong></div>
+          <div class="rp-metrics">
+            <div><span>Report status</span><strong>{pillLabel(selected.status)}</strong></div>
+            <div><span>Last updated</span><strong>{new Date(selected.updated_at).toLocaleDateString()}</strong></div>
+            <div><span>Completion</span><strong>{selected.completion}%</strong></div>
           </div>
-          <div class="report-tabs">
-            <button class:active={!showReport} onclick={() => (showReport = false)}>Review actions</button><button
-              class:active={showReport}
-              onclick={() => (showReport = true)}>Report content</button
-            >
+          <div class="rp-tabs">
+            <button class:active={!showReport} onclick={() => (showReport = false)}>Review</button>
+            <button class:active={showReport} onclick={() => (showReport = true)}>Report content</button>
           </div>
           {#if !showReport}
-            <div class="review-actions-panel">
+            <div class="rp-actions">
               {#if reportContent?.reviews?.length}
-                <div class="review-history">
+                <div class="rp-reviews">
                   <h3>Review history</h3>
-                  {#each reportContent.reviews as rv}<div class="review-entry">
-                      <span class="status {rv.decision === 'APPROVED' ? 'approved' : 'changes'}"
-                        >{rv.decision === 'APPROVED' ? 'Approved' : 'Changes requested'}</span
-                      >
+                  {#each reportContent.reviews as rv}
+                    <div class="rp-rv-row">
+                      <span class="report-pill" class:r-ok={rv.decision === 'APPROVED'} class:r-chg={rv.decision === 'CHANGES_REQUIRED'}>{rv.decision === 'APPROVED' ? 'Approved' : 'Changes'}</span>
                       <div>
-                        <strong>{rv.reviewer_name}</strong><small
-                          >{new Date(rv.created_at).toLocaleString()}{rv.remarks ? ` · ${rv.remarks}` : ''}</small
-                        >
+                        <strong>{rv.reviewer_name}</strong>
+                        <small>{new Date(rv.created_at).toLocaleString()}{rv.remarks ? ` — ${rv.remarks}` : ''}</small>
                       </div>
-                    </div>{/each}
+                    </div>
+                  {/each}
                 </div>
               {/if}
               <h3>Reviewer remarks</h3>
-              <textarea
-                bind:value={comment}
-                rows="5"
-                placeholder="Record action points or feedback for the faculty member."
-              ></textarea>
-              {#if error}<div class="decision-note error-note">{error}</div>{/if}
-              {#if saved}<div class="decision-note saved-note">{saved}</div>{/if}
-              <div class="review-actions">
-                <button class="button approve" onclick={() => review('APPROVED')}><span>✓</span> Approve</button>
-                <button class="button changes" onclick={() => review('CHANGES_REQUIRED')}
-                  ><span>↩</span> Request changes</button
-                >
+              <textarea class="rp-textarea" bind:value={comment} rows="4" placeholder="Record feedback for the faculty member…"></textarea>
+              <div class="rp-btns">
+                <button class="btn-approve" onclick={() => review('APPROVED')}>Approve</button>
+                <button class="btn-changes" onclick={() => review('CHANGES_REQUIRED')}>Request changes</button>
               </div>
-              <details class="reopen-details">
+              <details class="rp-reopen">
                 <summary>Reopen report for editing</summary>
-                <div>
-                  <span class="eyebrow">Reason for reopening</span><input
-                    bind:value={reason}
-                    placeholder="Why is this being reopened?"
-                  /><span class="eyebrow">Allow editing until</span><input
-                    type="date"
-                    bind:value={allowedUntil}
-                  /><button class="button" onclick={reopen}>Reopen report</button>
+                <div class="rp-reopen-body">
+                  <label>Reason<input bind:value={reason} placeholder="Why is this being reopened?" /></label>
+                  <label>Allow editing until<input type="date" bind:value={allowedUntil} /></label>
+                  <button class="act-link" onclick={reopen}>Reopen</button>
                 </div>
               </details>
             </div>
           {:else}
-            <div class="report-content-panel">
-              {#if contentLoading}<div class="loading-inline">
-                  <span class="spinner"></span>
-                </div>{:else if !reportContent}<div class="empty-state">Could not load report content.</div>{:else}
+            <div class="rp-content">
+              {#if contentLoading}
+                <div class="dash-loading"><span class="spinner"></span></div>
+              {:else if !reportContent}
+                <div class="empty-state">Could not load report content.</div>
+              {:else}
                 <h3>Teaching & academic delivery</h3>
-                {#if !reportContent.teaching.length}<p class="empty-section">No teaching records found.</p>{:else}<div
-                    class="content-table"
-                  >
+                {#if !reportContent.teaching.length}
+                  <p class="empty-state">No teaching records found.</p>
+                {:else}
+                  <div class="content-table-wrap">
                     <table>
-                      <thead
-                        ><tr
-                          ><th>Course</th><th>Name</th><th>Program</th><th>Type</th><th>Scheduled</th><th>Conducted</th
-                          ><th>Missed</th><th>Syllabus</th></tr
-                        ></thead
-                      ><tbody
-                        >{#each reportContent.teaching as t}<tr
-                            ><td>{t.course_code}</td><td>{t.course_name}</td><td>{t.program_level}</td><td
-                              >{t.class_type}</td
-                            ><td>{t.scheduled}</td><td>{t.conducted}</td><td
-                              >{t.missed}{t.missed_action ? ` (${t.missed_action})` : ''}</td
-                            ><td>{t.syllabus_completion ?? '—'}%</td></tr
-                          >{/each}</tbody
-                      >
+                      <thead><tr><th>Course</th><th>Name</th><th>Program</th><th>Type</th><th>Sched.</th><th>Cond.</th><th>Missed</th><th>Syllabus</th></tr></thead>
+                      <tbody>
+                        {#each reportContent.teaching as t}
+                          <tr><td>{t.course_code}</td><td>{t.course_name}</td><td>{t.program_level}</td><td>{t.class_type}</td><td>{t.scheduled}</td><td>{t.conducted}</td><td>{t.missed}{t.missed_action ? ` (${t.missed_action})` : ''}</td><td>{t.syllabus_completion ?? '-'}%</td></tr>
+                        {/each}
+                      </tbody>
                     </table>
-                  </div>{/if}
+                  </div>
+                {/if}
                 <h3>Weekly summary</h3>
-                {#if reportContent.summary}<div class="summary-block">{reportContent.summary}</div>{:else}<em
-                    class="empty-section">No summary entered.</em
-                  >{/if}
+                {#if reportContent.summary}
+                  <div class="summary-block">{reportContent.summary}</div>
+                {:else}
+                  <p class="empty-state">No summary entered.</p>
+                {/if}
               {/if}
             </div>
           {/if}
@@ -252,352 +171,65 @@
 </main>
 
 <style>
-  .breadcrumb {
-    font-size: 0.73rem;
-    color: #71818a;
-    margin-bottom: 8px;
-  }
-  .breadcrumb span {
-    padding: 0 8px;
-    color: #b2bdc1;
-  }
-  .loading-panel,
-  .loading-inline {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 24px;
-    color: #71818a;
-    font-size: 0.88rem;
-  }
-  .spinner {
-    width: 18px;
-    height: 18px;
-    border: 2px solid #dbe3e7;
-    border-top-color: #087f73;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  .review-layout {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 18px;
-  }
-  .queue {
-    border: 1px solid #dbe3e7;
-    background: #fdfcf9;
-    border-radius: 7px;
-    overflow: hidden;
-  }
-  .queue-heading {
-    padding: 15px 16px;
-    border-bottom: 1px solid #dbe3e7;
-    color: #61727d;
-    font-size: 0.7rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-  .queue button {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    align-items: center;
-    text-align: left;
-    border: 0;
-    border-bottom: 1px solid #e6ecee;
-    background: transparent;
-    padding: 16px;
-    cursor: pointer;
-    font: inherit;
-    color: #1b2b36;
-  }
-  .queue button:last-child {
-    border-bottom: 0;
-  }
-  .queue button.chosen {
-    background: #edf3f5;
-  }
-  .queue strong,
-  .queue small {
-    display: block;
-  }
-  .queue small {
-    color: #71818a;
-    margin-top: 4px;
-    font-size: 0.72rem;
-  }
-  .queue-empty {
-    padding: 25px 16px;
-    color: #71818a;
-    font-size: 0.8rem;
-  }
-  .export-chip {
-    background: #edf3f5;
-    color: #3a7083;
-    padding: 3px 10px;
-    font-size: 0.63rem;
-    font-weight: 800;
-    border-radius: 3px;
-    transition: background 0.15s;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-  }
-  .export-chip:hover {
-    background: #dbe8ed;
-  }
-  .status {
-    white-space: nowrap;
-    border-radius: 3px;
-    padding: 4px 8px;
-    font-size: 0.65rem;
-    font-weight: 800;
-  }
-  .submitted {
-    background: #e6f0f4;
-    color: #3a7083;
-  }
-  .approved {
-    background: #e4f3ef;
-    color: #167166;
-  }
-  .changes {
-    background: #fff2d9;
-    color: #896015;
-  }
-  .review-panel {
-    background: #fdfcf9;
-    border: 1px solid #dbe3e7;
-    border-radius: 7px;
-    padding: 24px;
-  }
-  .review-panel-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 15px;
-  }
-  .review-panel h2 {
-    font-size: 1.55rem;
-    letter-spacing: -0.035em;
-    margin: 8px 0 3px;
-  }
-  .review-panel p {
-    color: #71818a;
-    margin: 0;
-  }
-  .review-metrics {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    border-block: 1px solid #dbe3e7;
-    margin: 20px 0;
-    padding: 14px 0;
-  }
-  .review-metrics small {
-    display: block;
-    color: #71818a;
-    font-size: 0.7rem;
-  }
-  .review-metrics strong {
-    display: block;
-    font-size: 1.05rem;
-    margin-top: 5px;
-  }
-  .report-tabs {
-    display: flex;
-    gap: 0;
-    border-bottom: 1px solid #dbe3e7;
-    margin-bottom: 18px;
-  }
-  .report-tabs button {
-    border: 0;
-    background: 0;
-    padding: 10px 18px;
-    font: inherit;
-    font-size: 0.82rem;
-    color: #61727d;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.12s;
-  }
-  .report-tabs button.active {
-    color: #087f73;
-    font-weight: 750;
-    border-bottom-color: #087f73;
-  }
-  .report-content-panel h3,
-  .review-actions-panel h3 {
-    font-size: 0.82rem;
-    margin: 18px 0 10px;
-    color: #1b2b36;
-  }
-  .review-history {
-    margin-bottom: 18px;
-  }
-  .review-entry {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid #eef3f5;
-    font-size: 0.82rem;
-  }
-  .review-entry strong {
-    display: block;
-    font-size: 0.8rem;
-  }
-  .review-entry small {
-    color: #71818a;
-    font-size: 0.7rem;
-  }
-  .review-entry .status {
-    flex: none;
-  }
-  .review-panel textarea {
-    width: 100%;
-    border: 1px solid #cbd7de;
-    border-radius: 6px;
-    padding: 11px;
-    font: inherit;
-    background: #fbfcfc;
-    resize: vertical;
-    margin-bottom: 14px;
-  }
-  .decision-note {
-    padding: 10px 14px;
-    border-radius: 5px;
-    font-size: 0.82rem;
-    margin-bottom: 14px;
-  }
-  .error-note {
-    background: #f9e9e7;
-    color: #8f413b;
-  }
-  .saved-note {
-    background: #e4f3ef;
-    color: #167166;
-  }
-  .review-actions {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 18px;
-  }
-  .review-actions .button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    border: 0;
-    border-radius: 6px;
-    font: inherit;
-    font-size: 0.8rem;
-    font-weight: 750;
-    cursor: pointer;
-    transition: background 0.12s;
-  }
-  .button.approve {
-    background: #087f73;
-    color: #f5f4ef;
-  }
-  .button.approve:hover {
-    background: #0a9688;
-  }
-  .button.changes {
-    background: #f7ead2;
-    color: #97651b;
-  }
-  .button.changes:hover {
-    background: #f3dfb8;
-  }
-  .reopen-details summary {
-    cursor: pointer;
-    font-size: 0.78rem;
-    color: #61727d;
-    padding: 6px 0;
-  }
-  .reopen-details > div {
-    display: grid;
-    gap: 8px;
-    padding: 10px 0;
-  }
-  .reopen-details input {
-    border: 1px solid #cbd7de;
-    border-radius: 5px;
-    padding: 9px;
-    font: inherit;
-    background: #fbfcfc;
-  }
-  .reopen-details .eyebrow {
-    font-size: 0.66rem;
-    color: #71818a;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 800;
-    margin-top: 4px;
-  }
-  .content-table {
-    overflow-x: auto;
-    margin-bottom: 18px;
-  }
-  .content-table table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.78rem;
-  }
-  .content-table th {
-    text-align: left;
-    padding: 9px 8px;
-    border-bottom: 1px solid #dbe3e7;
-    color: #61727d;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-  .content-table td {
-    padding: 9px 8px;
-    border-bottom: 1px solid #eef3f5;
-    color: #1b2b36;
-  }
-  .content-table tr:last-child td {
-    border-bottom: 0;
-  }
-  .summary-block {
-    background: #f7f9fa;
-    border-radius: 6px;
-    padding: 14px;
-    font-size: 0.82rem;
-    line-height: 1.55;
-    color: #2b3d47;
-    white-space: pre-wrap;
-  }
-  .empty-section {
-    color: #87969c;
-    font-size: 0.78rem;
-    font-style: italic;
-    margin: 6px 0;
-  }
-  .empty-state {
-    padding: 40px 0;
-    text-align: center;
-    color: #87969c;
-  }
-  @media (max-width: 800px) {
-    .review-layout {
-      grid-template-columns: 1fr;
-    }
-  }
-  @media (max-width: 520px) {
-    .review-actions {
-      flex-direction: column;
-    }
-    .review-metrics {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
+  .dash-loading { display: flex; align-items: center; gap: 12px; padding: 24px; color: #71818a; font-size: 0.88rem; }
+  .spinner { width: 18px; height: 18px; border: 2px solid #dbe3e7; border-top-color: #145b78; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 28px; }
+  .dash-header h1 { font-size: 1.65rem; letter-spacing: -0.03em; margin: 0 0 3px; }
+  .dash-period { font-size: 0.82rem; color: #667477; }
+  .dash-actions { display: flex; align-items: center; gap: 8px; }
+  .act-link { border: 1px solid #dbe3e7; border-radius: 6px; padding: 7px 12px; background: #fdfcf9; color: #145b78; font: inherit; font-size: 0.73rem; font-weight: 700; cursor: pointer; text-decoration: none; white-space: nowrap; transition: all 0.12s; }
+  .act-link:hover { background: #e5f0f4; border-color: #bdd3db; }
+  .msg.err { padding: 11px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 0.78rem; background: #f9e9e7; color: #8f413b; }
+  .report-pill { flex: none; font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; letter-spacing: 0.02em; white-space: nowrap; }
+  .r-sub { background: #e5f0f4; color: #145b78; }
+  .r-ok { background: #e4f1eb; color: #24745b; }
+  .r-chg { background: #f4eddd; color: #8a681d; }
+  .review-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
+  .queue-panel { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
+  .queue-head { padding: 14px 16px; border-bottom: 1px solid #dbe3e7; color: #667477; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
+  .q-row { width: 100%; display: flex; justify-content: space-between; gap: 10px; align-items: center; text-align: left; border: 0; border-bottom: 1px solid #e8eeec; background: transparent; padding: 14px 16px; cursor: pointer; font: inherit; color: #1b2b36; transition: background 0.1s; }
+  .q-row:last-child { border-bottom: 0; }
+  .q-row:hover { background: #f4f6f5; }
+  .q-row.chosen { background: #eef3f5; }
+  .q-info strong, .q-info small { display: block; }
+  .q-info small { color: #87969c; margin-top: 3px; font-size: 0.7rem; }
+  .q-empty { padding: 24px 16px; color: #87969c; font-size: 0.8rem; }
+  .review-panel { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
+  .rp-head { display: flex; justify-content: space-between; gap: 15px; padding: 20px; border-bottom: 1px solid #dbe3e7; }
+  .rp-head h2 { font-size: 1.3rem; letter-spacing: -0.03em; margin: 0 0 4px; }
+  .rp-head p { color: #667477; margin: 0; font-size: 0.82rem; }
+  .rp-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 14px 20px; border-bottom: 1px solid #dbe3e7; }
+  .rp-metrics span { display: block; color: #71818a; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+  .rp-metrics strong { display: block; font-size: 0.9rem; margin-top: 4px; color: #1b2b36; }
+  .rp-tabs { display: flex; border-bottom: 1px solid #dbe3e7; }
+  .rp-tabs button { border: 0; background: 0; padding: 9px 18px; font: inherit; font-size: 0.78rem; color: #667477; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.12s; }
+  .rp-tabs button.active { color: #145b78; font-weight: 700; border-bottom-color: #145b78; }
+  .rp-actions, .rp-content { padding: 20px; }
+  .rp-reviews { margin-bottom: 18px; }
+  .rp-actions h3, .rp-content h3 { font-size: 0.8rem; margin: 0 0 10px; color: #1b2b36; }
+  .rp-rv-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #e8eeec; font-size: 0.8rem; }
+  .rp-rv-row strong { display: block; font-size: 0.78rem; }
+  .rp-rv-row small { color: #71818a; font-size: 0.68rem; }
+  .rp-textarea { width: 100%; box-sizing: border-box; border: 1px solid #dbe3e7; border-radius: 6px; padding: 10px; font: inherit; background: #fbfcfc; resize: vertical; margin-bottom: 14px; }
+  .rp-btns { display: flex; gap: 10px; margin-bottom: 18px; }
+  .btn-approve, .btn-changes { border: 0; border-radius: 6px; padding: 9px 16px; font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: background 0.12s; }
+  .btn-approve { background: #17252d; color: #f4f6f5; }
+  .btn-approve:hover { background: #294a5a; }
+  .btn-changes { background: #f4eddd; color: #8a681d; }
+  .btn-changes:hover { background: #efe3c9; }
+  .rp-reopen summary { cursor: pointer; font-size: 0.76rem; color: #667477; padding: 6px 0; }
+  .rp-reopen-body { display: grid; gap: 10px; padding: 12px 0; }
+  .rp-reopen-body label { font-size: 0.72rem; font-weight: 700; color: #667477; }
+  .rp-reopen-body input { border: 1px solid #dbe3e7; border-radius: 5px; padding: 8px 10px; font: inherit; background: #fbfcfc; width: 100%; box-sizing: border-box; margin-top: 4px; }
+  .rp-reopen-body .act-link { align-self: start; }
+  .content-table-wrap { overflow-x: auto; margin-bottom: 18px; }
+  .content-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+  .content-table-wrap th { text-align: left; padding: 8px; border-bottom: 1px solid #dbe3e7; color: #667477; font-weight: 700; white-space: nowrap; }
+  .content-table-wrap td { padding: 8px; border-bottom: 1px solid #e8eeec; color: #1b2b36; }
+  .content-table-wrap tr:last-child td { border-bottom: 0; }
+  .summary-block { background: #f4f6f5; border-radius: 6px; padding: 14px; font-size: 0.82rem; line-height: 1.55; color: #1b2b36; white-space: pre-wrap; }
+  .empty-state { color: #87969c; font-size: 0.78rem; padding: 10px 0; }
+  @media (max-width: 800px) { .review-layout { grid-template-columns: 1fr; } }
+  @media (max-width: 520px) { .rp-btns { flex-direction: column; } .rp-metrics { grid-template-columns: 1fr 1fr; } }
 </style>

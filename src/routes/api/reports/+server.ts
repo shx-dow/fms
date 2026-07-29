@@ -113,16 +113,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         );
     }
 
-    sqlite
-      .prepare('INSERT INTO audit_events VALUES (?, ?, ?, ?, ?, ?)')
-      .run(
-        randomUUID(),
-        userId,
-        payload.status === 'SUBMITTED' ? 'REPORT_SUBMITTED' : 'REPORT_SAVED',
-        'REPORT',
-        reportId,
-        now,
-      );
+    if (payload.status === 'SUBMITTED') {
+      sqlite
+        .prepare('INSERT INTO audit_events VALUES (?, ?, ?, ?, ?, ?)')
+        .run(randomUUID(), userId, 'REPORT_SUBMITTED', 'REPORT', reportId, now);
+    }
   });
 
   updates();

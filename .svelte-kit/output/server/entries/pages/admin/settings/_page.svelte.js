@@ -6,10 +6,14 @@ function _page($$renderer, $$props) {
         $$renderer4.push(`<title>Reporting periods · Faculty Reporting System</title>`);
       });
     });
-    $$renderer2.push(`<main class="shell app-shell"><div class="breadcrumb svelte-1gjcsm">Administration <span class="svelte-1gjcsm">/</span> Reporting periods</div> <div class="page-heading"><div><div class="eyebrow">Administration</div> <h1>Reporting periods</h1> <p>Configure the weekly reporting window and submission deadline.</p></div></div> `);
+    $$renderer2.push(`<main class="shell"><header class="dash-header svelte-1gjcsm"><div><h1 class="svelte-1gjcsm">Reporting periods</h1> <span class="dash-period svelte-1gjcsm">Weekly schedule configuration</span></div></header> `);
+    {
+      $$renderer2.push("<!--[-1-->");
+    }
+    $$renderer2.push(`<!--]--> `);
     {
       $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<div class="loading-panel svelte-1gjcsm"><span class="spinner svelte-1gjcsm"></span><span>Loading periods…</span></div>`);
+      $$renderer2.push(`<div class="dash-loading svelte-1gjcsm"><span class="spinner svelte-1gjcsm"></span><span>Loading…</span></div>`);
     }
     $$renderer2.push(`<!--]--></main>`);
   });
