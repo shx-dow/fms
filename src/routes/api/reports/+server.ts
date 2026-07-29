@@ -14,7 +14,8 @@ export const GET: RequestHandler = ({ locals }) => {
     sqlite.prepare('INSERT INTO reports (id, faculty_id, period_id, status, completion, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').run(id, userId, period.id, 'DRAFT', 0, now, now);
     report = sqlite.prepare('SELECT * FROM reports WHERE id = ?').get(id) as Record<string, unknown>;
   }
-  return json({ report, policy: policyFor(report as { status: string; reopened_until?: string | null }), teaching: sqlite.prepare('SELECT * FROM teaching_records WHERE report_id = ?').all(report.id), research: sqlite.prepare('SELECT * FROM research_records WHERE report_id = ?').all(report.id), duties: sqlite.prepare('SELECT * FROM institutional_duties WHERE report_id = ?').all(report.id), outreach: sqlite.prepare('SELECT * FROM outreach_records WHERE report_id = ?').all(report.id) });
+  const history = sqlite.prepare('SELECT r.id, r.status, r.completion, r.updated_at, r.submitted_at, p.label AS period_label, p.starts_on, p.ends_on, p.due_on FROM reports r JOIN reporting_periods p ON p.id = r.period_id WHERE r.faculty_id = ? ORDER BY p.starts_on DESC').all(userId);
+  return json({ report, reports: history, policy: policyFor(report as { status: string; reopened_until?: string | null }), teaching: sqlite.prepare('SELECT * FROM teaching_records WHERE report_id = ?').all(report.id), research: sqlite.prepare('SELECT * FROM research_records WHERE report_id = ?').all(report.id), duties: sqlite.prepare('SELECT * FROM institutional_duties WHERE report_id = ?').all(report.id), outreach: sqlite.prepare('SELECT * FROM outreach_records WHERE report_id = ?').all(report.id) });
 };
 
 export const POST: RequestHandler = async ({ request, locals }) => {

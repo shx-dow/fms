@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS institutional_duties (id TEXT PRIMARY KEY, report_id 
 CREATE TABLE IF NOT EXISTS outreach_records (id TEXT PRIMARY KEY, report_id TEXT NOT NULL, activity TEXT NOT NULL, audience TEXT, outcome TEXT, date TEXT);
 CREATE TABLE IF NOT EXISTS reviews (id TEXT PRIMARY KEY, report_id TEXT NOT NULL, reviewer_id TEXT NOT NULL, decision TEXT NOT NULL, remarks TEXT, created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS audit_events (id TEXT PRIMARY KEY, actor_id TEXT NOT NULL, action TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS notification_reads (user_id TEXT NOT NULL, event_id TEXT NOT NULL, read_at TEXT NOT NULL, PRIMARY KEY (user_id, event_id));
 CREATE TABLE IF NOT EXISTS report_exceptions (id TEXT PRIMARY KEY, report_id TEXT NOT NULL, actor_id TEXT NOT NULL, reason TEXT NOT NULL, allowed_until TEXT NOT NULL, created_at TEXT NOT NULL);
 `);
 try { sqlite.exec("ALTER TABLE reports ADD COLUMN reopened_until TEXT"); } catch {}

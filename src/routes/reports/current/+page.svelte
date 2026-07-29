@@ -42,6 +42,9 @@
     periodLabel = d.policy?.period?.label ?? periodLabel;
     if (d.teaching?.length) teaching = d.teaching.map((item: any) => ({ courseCode: item.course_code, courseName: item.course_name, programLevel: item.program_level, classType: item.class_type, scheduled: item.scheduled, conducted: item.conducted, missed: item.missed, missedAction: item.missed_action ?? '', syllabusCompletion: item.syllabus_completion ?? 0 }));
     weeklySummary = d.report.summary ?? '';
+    researchRecords = (d.research ?? []).map((r: any) => ({ category: r.category, title: r.title, venueOrAgency: r.venue_or_agency ?? '', indexingOrQuality: r.indexing_or_quality ?? '', role: r.role ?? '', status: r.status ?? '' }));
+    dutiesRecords = (d.duties ?? []).map((r: any) => ({ name: r.name, role: r.role, activity: r.activity ?? '', reach: r.reach ?? '', outcome: r.outcome ?? '' }));
+    outreachRecords = (d.outreach ?? []).map((r: any) => ({ activity: r.activity, audience: r.audience ?? '', outcome: r.outcome ?? '', date: r.date ?? '' }));
     canEdit = d.policy?.canEdit ?? true;
     if (reportId) {
       try { const r = await fetch(`/api/reports/${reportId}`); const rd = await r.json(); reviews = rd.reviews ?? []; } catch {}
@@ -64,6 +67,13 @@
     savedAt = response.ok ? 'Saved' : 'Save failed';
     saving = false;
     return response.ok;
+  }
+  async function saveActivity(kind: 'research' | 'duties' | 'outreach') {
+    if (!reportId || !canEdit || additionalSaving) return;
+    additionalSaving = true;
+    const response = await fetch(`/api/${kind}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportId, records: kind === 'research' ? researchRecords : kind === 'duties' ? dutiesRecords : outreachRecords }) });
+    additionalSaving = false;
+    savedAt = response.ok ? 'Saved' : 'Save failed';
   }
   function addTeaching() { teaching = [...teaching, { courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0 }]; saveDraft(); }
   function removeTeaching(index: number) { teaching = teaching.filter((_, i) => i !== index); saveDraft(); }
@@ -243,11 +253,14 @@
             <div class="attachment-grid">{#each attachments as a}<div class="attachment-card"><div class="attach-icon">{a.mime_type.includes('pdf') ? '📄' : '🖼'}</div><div class="attach-info"><strong>{fileName(a.filename)}</strong><small>{formatSize(a.size)} · {new Date(a.created_at).toLocaleDateString()}</small></div><div class="attach-actions"><a class="dl-link" href="/api/attachments/{a.id}" download>Download</a>{#if canEdit}<button class="remove-attach" onclick={() => deleteAttachment(a.id)}>Delete</button>{/if}</div></div>{:else}<div class="empty-section">No files uploaded yet.</div>{/each}</div>
             {#if canEdit}<div class="upload-area"><label class="upload-control">+ Upload file<input disabled={!canEdit} type="file" accept="application/pdf,image/png,image/jpeg" onchange={uploadEvidence} /></label>{#if attachmentMessage}<span class="attachment-message">{attachmentMessage}</span>{/if}</div>{/if}
           {:else if activeExtraSection === 'research'}
-            <div class="section-intro"><div><div class="eyebrow">Scholarly activity</div><h2>Research & publications</h2><p>Journal papers, patents, grants, conferences and FDPs tracked outside the weekly submission.</p></div></div><p class="extra-note">Research, institutional duties and outreach records are available for the longer academic cycle and are not part of the weekly teaching report submission. These records will be managed through a separate periodic workflow.</p>
+            <div class="section-intro"><div><div class="eyebrow">Ongoing record</div><h2>Research & publications</h2><p>Maintain work that spans multiple weeks without repeating it in every report.</p></div></div>
+            {#each researchRecords as item}<div class="ongoing-record"><div class="field-grid"><label>Category<select bind:value={item.category}><option>Journal Paper</option><option>Patent</option><option>Research Grant</option><option>Conference / FDP</option></select></label><label>Title<input bind:value={item.title} placeholder="Title of paper, patent or project" /></label><label>Venue / agency<input bind:value={item.venueOrAgency} /></label><label>Status<input bind:value={item.status} placeholder="In progress, submitted, published" /></label></div></div>{/each}<div class="ongoing-actions"><button class="add-record" onclick={() => researchRecords = [...researchRecords, { category:'Journal Paper', title:'', venueOrAgency:'', indexingOrQuality:'', role:'', status:'' }]}>+ Add research record</button><button class="quiet" onclick={() => saveActivity('research')}>{additionalSaving ? 'Saving…' : 'Save research'}</button></div>
           {:else if activeExtraSection === 'duties'}
-            <div class="section-intro"><div><div class="eyebrow">Service</div><h2>Institutional duties</h2><p>Club and committee memberships, administrative responsibilities and departmental roles.</p></div></div><p class="extra-note">Institutional duties are tracked outside the weekly submission and will be managed through a separate periodic workflow.</p>
+            <div class="section-intro"><div><div class="eyebrow">Ongoing record</div><h2>Institutional duties</h2><p>Keep committee, club and departmental responsibilities current.</p></div></div>
+            {#each dutiesRecords as item}<div class="ongoing-record"><div class="field-grid"><label>Committee / body<input bind:value={item.name} /></label><label>Role<input bind:value={item.role} /></label><label>Activity<input bind:value={item.activity} /></label><label>Outcome<input bind:value={item.outcome} /></label></div></div>{/each}<div class="ongoing-actions"><button class="add-record" onclick={() => dutiesRecords = [...dutiesRecords, { name:'', role:'', activity:'', reach:'', outcome:'' }]}>+ Add duty</button><button class="quiet" onclick={() => saveActivity('duties')}>{additionalSaving ? 'Saving…' : 'Save duties'}</button></div>
           {:else if activeExtraSection === 'outreach'}
-            <div class="section-intro"><div><div class="eyebrow">Engagement</div><h2>Outreach & admissions</h2><p>Student outreach, admission-related activities and community engagement.</p></div></div><p class="extra-note">Outreach activities are tracked outside the weekly submission and will be managed through a separate periodic workflow.</p>
+            <div class="section-intro"><div><div class="eyebrow">Ongoing record</div><h2>Outreach & admissions</h2><p>Log events and engagement activities when they happen.</p></div></div>
+            {#each outreachRecords as item}<div class="ongoing-record"><div class="field-grid"><label>Activity<input bind:value={item.activity} /></label><label>Audience<input bind:value={item.audience} /></label><label>Date<input type="date" bind:value={item.date} /></label><label>Outcome<input bind:value={item.outcome} /></label></div></div>{/each}<div class="ongoing-actions"><button class="add-record" onclick={() => outreachRecords = [...outreachRecords, { activity:'', audience:'', outcome:'', date:'' }]}>+ Add outreach</button><button class="quiet" onclick={() => saveActivity('outreach')}>{additionalSaving ? 'Saving…' : 'Save outreach'}</button></div>
           {/if}
         </div>
       {/if}
