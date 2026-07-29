@@ -3,7 +3,8 @@ import { sqlite } from '$lib/server/local-db';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ locals }) => {
-  const userId = locals.user?.id ?? 'dev-faculty-1';
+  if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
+  const userId = locals.user.id;
   const report = sqlite
     .prepare(
       'SELECT r.*, p.label, p.due_on FROM reports r JOIN reporting_periods p ON p.id = r.period_id WHERE r.faculty_id = ? ORDER BY p.starts_on DESC LIMIT 1',

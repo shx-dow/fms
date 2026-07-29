@@ -1,5 +1,6 @@
 {
 	"/": [
+		"src/routes/+page.ts",
 		"src/routes/+layout.server.ts",
 		"src/routes/+layout.server.ts"
 	],
@@ -68,6 +69,9 @@
 	],
 	"/api/reports/[id]": [
 		"src/routes/api/reports/[id]/+server.ts"
+	],
+	"/api/reports/[id]/pdf": [
+		"src/routes/api/reports/[id]/pdf/+server.ts"
 	],
 	"/api/research": [
 		"src/routes/api/research/+server.ts"

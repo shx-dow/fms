@@ -115,7 +115,12 @@
           target="_blank"
           class="period-chip export-chip"
           style="text-decoration:none;cursor:pointer">CSV</a
-        >
+        >{#if selected}<a
+          href="/api/reports/{selected.id}/pdf"
+          target="_blank"
+          class="period-chip export-chip"
+          style="text-decoration:none;cursor:pointer">PDF</a
+        >{/if}
       </div>
     </div>
     <div class="review-layout">

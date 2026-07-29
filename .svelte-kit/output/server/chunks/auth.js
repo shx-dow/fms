@@ -18,8 +18,16 @@ function createSession(userId) {
 }
 function getUserFromSession(sessionId) {
   if (!sessionId) return null;
-  const row = sqlite.prepare("SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ? AND s.expires_at > ? AND u.is_active = 1").get(sessionId, (/* @__PURE__ */ new Date()).toISOString());
-  return row ? { id: row.id, name: row.name, email: row.email, role: row.role, departmentId: row.department_id } : null;
+  const row = sqlite.prepare(
+    "SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ? AND s.expires_at > ? AND u.is_active = 1"
+  ).get(sessionId, (/* @__PURE__ */ new Date()).toISOString());
+  return row ? {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    role: row.role,
+    departmentId: row.department_id
+  } : null;
 }
 function deleteSession(sessionId) {
   if (sessionId) sqlite.prepare("DELETE FROM sessions WHERE id = ?").run(sessionId);

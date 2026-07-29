@@ -1,5 +1,4 @@
 import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { env } from '$env/dynamic/private';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -85,4 +84,3 @@ sqlite
     "INSERT OR IGNORE INTO audit_events (id, actor_id, action, entity_type, entity_id, created_at) VALUES ('demo-audit-1', 'dev-faculty-1', 'REPORT_SUBMITTED', 'REPORT', 'demo-report-submitted', '2026-07-23T16:30:00Z'), ('demo-audit-2', 'dev-faculty-2', 'REPORT_SUBMITTED', 'REPORT', 'demo-report-approved', '2026-07-23T14:00:00Z'), ('demo-audit-3', 'dev-hod-1', 'APPROVED', 'REPORT', 'demo-report-approved', '2026-07-24T11:30:00Z')",
   )
   .run();
-export const localDb = drizzle(sqlite);

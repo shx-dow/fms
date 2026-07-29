@@ -1,4 +1,4 @@
-import { a5 as head, e as escape_html, a8 as attr } from "../../../chunks/index.js";
+import { ab as head, e as escape_html, i as attr } from "../../../chunks/index.js";
 function _page($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
     let { form } = $$props;
@@ -8,7 +8,7 @@ function _page($$renderer, $$props) {
         $$renderer4.push(`<title>Sign in · Faculty Reporting System</title>`);
       });
     });
-    $$renderer2.push(`<main class="simple-login svelte-1x05zx6"><section class="login-card svelte-1x05zx6"><div class="simple-brand svelte-1x05zx6"><span class="crest svelte-1x05zx6">U</span><div><strong class="svelte-1x05zx6">University</strong><small class="svelte-1x05zx6">Faculty Reporting System</small></div></div> <h1 class="svelte-1x05zx6">Sign in</h1> <form method="POST" class="svelte-1x05zx6"><label for="email" class="svelte-1x05zx6">Email address<input id="email" name="email" type="email" autocomplete="username" required="" placeholder="name@university.edu" autofocus="" class="svelte-1x05zx6"/></label> <label for="password" class="svelte-1x05zx6">Password<input id="password" name="password" type="password" autocomplete="current-password" required="" class="svelte-1x05zx6"/></label> `);
+    $$renderer2.push(`<main class="simple-login svelte-1x05zx6"><section class="login-card svelte-1x05zx6"><div class="simple-brand svelte-1x05zx6"><span class="crest svelte-1x05zx6">I</span> <div><strong class="svelte-1x05zx6">The ICFAI University, Jaipur</strong><small class="svelte-1x05zx6">Faculty Reporting</small></div></div> <div class="eyebrow svelte-1x05zx6">Internal university workspace</div> <h1 class="svelte-1x05zx6">Sign in</h1> <form method="POST" class="svelte-1x05zx6"><label for="email" class="svelte-1x05zx6">Email address<input id="email" name="email" type="email" autocomplete="username" required="" placeholder="name@university.edu" autofocus="" class="svelte-1x05zx6"/></label> <label for="password" class="svelte-1x05zx6">Password<input id="password" name="password" type="password" autocomplete="current-password" required="" class="svelte-1x05zx6"/></label> `);
     if (form?.error) {
       $$renderer2.push("<!--[0-->");
       $$renderer2.push(`<div class="error svelte-1x05zx6" role="alert">${escape_html(form.error)}</div>`);

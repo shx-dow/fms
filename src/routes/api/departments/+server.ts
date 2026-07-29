@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
 import { sqlite } from '$lib/server/local-db';
 import type { RequestHandler } from './$types';
+import { departmentSchema } from '$lib/server/validation';
 
 export const GET: RequestHandler = ({ locals }) => {
   if (!locals.user || locals.user.role !== 'ADMIN')
@@ -18,9 +19,10 @@ export const GET: RequestHandler = ({ locals }) => {
 export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user || locals.user.role !== 'ADMIN')
     return json({ ok: false, error: 'Only Admin may manage departments.' }, { status: 403 });
-  const { id, code, name } = await request.json();
-  if (!id || !code || !name)
-    return json({ ok: false, error: 'Department code and name are required.' }, { status: 400 });
+  const parsed = departmentSchema.safeParse(await request.json());
+  if (!parsed.success)
+    return json({ ok: false, error: parsed.error.issues.map(i => i.message).join('; ') }, { status: 400 });
+  const { id, code, name } = parsed.data;
   sqlite
     .prepare(
       'INSERT INTO departments (id, code, name) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET code=excluded.code, name=excluded.name',

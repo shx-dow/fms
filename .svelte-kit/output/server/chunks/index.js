@@ -77,6 +77,27 @@ const ELEMENT_IS_NAMESPACED = 1;
 const ELEMENT_PRESERVE_ATTRIBUTE_CASE = 1 << 1;
 const ELEMENT_IS_INPUT = 1 << 2;
 const UNINITIALIZED = Symbol("uninitialized");
+const VOID_ELEMENT_NAMES = [
+  "area",
+  "base",
+  "br",
+  "col",
+  "command",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "keygen",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr"
+];
+function is_void(name) {
+  return VOID_ELEMENT_NAMES.includes(name) || name.toLowerCase() === "!doctype";
+}
 const DOM_BOOLEAN_ATTRIBUTES = [
   "allowfullscreen",
   "async",
@@ -114,6 +135,17 @@ const PASSIVE_EVENTS = ["touchstart", "touchmove"];
 function is_passive_event(name) {
   return PASSIVE_EVENTS.includes(name);
 }
+const RAW_TEXT_ELEMENTS = (
+  /** @type {const} */
+  ["textarea", "script", "style", "title"]
+);
+function is_raw_text_element(name) {
+  return RAW_TEXT_ELEMENTS.includes(
+    /** @type {typeof RAW_TEXT_ELEMENTS[number]} */
+    name
+  );
+}
+const REGEX_VALID_TAG_NAME = /^[a-zA-Z][a-zA-Z0-9]*(-[a-zA-Z0-9.\-_\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u{10000}-\u{EFFFF}]*)?$/u;
 const ATTR_REGEX = /[&"<]/g;
 const CONTENT_REGEX = /[&<]/g;
 function escape_html(value, is_attr) {
@@ -283,6 +315,13 @@ function await_invalid() {
   const error = new Error(`await_invalid
 Encountered asynchronous work while rendering synchronously.
 https://svelte.dev/e/await_invalid`);
+  error.name = "Svelte error";
+  throw error;
+}
+function dynamic_element_invalid_tag(tag) {
+  const error = new Error(`dynamic_element_invalid_tag
+\`<svelte:element this="${tag}">\` is not a valid element name — the element will not be rendered
+https://svelte.dev/e/dynamic_element_invalid_tag`);
   error.name = "Svelte error";
   throw error;
 }
@@ -1129,6 +1168,25 @@ class SSRState {
   }
 }
 const INVALID_ATTR_NAME_CHAR_REGEX = /[\s'">/=\u{FDD0}-\u{FDEF}\u{FFFE}\u{FFFF}\u{1FFFE}\u{1FFFF}\u{2FFFE}\u{2FFFF}\u{3FFFE}\u{3FFFF}\u{4FFFE}\u{4FFFF}\u{5FFFE}\u{5FFFF}\u{6FFFE}\u{6FFFF}\u{7FFFE}\u{7FFFF}\u{8FFFE}\u{8FFFF}\u{9FFFE}\u{9FFFF}\u{AFFFE}\u{AFFFF}\u{BFFFE}\u{BFFFF}\u{CFFFE}\u{CFFFF}\u{DFFFE}\u{DFFFF}\u{EFFFE}\u{EFFFF}\u{FFFFE}\u{FFFFF}\u{10FFFE}\u{10FFFF}]/u;
+function element(renderer, tag, attributes_fn = noop, children_fn = noop) {
+  renderer.push("<!---->");
+  if (tag) {
+    if (!REGEX_VALID_TAG_NAME.test(tag)) {
+      dynamic_element_invalid_tag(tag);
+    }
+    renderer.push(`<${tag}`);
+    attributes_fn();
+    renderer.push(`>`);
+    if (!is_void(tag)) {
+      children_fn();
+      if (!is_raw_text_element(tag)) {
+        renderer.push(EMPTY_COMMENT);
+      }
+      renderer.push(`</${tag}>`);
+    }
+  }
+  renderer.push("<!---->");
+}
 function render(component, options = {}) {
   if (options.csp?.hash && options.csp.nonce) {
     invalid_csp();
@@ -1179,6 +1237,23 @@ function attributes(attrs, css_hash, classes, styles, flags = 0) {
   }
   return attr_str;
 }
+function spread_props(props) {
+  const merged_props = {};
+  let key;
+  for (let i = 0; i < props.length; i++) {
+    const obj = props[i];
+    if (obj == null) continue;
+    for (key of Object.keys(obj)) {
+      const desc = Object.getOwnPropertyDescriptor(obj, key);
+      if (desc) {
+        Object.defineProperty(merged_props, key, desc);
+      } else {
+        merged_props[key] = obj[key];
+      }
+    }
+  }
+  return merged_props;
+}
 function stringify(value) {
   return typeof value === "string" ? value : value == null ? "" : value + "";
 }
@@ -1220,68 +1295,72 @@ function derived(fn) {
   };
 }
 export {
-  define_property as $,
+  includes as $,
   ATTRIBUTES_CACHE as A,
   BOUNDARY_EFFECT as B,
   COMMENT_NODE as C,
   DESTROYED as D,
   ERROR_VALUE as E,
-  BLOCK_EFFECT as F,
-  ASYNC as G,
+  DIRTY as F,
+  DERIVED as G,
   HYDRATION_ERROR as H,
-  INERT as I,
-  EAGER_EFFECT as J,
-  deferred as K,
-  RENDER_EFFECT as L,
+  HYDRATION_START_FAILED as I,
+  EFFECT_TRANSPARENT as J,
+  EFFECT_PRESERVED as K,
+  INERT as L,
   MAYBE_DIRTY as M,
-  MANAGED_EFFECT as N,
-  ROOT_EFFECT as O,
-  BRANCH_EFFECT as P,
-  includes as Q,
+  STALE_REACTION as N,
+  BLOCK_EFFECT as O,
+  ASYNC as P,
+  EAGER_EFFECT as Q,
   REACTION_RAN as R,
   STATE_SYMBOL as S,
   TEXT_CACHE as T,
   UNINITIALIZED as U,
-  REACTION_IS_UPDATING as V,
+  deferred as V,
   WAS_MARKED as W,
-  index_of as X,
-  HEAD_EFFECT as Y,
-  DESTROYING as Z,
-  USER_EFFECT as _,
-  attr_class as a,
-  array_from as a0,
-  is_passive_event as a1,
-  LEGACY_PROPS as a2,
-  render as a3,
-  setContext as a4,
-  head as a5,
-  ensure_array_like as a6,
-  stringify as a7,
-  attr as a8,
-  attr_style as a9,
-  HYDRATION_END as b,
-  HYDRATION_START as c,
-  derived as d,
+  RENDER_EFFECT as X,
+  MANAGED_EFFECT as Y,
+  ROOT_EFFECT as Z,
+  BRANCH_EFFECT as _,
+  attributes as a,
+  REACTION_IS_UPDATING as a0,
+  index_of as a1,
+  HEAD_EFFECT as a2,
+  DESTROYING as a3,
+  USER_EFFECT as a4,
+  define_property as a5,
+  array_from as a6,
+  is_passive_event as a7,
+  LEGACY_PROPS as a8,
+  render as a9,
+  setContext as aa,
+  head as ab,
+  stringify as ac,
+  attr_style as ad,
+  ensure_array_like as b,
+  clsx as c,
+  element as d,
   escape_html as e,
-  HYDRATION_START_ELSE as f,
+  derived as f,
   getContext as g,
-  array_prototype as h,
-  get_descriptor as i,
-  get_prototype_of as j,
-  is_array as k,
-  is_extensible as l,
-  CLASS_CACHE as m,
+  attr_class as h,
+  attr as i,
+  HYDRATION_END as j,
+  HYDRATION_START as k,
+  HYDRATION_START_ELSE as l,
+  array_prototype as m,
   noop as n,
   object_prototype as o,
-  STYLE_CACHE as p,
-  EFFECT as q,
+  get_descriptor as p,
+  get_prototype_of as q,
   run_all as r,
-  CONNECTED as s,
-  CLEAN as t,
-  DIRTY as u,
-  DERIVED as v,
-  HYDRATION_START_FAILED as w,
-  EFFECT_TRANSPARENT as x,
-  EFFECT_PRESERVED as y,
-  STALE_REACTION as z
+  spread_props as s,
+  is_array as t,
+  is_extensible as u,
+  CLASS_CACHE as v,
+  STYLE_CACHE as w,
+  EFFECT as x,
+  CONNECTED as y,
+  CLEAN as z
 };

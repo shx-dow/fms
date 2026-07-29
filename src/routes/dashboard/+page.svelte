@@ -81,7 +81,6 @@
       <h1>Dashboard</h1>
       <p>Reporting overview for Faculty member, Department of Computer Science and Engineering.</p>
     </div>
-    <div class="header-meta"><span>Academic year</span><strong>2026–27</strong></div>
   </section>
   {#if loading}
     <div class="loading-panel"><span class="spinner"></span><span>Loading dashboard…</span></div>
@@ -245,16 +244,11 @@
     font-size: 0.88rem;
   }
   .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 18px;
     border-left: 1px solid #dbe3e7;
     padding-left: 20px;
-    color: #71818a;
-    font-size: 0.72rem;
-  }
-  .header-meta strong {
-    display: block;
-    color: #1b2b36;
-    font-size: 0.9rem;
-    margin-top: 4px;
   }
   .loading-panel {
     display: flex;
@@ -579,4 +573,4 @@
     text-decoration: none;
     white-space: nowrap;
   }
-</style>
+  </style>

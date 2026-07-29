@@ -29,10 +29,11 @@ declare module "$app/types" {
 	type MatcherParam<M> = M extends (param : string) => param is (infer U extends string) ? U : string;
 
 	export interface AppTypes {
-		RouteId(): "/" | "/admin" | "/admin/audit" | "/admin/departments" | "/admin/faculty" | "/admin/reports" | "/admin/settings" | "/api" | "/api/attachments" | "/api/attachments/[id]" | "/api/audit" | "/api/dashboard" | "/api/dashboard/trends" | "/api/departments" | "/api/duties" | "/api/exceptions" | "/api/notifications" | "/api/outreach" | "/api/periods" | "/api/report-calendar" | "/api/reports" | "/api/reports/current" | "/api/reports/current/export" | "/api/reports/missing" | "/api/reports/[id]" | "/api/research" | "/api/reviews" | "/api/users" | "/calendar" | "/dashboard" | "/login" | "/logout" | "/notifications" | "/reports" | "/reports/current" | "/reports/current/print";
+		RouteId(): "/" | "/admin" | "/admin/audit" | "/admin/departments" | "/admin/faculty" | "/admin/reports" | "/admin/settings" | "/api" | "/api/attachments" | "/api/attachments/[id]" | "/api/audit" | "/api/dashboard" | "/api/dashboard/trends" | "/api/departments" | "/api/duties" | "/api/exceptions" | "/api/notifications" | "/api/outreach" | "/api/periods" | "/api/report-calendar" | "/api/reports" | "/api/reports/current" | "/api/reports/current/export" | "/api/reports/missing" | "/api/reports/[id]" | "/api/reports/[id]/pdf" | "/api/research" | "/api/reviews" | "/api/users" | "/calendar" | "/dashboard" | "/login" | "/logout" | "/notifications" | "/reports" | "/reports/current" | "/reports/current/print";
 		RouteParams(): {
 			"/api/attachments/[id]": { id: string };
-			"/api/reports/[id]": { id: string }
+			"/api/reports/[id]": { id: string };
+			"/api/reports/[id]/pdf": { id: string }
 		};
 		LayoutParams(): {
 			"/": { id?: string | undefined };
@@ -60,6 +61,7 @@ declare module "$app/types" {
 			"/api/reports/current/export": Record<string, never>;
 			"/api/reports/missing": Record<string, never>;
 			"/api/reports/[id]": { id: string };
+			"/api/reports/[id]/pdf": { id: string };
 			"/api/research": Record<string, never>;
 			"/api/reviews": Record<string, never>;
 			"/api/users": Record<string, never>;
@@ -72,7 +74,7 @@ declare module "$app/types" {
 			"/reports/current": Record<string, never>;
 			"/reports/current/print": Record<string, never>
 		};
-		Pathname(): "/" | "/admin" | "/admin/audit" | "/admin/departments" | "/admin/faculty" | "/admin/reports" | "/admin/settings" | "/api/attachments" | `/api/attachments/${string}` & {} | "/api/audit" | "/api/dashboard" | "/api/dashboard/trends" | "/api/departments" | "/api/duties" | "/api/exceptions" | "/api/notifications" | "/api/outreach" | "/api/periods" | "/api/report-calendar" | "/api/reports" | "/api/reports/current/export" | "/api/reports/missing" | `/api/reports/${string}` & {} | "/api/research" | "/api/reviews" | "/api/users" | "/calendar" | "/dashboard" | "/login" | "/logout" | "/notifications" | "/reports" | "/reports/current" | "/reports/current/print";
+		Pathname(): "/" | "/admin" | "/admin/audit" | "/admin/departments" | "/admin/faculty" | "/admin/reports" | "/admin/settings" | "/api/attachments" | `/api/attachments/${string}` & {} | "/api/audit" | "/api/dashboard" | "/api/dashboard/trends" | "/api/departments" | "/api/duties" | "/api/exceptions" | "/api/notifications" | "/api/outreach" | "/api/periods" | "/api/report-calendar" | "/api/reports" | "/api/reports/current/export" | "/api/reports/missing" | `/api/reports/${string}` & {} | `/api/reports/${string}/pdf` & {} | "/api/research" | "/api/reviews" | "/api/users" | "/calendar" | "/dashboard" | "/login" | "/logout" | "/notifications" | "/reports" | "/reports/current" | "/reports/current/print";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): string & {};
 	}

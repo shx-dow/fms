@@ -66,10 +66,12 @@
                 : item.status === 'DRAFT'
                   ? `Draft · ${item.completion}%`
                   : item.status[0] + item.status.slice(1).toLowerCase()}</span
-            ><span>Updated {new Date(item.updated_at).toLocaleDateString()}</span><a
+            ><span>Updated {new Date(item.updated_at).toLocaleDateString()}</span>
+            <a
               href={item.id === history[0]?.id ? '/reports/current' : `/calendar?date=${item.updated_at.slice(0, 10)}`}
               >View →</a
             >
+            <a href="/api/reports/{item.id}/pdf" target="_blank" class="pdf-link">PDF</a>
           </div>{/each}{/if}
     </section>
     <p class="history-note">Use the <a href="/calendar">report calendar →</a> to browse activity by date.</p>{/if}

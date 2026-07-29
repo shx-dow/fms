@@ -42,13 +42,19 @@
   let scheduled = $derived(teaching.reduce((sum, item) => sum + Number(item.scheduled || 0), 0));
   let conducted = $derived(teaching.reduce((sum, item) => sum + Number(item.conducted || 0), 0));
   let deliveryRate = $derived(scheduled ? Math.round((conducted / scheduled) * 100) : 0);
+  let hasValidTeaching = $derived(teaching.some((item) => item.courseCode?.trim() && item.courseName?.trim()));
+  let teachingValid = $derived(teaching.every((item) => {
+    if (!item.courseCode?.trim() && !item.courseName?.trim()) return true;
+    return Number(item.conducted ?? 0) <= Number(item.scheduled ?? 0);
+  }));
   let completion = $derived(
     Math.min(
       100,
       Math.round(
-        (teaching.some((item) => item.courseCode && item.courseName) ? 45 : 15) +
-          (scheduled > 0 ? 25 : 0) +
-          (weeklySummary ? 30 : 0),
+        (hasValidTeaching ? 40 : 0) +
+          (hasValidTeaching && scheduled > 0 ? 20 : 0) +
+          (weeklySummary?.trim() ? 30 : 0) +
+          (hasValidTeaching && teachingValid && weeklySummary?.trim() ? 10 : 0)
       ),
     ),
   );
@@ -224,10 +230,11 @@
       </p>
     </div>
     <div class="editor-actions">
-      {#if !isReadonly}
-        <span class="save-note"><i></i>{savedAt}</span>
-        <a class="quiet" href="/api/reports/current/export">Export CSV</a>
-        <button class="quiet" onclick={() => (preview = !preview)}>{preview ? 'Edit report' : 'Preview'}</button>
+{#if !isReadonly}
+    <span class="save-note"><i></i>{savedAt}</span>
+    <a class="quiet" href="/api/reports/{reportId}/pdf" target="_blank">Export PDF</a>
+    <a class="quiet" href="/api/reports/current/export">Export CSV</a>
+    <button class="quiet" onclick={() => (preview = !preview)}>{preview ? 'Edit report' : 'Preview'}</button>
         <button class="submit" disabled={!canEdit || saving} onclick={() => (confirmSubmit = true)}
           >Submit report <span>→</span></button
         >

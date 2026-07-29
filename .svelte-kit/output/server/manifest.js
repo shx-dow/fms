@@ -10,7 +10,7 @@ return {
 	assets: new Set([]),
 	mimeTypes: {},
 	_: {
-		client: {start:"_app/immutable/entry/start.LPFGm1Gf.js",app:"_app/immutable/entry/app.CEVy82Y8.js",imports:["_app/immutable/entry/start.LPFGm1Gf.js","_app/immutable/chunks/DTT9CE4u.js","_app/immutable/chunks/DfOrqLGW.js","_app/immutable/chunks/CoJRVpV3.js","_app/immutable/entry/app.CEVy82Y8.js","_app/immutable/chunks/DfOrqLGW.js","_app/immutable/chunks/QNJ5kBQP.js","_app/immutable/chunks/BwpxttFb.js","_app/immutable/chunks/CoJRVpV3.js","_app/immutable/chunks/CaZpg5yG.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.DFG66SuW.js",app:"_app/immutable/entry/app.DQ-h-uEJ.js",imports:["_app/immutable/entry/start.DFG66SuW.js","_app/immutable/chunks/B5PATZA1.js","_app/immutable/chunks/CoS3lE0R.js","_app/immutable/chunks/OA8UcISh.js","_app/immutable/chunks/CJdaaa5S.js","_app/immutable/entry/app.DQ-h-uEJ.js","_app/immutable/chunks/CoS3lE0R.js","_app/immutable/chunks/BiWaX3KG.js","_app/immutable/chunks/Bzak7iHL.js","_app/immutable/chunks/CJdaaa5S.js","_app/immutable/chunks/BKYKkfB3.js","_app/immutable/chunks/DJ_iecmg.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js')),
@@ -193,6 +193,13 @@ return {
 				params: [{"name":"id","optional":false,"rest":false,"chained":false}],
 				page: null,
 				endpoint: __memo(() => import('./entries/endpoints/api/reports/_id_/_server.ts.js'))
+			},
+			{
+				id: "/api/reports/[id]/pdf",
+				pattern: /^\/api\/reports\/([^/]+?)\/pdf\/?$/,
+				params: [{"name":"id","optional":false,"rest":false,"chained":false}],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/reports/_id_/pdf/_server.ts.js'))
 			},
 			{
 				id: "/api/research",

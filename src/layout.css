@@ -32,6 +32,7 @@ body {
   padding: 23px 14px 0;
   z-index: 100;
   overflow-y: auto;
+  transition: width 0.18s ease;
 }
 .institution-brand {
   display: flex;
@@ -48,7 +49,7 @@ body {
 }
 .institution-brand small {
   display: block;
-  color: #a9bcc3;
+  color: #bdd2d8;
   font-size: 0.68rem;
   margin-top: 2px;
 }
@@ -62,8 +63,13 @@ body {
   color: #eaf0f1;
   font-weight: 850;
 }
+.sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
 .sidebar-label {
-  color: #91aab3;
+  color: #aec6ce;
   text-transform: uppercase;
   letter-spacing: 0.13em;
   font-weight: 800;
@@ -83,7 +89,7 @@ body {
   gap: 11px;
   padding: 10px 11px;
   border-radius: 6px;
-  color: #c8d5d9;
+  color: #e2eaed;
   text-decoration: none;
   font-size: 0.81rem;
   transition:
@@ -92,18 +98,25 @@ body {
 }
 .sidebar-nav a:hover {
   background: var(--navy-2);
-  color: #f4f6f5;
+  color: #f8faf9;
 }
 .sidebar-nav a.active {
   background: #315a70;
-  color: #f4f6f5;
+  color: #f8faf9;
   font-weight: 750;
 }
-.sidebar-nav a span {
-  width: 18px;
-  color: #91c0ca;
-  font-size: 0.95rem;
-  text-align: center;
+.sidebar-nav a svg {
+  flex: none;
+  color: #aacfd7;
+}
+.sidebar-nav a .nav-label {
+  color: #eef3f4;
+}
+.sidebar-nav a.active svg {
+  color: #d4e8ed;
+}
+.sidebar-nav a.active .nav-label {
+  color: #ffffff;
 }
 .sidebar-nav a b {
   margin-left: auto;
@@ -114,17 +127,16 @@ body {
   padding: 2px 6px;
 }
 .sidebar-footer {
-  margin-top: auto;
-  border-top: 1px solid #38515d;
-  padding: 17px 8px 21px;
+  border-top: 1px solid #2a4554;
+  padding: 12px 8px 10px;
+  flex: none;
 }
 .sidebar-user {
   display: flex;
   gap: 11px;
   align-items: center;
-  color: #d3e0e3;
-  text-decoration: none;
-  margin-bottom: 8px;
+  color: #e2eaed;
+  margin-bottom: 10px;
 }
 .sidebar-user-avatar {
   width: 30px;
@@ -145,27 +157,33 @@ body {
 .sidebar-user-info small {
   display: block;
   font-size: 0.64rem;
-  color: #9ab8c0;
+  color: #aec6ce;
   margin-top: 2px;
 }
 .logout-link {
   display: flex;
   align-items: center;
-  gap: 9px;
-  color: #aebfc4;
+  justify-content: center;
+  gap: 7px;
+  color: #cbd9dd;
   text-decoration: none;
   font-size: 0.73rem;
-  padding: 8px;
+  font-weight: 700;
+  padding: 7px 10px;
   border-radius: 5px;
+  background: #233b47;
+  transition: background 0.14s ease;
 }
 .logout-link:hover {
-  background: var(--navy-2);
-  color: #f0f4f5;
+  background: #3d2a2a;
+  color: #f5e0dd;
 }
 .app-main {
   min-width: 0;
   flex: 1;
   margin-left: 246px;
+  transition: margin-left 0.18s ease;
+  position: relative;
 }
 .app-main > .shell {
   max-width: 1240px;
@@ -230,6 +248,37 @@ body {
 .app-main .topbar-user {
   font-size: 0.8rem;
 }
+.sidebar-collapsed .app-sidebar {
+  width: 76px;
+  overflow-x: hidden;
+}
+.sidebar-collapsed .app-main {
+  margin-left: 76px;
+}
+.sidebar-collapsed .institution-brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+.sidebar-collapsed .institution-brand > span:last-child,
+.sidebar-collapsed .sidebar-label,
+.sidebar-collapsed .sidebar-nav a .nav-label,
+.sidebar-collapsed .sidebar-user-info,
+.sidebar-collapsed .sidebar-footer .logout-link {
+  display: none;
+}
+.sidebar-collapsed .sidebar-nav a {
+  justify-content: center;
+  padding-inline: 0;
+}
+.sidebar-collapsed .sidebar-footer {
+  padding-inline: 0;
+  display: flex;
+  justify-content: center;
+}
+.sidebar-collapsed .sidebar-user {
+  justify-content: center;
+  margin-bottom: 0;
+}
 .app-main label {
   font-size: 0.75rem;
 }
@@ -262,24 +311,6 @@ body {
   }
   .app-main {
     margin-left: 0;
-  }
-  .mobile-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--navy);
-    padding: 12px 16px;
-  }
-  .mobile-bar .institution-brand {
-    padding: 0;
-  }
-  .mobile-bar .institution-brand strong {
-    font-size: 0.78rem;
-  }
-  .mobile-bar a:last-child {
-    color: #dbe8eb;
-    text-decoration: none;
-    font-size: 0.74rem;
   }
   .app-main > .shell {
     padding: 24px 16px 48px;

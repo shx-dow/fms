@@ -1,4 +1,4 @@
-import { a5 as head, e as escape_html, a8 as attr, a6 as ensure_array_like, a as attr_class, a9 as attr_style, a7 as stringify, d as derived } from "../../../../chunks/index.js";
+import { ab as head, e as escape_html, i as attr, b as ensure_array_like, h as attr_class, ad as attr_style, ac as stringify, f as derived } from "../../../../chunks/index.js";
 function _page($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
     let { data } = $$props;
@@ -27,7 +27,12 @@ function _page($$renderer, $$props) {
     let scheduled = derived(() => teaching.reduce((sum, item) => sum + Number(item.scheduled || 0), 0));
     let conducted = derived(() => teaching.reduce((sum, item) => sum + Number(item.conducted || 0), 0));
     let deliveryRate = derived(() => scheduled() ? Math.round(conducted() / scheduled() * 100) : 0);
-    let completion = derived(() => Math.min(100, Math.round((teaching.some((item) => item.courseCode && item.courseName) ? 45 : 15) + (scheduled() > 0 ? 25 : 0) + 0)));
+    let hasValidTeaching = derived(() => teaching.some((item) => item.courseCode?.trim() && item.courseName?.trim()));
+    let teachingValid = derived(() => teaching.every((item) => {
+      if (!item.courseCode?.trim() && !item.courseName?.trim()) return true;
+      return Number(item.conducted ?? 0) <= Number(item.scheduled ?? 0);
+    }));
+    let completion = derived(() => Math.min(100, Math.round((hasValidTeaching() ? 40 : 0) + (hasValidTeaching() && scheduled() > 0 ? 20 : 0) + (weeklySummary?.trim() ? 30 : 0) + (hasValidTeaching() && teachingValid() && weeklySummary?.trim() ? 10 : 0))));
     let isReadonly = derived(() => false);
     const fileName = (n) => n.length > 40 ? n.slice(0, 37) + "…" : n;
     async function saveDraft(_event, status = "DRAFT") {
@@ -59,7 +64,7 @@ function _page($$renderer, $$props) {
     $$renderer2.push(`<main class="shell app-shell editor-shell"><header class="topbar"><a class="brand" href="/">FR<span>·</span>S</a> <div class="topbar-user">${escape_html(data.user?.name ?? "User")} <span class="avatar">${escape_html((data.user?.name ?? "U").slice(0, 1))}</span></div></header> <div class="editor-head"><div><div class="eyebrow">Faculty portal · ${escape_html(periodLabel)}</div> <h1>Faculty weekly report</h1> <p>${escape_html(isReadonly() ? "This report is locked and cannot be edited." : "Record this week's teaching activity. Research, duties and appraisal are managed separately.")}</p></div> <div class="editor-actions">`);
     if (!isReadonly()) {
       $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<span class="save-note"><i></i>${escape_html(savedAt)}</span> <a class="quiet" href="/api/reports/current/export">Export CSV</a> <button class="quiet">${escape_html("Preview")}</button> <button class="submit"${attr("disabled", saving, true)}>Submit report <span>→</span></button>`);
+      $$renderer2.push(`<span class="save-note"><i></i>${escape_html(savedAt)}</span> <a class="quiet"${attr("href", `/api/reports/${stringify(reportId)}/pdf`)} target="_blank">Export PDF</a> <a class="quiet" href="/api/reports/current/export">Export CSV</a> <button class="quiet">${escape_html("Preview")}</button> <button class="submit"${attr("disabled", saving, true)}>Submit report <span>→</span></button>`);
     } else {
       $$renderer2.push("<!--[-1-->");
     }
@@ -181,7 +186,7 @@ function _page($$renderer, $$props) {
     $$renderer2.push(`<!--]--></section></div> `);
     if (!isReadonly()) {
       $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<section class="evidence-panel"><div><strong>Supporting evidence</strong><p>${escape_html(attachments.length)} file${escape_html(attachments.length === 1 ? "" : "s")} attached${escape_html(attachments.length ? ` · ${attachments.map((a) => fileName(a.filename)).join(", ")}` : "")}.</p></div> <div class="panel-mini-actions"><button class="quiet">Manage files</button></div></section>`);
+      $$renderer2.push(`<section class="evidence-panel"><div><strong>Supporting evidence</strong> <p>${escape_html(attachments.length)} file${escape_html(attachments.length === 1 ? "" : "s")} attached${escape_html(attachments.length ? ` · ${attachments.map((a) => fileName(a.filename)).join(", ")}` : "")}.</p></div> <div class="panel-mini-actions"><button class="quiet">Manage files</button></div></section>`);
     } else {
       $$renderer2.push("<!--[-1-->");
     }
