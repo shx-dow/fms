@@ -1,0 +1,11 @@
+node_modules/
+data/
+.env
+.env.example
+docs/
+.svelte-kit/
+build/
+.DS_Store
+*.db
+*.log
+*.tsbuildinfo

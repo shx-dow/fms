@@ -1,0 +1,23 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  type User = { id: string; name: string; email: string; role: string; department_name?: string; is_active: number };
+  let users: User[] = $state([]);
+  let search = $state('');
+  let error = $state('');
+  let loading = $state(true);
+  let confirmId = $state<string | null>(null);
+  onMount(async () => {
+    try { const response = await fetch('/api/users'); const data = await response.json(); users = data.users ?? []; error = data.error ?? ''; }
+    catch { error = 'Unable to load users.'; }
+    finally { loading = false; }
+  });
+  let filtered = $derived(users.filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase())));
+  async function toggle(user: User) {
+    confirmId = null;
+    const response = await fetch('/api/users', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId: user.id, isActive: !user.is_active }) });
+    if (response.ok) { user.is_active = user.is_active ? 0 : 1; } else { error = 'Unable to update user status.'; }
+  }
+</script>
+<svelte:head><title>Faculty directory · Faculty Reporting System</title></svelte:head>
+<main class="shell app-shell"><div class="breadcrumb">Administration <span>/</span> Faculty directory</div><div class="page-heading"><div><div class="eyebrow">Administration</div><h1>Faculty directory</h1><p>Manage reporting access and department assignments.</p></div><span class="period-chip">{users.length} account{users.length === 1 ? '' : 's'}</span></div>{#if error}<div class="error">{error}</div>{/if}{#if loading}<div class="loading-panel"><span class="spinner"></span><span>Loading faculty directory…</span></div>{:else}<div class="search-bar"><input type="search" placeholder="Search by name or email…" bind:value={search} /></div><section class="user-panel"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Status</th><th></th></tr></thead><tbody>{#if !filtered.length}<tr><td colspan="6" class="empty-row">{search ? 'No users match your search.' : 'No users found.'}</td></tr>{:else}{#each filtered as user}<tr><td><strong>{user.name}</strong></td><td>{user.email}</td><td>{user.role}</td><td>{user.department_name ?? 'Institution-wide'}</td><td><span class="status-pill {user.is_active ? 'active' : 'inactive'}">{user.is_active ? 'Active' : 'Inactive'}</span></td><td class="action">{#if confirmId === user.id}<span class="confirm-group"><button class="confirm-yes" onclick={() => toggle(user)}>Confirm</button><button class="confirm-no" onclick={() => confirmId = null}>Cancel</button></span>{:else}<button class="toggle-btn" onclick={() => confirmId = user.id}>{user.is_active ? 'Deactivate' : 'Activate'}</button>{/if}</td></tr>{/each}{/if}</tbody></table></section>{/if}</main>
+<style>.breadcrumb{font-size:.73rem;color:#71818a;margin-bottom:8px}.breadcrumb span{padding:0 8px;color:#b2bdc1}.loading-panel{display:flex;align-items:center;gap:12px;padding:24px;color:#71818a;font-size:.88rem}.spinner{width:18px;height:18px;border:2px solid #dbe3e7;border-top-color:#087f73;border-radius:50%;animation:spin .6s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.search-bar{margin-bottom:16px}.search-bar input{width:100%;max-width:380px;padding:10px 12px;border:1px solid #c8d5da;border-radius:6px;font:inherit;background:#fdfcf9}.user-panel{background:#fdfcf9;border:1px solid #dbe3e7;border-radius:7px;overflow:auto}.user-panel table{width:100%;border-collapse:collapse;min-width:720px;font-size:.76rem}.user-panel th,.user-panel td{padding:14px 16px;text-align:left;border-bottom:1px solid #e6ecee}.user-panel th{text-transform:uppercase;letter-spacing:.08em;color:#87969c;font-size:.63rem}.user-panel td{color:#61727d}.user-panel td strong{color:#1b2b36}.status-pill{display:inline-block;padding:4px 8px;border-radius:3px;font-size:.65rem;font-weight:800}.status-pill.active{background:#e4f3ef;color:#167166}.status-pill.inactive{background:#f1f3f4;color:#71818a}.action{text-align:right}.toggle-btn{border:0;background:transparent;color:#087f73;font:inherit;font-size:.74rem;font-weight:800;cursor:pointer}.confirm-group{display:inline-flex;gap:6px}.confirm-yes,.confirm-no{border:0;border-radius:4px;padding:5px 9px;font:inherit;font-size:.7rem;font-weight:800;cursor:pointer}.confirm-yes{background:#a24e45;color:#fdfcf9}.confirm-no{background:#e6ecee;color:#61727d}.error{padding:11px 14px;background:#f9e9e7;color:#8f413b;border-radius:5px;margin-bottom:18px;font-size:.78rem}.empty-row{text-align:center;padding:24px;color:#87969c;font-size:.8rem}</style>
