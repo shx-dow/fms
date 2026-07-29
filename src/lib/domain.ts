@@ -54,5 +54,5 @@ export const reportStatusLabel: Record<ReportStatus, string> = {
   DRAFT: 'Draft',
   SUBMITTED: 'Submitted',
   APPROVED: 'Approved',
-  CHANGES_REQUIRED: 'Changes required'
+  CHANGES_REQUIRED: 'Changes required',
 };

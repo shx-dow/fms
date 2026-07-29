@@ -4,6 +4,4 @@ import { env } from '$env/dynamic/private';
 
 const connectionString = env.DATABASE_URL;
 
-export const db = connectionString
-  ? drizzle(postgres(connectionString, { max: 1 }))
-  : null;
+export const db = connectionString ? drizzle(postgres(connectionString, { max: 1 })) : null;
