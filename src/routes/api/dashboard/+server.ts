@@ -1,28 +1,22 @@
 import { json } from '@sveltejs/kit';
 import { sqlite } from '$lib/server/local-db';
 import type { RequestHandler } from './$types';
+import { computeWeekLabel } from '$lib/week-label';
 
 export const GET: RequestHandler = ({ locals }) => {
   if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
   const userId = locals.user.id;
   const report = sqlite
     .prepare(
-      'SELECT r.*, p.label, p.due_on FROM reports r JOIN reporting_periods p ON p.id = r.period_id WHERE r.faculty_id = ? ORDER BY p.starts_on DESC LIMIT 1',
+      'SELECT r.*, p.starts_on, p.due_on FROM reports r JOIN reporting_periods p ON p.id = r.period_id WHERE r.faculty_id = ? ORDER BY p.starts_on DESC LIMIT 1',
     )
-    .get(userId) as
-    | {
-        id: string;
-        completion: number;
-        status: string;
-        label: string;
-        due_on: string;
-      }
-    | undefined;
+    .get(userId) as Record<string, unknown> | undefined;
   if (!report)
     return json({
       report: null,
       stats: { scheduled: 0, conducted: 0, syllabus: 0 },
     });
+  report.label = computeWeekLabel(String(report.starts_on));
   const stats = sqlite
     .prepare(
       'SELECT COALESCE(SUM(scheduled),0) AS scheduled, COALESCE(SUM(conducted),0) AS conducted, COALESCE(ROUND(AVG(syllabus_completion)),0) AS syllabus FROM teaching_records WHERE report_id = ?',

@@ -10,7 +10,7 @@
   let savedAt = $state('');
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let canEdit = $state(true);
-  let periodLabel = $state('Current week');
+  let periodLabel = $state('');
   let reportId = $state('');
   let reportStatus = $state('DRAFT');
   let teaching: TeachingRecord[] = $state([{ courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0 }]);
@@ -25,6 +25,7 @@
   let additionalSaving = $state(false);
   let activeExtraSection = $state('attachments');
   let deadlineDate = $state('');
+  let canSubmit = $derived(new Date().getDay() === 5);
 
   let scheduled = $derived(teaching.reduce((s, i) => s + Number(i.scheduled || 0), 0));
   let conducted = $derived(teaching.reduce((s, i) => s + Number(i.conducted || 0), 0));
@@ -66,8 +67,8 @@
   onDestroy(() => clearTimeout(saveTimer));
   function flashSaved() {
     clearTimeout(saveTimer);
-    savedAt = 'Saved';
-    saveTimer = setTimeout(() => { savedAt = ''; }, 2000);
+    savedAt = 'Draft Saved';
+    saveTimer = setTimeout(() => { savedAt = ''; }, 3000);
   }
   async function loadAttachments() {
     try { const r = await fetch(`/api/attachments?reportId=${reportId}`); const d = await r.json(); attachments = d.attachments ?? []; } catch {}
@@ -140,7 +141,7 @@
       <a class="act-link" href="/api/reports/current/export">CSV</a>
       {#if !isReadonly}
         <button class="act-link" onclick={() => (preview = !preview)}>{preview ? 'Edit' : 'Preview'}</button>
-        <button class="act-submit" disabled={!canEdit || saving} onclick={() => (confirmSubmit = true)}>Submit →</button>
+        <button class="act-submit" disabled={!canEdit || saving || !canSubmit} title={!canSubmit ? 'Opens Friday' : ''} onclick={() => (confirmSubmit = true)}>Submit →</button>
       {/if}
     </div>
   </header>
@@ -153,7 +154,7 @@
         <p>Once submitted you will not be able to edit it unless an HOD or Admin reopens it.</p>
         <div class="confirm-actions">
           <button class="act-link" onclick={() => (confirmSubmit = false)}>Cancel</button>
-          <button class="act-submit" onclick={handleSubmit}>Confirm →</button>
+          <button class="act-submit" disabled={!canSubmit} onclick={handleSubmit}>Confirm →</button>
         </div>
       </div>
     </div>

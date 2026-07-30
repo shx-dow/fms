@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { sqlite } from '$lib/server/local-db';
+import { computeWeekLabel } from '$lib/week-label';
 
 export const GET: RequestHandler = ({ locals, url }) => {
   if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
@@ -21,8 +22,9 @@ export const GET: RequestHandler = ({ locals, url }) => {
   }
   const reports = sqlite
     .prepare(
-      `SELECT r.id, r.status, r.completion, r.submitted_at, r.updated_at, u.name AS faculty_name, u.email AS faculty_email, p.label AS period_label FROM reports r JOIN users u ON u.id = r.faculty_id JOIN reporting_periods p ON p.id = r.period_id WHERE ${clauses.join(' AND ')} ORDER BY COALESCE(r.submitted_at, r.updated_at) DESC`,
+      `SELECT r.id, r.status, r.completion, r.submitted_at, r.updated_at, u.name AS faculty_name, u.email AS faculty_email, p.starts_on AS period_starts_on FROM reports r JOIN users u ON u.id = r.faculty_id JOIN reporting_periods p ON p.id = r.period_id WHERE ${clauses.join(' AND ')} ORDER BY COALESCE(r.submitted_at, r.updated_at) DESC`,
     )
-    .all(...params);
+    .all(...params) as Record<string, unknown>[];
+  for (const r of reports) r.period_label = computeWeekLabel(String(r.period_starts_on));
   return json({ reports });
 };

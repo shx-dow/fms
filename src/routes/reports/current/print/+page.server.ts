@@ -1,15 +1,17 @@
 import { error } from '@sveltejs/kit';
 import { sqlite } from '$lib/server/local-db';
 import type { PageServerLoad } from './$types';
+import { computeWeekLabel } from '$lib/week-label';
 
 export const load: PageServerLoad = ({ locals }) => {
   if (!locals.user) throw error(401, 'Sign in required');
   const report = sqlite
     .prepare(
-      'SELECT r.*, u.name AS faculty_name, u.email AS faculty_email, p.label AS period_label FROM reports r JOIN users u ON u.id = r.faculty_id JOIN reporting_periods p ON p.id = r.period_id WHERE r.faculty_id = ? ORDER BY r.updated_at DESC LIMIT 1',
+      'SELECT r.*, u.name AS faculty_name, u.email AS faculty_email, p.starts_on AS period_starts_on FROM reports r JOIN users u ON u.id = r.faculty_id JOIN reporting_periods p ON p.id = r.period_id WHERE r.faculty_id = ? ORDER BY r.updated_at DESC LIMIT 1',
     )
     .get(locals.user.id) as Record<string, unknown> | undefined;
   if (!report) throw error(404, 'Report not found');
+  report.period_label = computeWeekLabel(String(report.period_starts_on));
   return {
     report,
     teaching: sqlite.prepare('SELECT * FROM teaching_records WHERE report_id = ?').all(report.id),

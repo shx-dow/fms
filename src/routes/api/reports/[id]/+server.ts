@@ -1,16 +1,18 @@
 import { json } from '@sveltejs/kit';
 import { sqlite } from '$lib/server/local-db';
 import type { RequestHandler } from './$types';
+import { computeWeekLabel } from '$lib/week-label';
 
 export const GET: RequestHandler = ({ locals, params }) => {
   if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
   const reportId = params.id;
   const report = sqlite
     .prepare(
-      'SELECT r.*, u.name AS faculty_name, u.email AS faculty_email, p.label AS period_label FROM reports r JOIN users u ON u.id = r.faculty_id JOIN reporting_periods p ON p.id = r.period_id WHERE r.id = ?',
+      'SELECT r.*, u.name AS faculty_name, u.email AS faculty_email, p.starts_on AS period_starts_on FROM reports r JOIN users u ON u.id = r.faculty_id JOIN reporting_periods p ON p.id = r.period_id WHERE r.id = ?',
     )
     .get(reportId) as Record<string, unknown> | undefined;
   if (!report) return json({ error: 'Report not found' }, { status: 404 });
+  report.period_label = computeWeekLabel(String(report.period_starts_on));
   if (locals.user.role === 'FACULTY' && report.faculty_id !== locals.user.id)
     return json({ error: 'Forbidden' }, { status: 403 });
   if (locals.user.role === 'HOD') {

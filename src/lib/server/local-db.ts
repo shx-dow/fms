@@ -46,12 +46,17 @@ sqlite
   .run(facultyPassword, facultyPassword, facultyPassword);
 sqlite
   .prepare(
-    "INSERT OR REPLACE INTO reporting_periods VALUES ('week-2026-07-27', 'Week of 27 July 2026', 'WEEKLY', '2026-07-27', '2026-07-31', '2026-07-31T18:00:00+05:30', 1)",
+    "INSERT OR REPLACE INTO reporting_periods VALUES ('week-2026-07-27', '', 'WEEKLY', '2026-07-27', '2026-07-31', '2026-07-31T18:00:00+05:30', 1)",
   )
   .run();
 sqlite
   .prepare(
-    "INSERT OR IGNORE INTO reporting_periods VALUES ('week-2026-07-20', 'Week of 20 July 2026', 'WEEKLY', '2026-07-20', '2026-07-25', '2026-07-25T18:00:00+05:30', 0)",
+    "INSERT OR REPLACE INTO reporting_periods VALUES ('week-2026-08-03', '', 'WEEKLY', '2026-08-03', '2026-08-07', '2026-08-07T18:00:00+05:30', 0)",
+  )
+  .run();
+sqlite
+  .prepare(
+    "INSERT OR REPLACE INTO reporting_periods VALUES ('week-2026-07-20', '', 'WEEKLY', '2026-07-20', '2026-07-24', '2026-07-24T18:00:00+05:30', 0)",
   )
   .run();
 sqlite

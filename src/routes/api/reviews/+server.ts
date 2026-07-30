@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { sqlite } from '$lib/server/local-db';
 import type { RequestHandler } from './$types';
 import { reviewSchema } from '$lib/server/validation';
+import { computeWeekLabel } from '$lib/week-label';
 
 export const GET: RequestHandler = ({ locals }) => {
   if (!locals.user || !['HOD', 'ADMIN'].includes(locals.user.role))
@@ -11,9 +12,10 @@ export const GET: RequestHandler = ({ locals }) => {
   const scope = locals.user.role === 'HOD' ? ' AND u.department_id = ?' : '';
   const rows = sqlite
     .prepare(
-      `SELECT r.id, r.status, r.updated_at, r.completion, r.submitted_at, u.name AS faculty_name, u.email AS faculty_email, p.label AS period_label FROM reports r JOIN users u ON u.id = r.faculty_id JOIN reporting_periods p ON p.id = r.period_id WHERE r.status IN ('SUBMITTED','CHANGES_REQUIRED','APPROVED')${scope} ORDER BY r.updated_at DESC`,
+      `SELECT r.id, r.status, r.updated_at, r.completion, r.submitted_at, u.name AS faculty_name, u.email AS faculty_email, p.starts_on AS period_starts_on FROM reports r JOIN users u ON u.id = r.faculty_id JOIN reporting_periods p ON p.id = r.period_id WHERE r.status IN ('SUBMITTED','CHANGES_REQUIRED','APPROVED')${scope} ORDER BY r.updated_at DESC`,
     )
-    .all(...(locals.user.role === 'HOD' ? [locals.user.departmentId ?? ''] : []));
+    .all(...(locals.user.role === 'HOD' ? [locals.user.departmentId ?? ''] : [])) as Record<string, unknown>[];
+  for (const r of rows) r.period_label = computeWeekLabel(String(r.period_starts_on));
   if (fmt === 'csv') {
     const header = 'Faculty,Email,Period,Status,Completion,Submitted At,Last Updated\n';
     const body = (rows as any[])

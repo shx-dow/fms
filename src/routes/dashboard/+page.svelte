@@ -63,7 +63,7 @@
     <header class="dash-header">
       <div>
         <h1>Dashboard</h1>
-        <span class="dash-period">{periodLabel || 'Current week'}</span>
+        <span class="dash-period">{periodLabel}</span>
       </div>
       <div class="dash-actions">
         {#if deadlinePassed}

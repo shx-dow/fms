@@ -4,6 +4,7 @@ import { sqlite } from '$lib/server/local-db';
 import type { RequestHandler } from './$types';
 import { currentPeriod, policyFor } from '$lib/server/report-policy';
 import { reportSaveSchema } from '$lib/server/validation';
+import { computeWeekLabel } from '$lib/week-label';
 
 export const GET: RequestHandler = ({ locals }) => {
   if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
@@ -19,8 +20,8 @@ export const GET: RequestHandler = ({ locals }) => {
     [key: string]: unknown;
   }
   let report = sqlite
-    .prepare('SELECT * FROM reports WHERE faculty_id = ? AND period_id = ? LIMIT 1')
-    .get(userId, period.id) as ReportRow | undefined;
+    .prepare('SELECT r.*, p.starts_on AS period_starts_on, p.due_on FROM reports r JOIN reporting_periods p ON p.id = r.period_id WHERE r.faculty_id = ? AND r.period_id = ? LIMIT 1')
+    .get(userId, period.id) as Record<string, unknown> | undefined;
   if (!report) {
     const now = new Date().toISOString();
     const id = randomUUID();
@@ -29,13 +30,16 @@ export const GET: RequestHandler = ({ locals }) => {
         'INSERT INTO reports (id, faculty_id, period_id, status, completion, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
       )
       .run(id, userId, period.id, 'DRAFT', 0, now, now);
-    report = sqlite.prepare('SELECT * FROM reports WHERE id = ?').get(id) as ReportRow;
+    report = sqlite.prepare('SELECT r.*, p.starts_on AS period_starts_on, p.due_on FROM reports r JOIN reporting_periods p ON p.id = r.period_id WHERE r.id = ?').get(id) as Record<string, unknown>;
   }
+  const periodLabel = computeWeekLabel(String(report.period_starts_on));
+  report.period_label = periodLabel;
   const history = sqlite
     .prepare(
-      'SELECT r.id, r.status, r.completion, r.updated_at, r.submitted_at, p.label AS period_label, p.starts_on, p.ends_on, p.due_on FROM reports r JOIN reporting_periods p ON p.id = r.period_id WHERE r.faculty_id = ? ORDER BY p.starts_on DESC',
+      'SELECT r.id, r.status, r.completion, r.updated_at, r.submitted_at, p.starts_on, p.ends_on, p.due_on FROM reports r JOIN reporting_periods p ON p.id = r.period_id WHERE r.faculty_id = ? ORDER BY p.starts_on DESC',
     )
-    .all(userId);
+    .all(userId) as Record<string, unknown>[];
+  for (const h of history) h.period_label = computeWeekLabel(String(h.starts_on));
   return json({
     report,
     reports: history,
