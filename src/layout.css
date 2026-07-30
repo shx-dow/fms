@@ -33,26 +33,23 @@ body {
   overflow-y: auto;
   transition: width 0.18s ease;
 }
-.institution-brand {
+.sidebar-top {
   display: flex;
   align-items: center;
-  gap: 11px;
+  justify-content: space-between;
+  padding: 4px 0 30px;
+  flex: none;
+}
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #f4f6f5;
   text-decoration: none;
-  padding: 4px 9px 30px;
+  padding: 0 9px;
+  flex: none;
 }
-.institution-brand strong {
-  display: block;
-  font-size: 0.88rem;
-  letter-spacing: 0.01em;
-}
-.institution-brand small {
-  display: block;
-  color: #bdd2d8;
-  font-size: 0.68rem;
-  margin-top: 2px;
-}
-.crest {
+.sidebar-logo .crest {
   width: 31px;
   height: 31px;
   border: 1px solid #7296a5;
@@ -61,6 +58,28 @@ body {
   place-items: center;
   color: #eaf0f1;
   font-weight: 850;
+}
+.sidebar-logo .expand-icon {
+  display: none;
+  width: 31px;
+  height: 31px;
+}
+.sidebar-toggle-top {
+  border: 0;
+  background: transparent;
+  color: #7296a5;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  transition: color 0.14s ease, background 0.14s ease;
+  flex: none;
+}
+.sidebar-toggle-top:hover {
+  color: #f4f6f5;
+  background: #1f3744;
 }
 .sidebar-body {
   flex: 1;
@@ -218,13 +237,20 @@ body {
 .sidebar-collapsed .app-main {
   margin-left: 76px;
 }
-.sidebar-collapsed .institution-brand {
-  justify-content: center;
-  padding-inline: 0;
+.sidebar-collapsed .sidebar-top {
+  justify-content: flex-start;
 }
-.sidebar-collapsed .institution-brand > span:last-child,
-.sidebar-collapsed .sidebar-nav a .nav-label,
-.sidebar-collapsed .sidebar-user-info {
+.sidebar-collapsed .sidebar-toggle-top {
+  display: none;
+}
+.sidebar-collapsed .app-sidebar:hover .sidebar-logo .crest {
+  display: none;
+}
+.sidebar-collapsed .app-sidebar:hover .sidebar-logo .expand-icon {
+  display: grid;
+  place-items: center;
+}
+.sidebar-collapsed .sidebar-nav a .nav-label {
   display: none;
 }
 .sidebar-collapsed .sidebar-label {
@@ -250,8 +276,16 @@ body {
 }
 .sidebar-collapsed .sidebar-user {
   justify-content: center;
-  margin-bottom: 0;
+  margin-bottom: 10px;
 }
 .sidebar-collapsed .logout-link {
+  justify-content: center;
   padding: 7px;
+}
+.sidebar-collapsed .logout-link:hover {
+  background: #3d2a2a;
+}
+.sidebar-collapsed .logout-link .nav-label,
+.sidebar-collapsed .sidebar-user-info {
+  display: none;
 }

@@ -72,12 +72,20 @@ import { onDestroy, onMount } from 'svelte';
   {@render children()}
 {:else}
   <div class="app-frame" class:sidebar-collapsed={sidebarCollapsed}>
-    <aside class="app-sidebar">
-      <a class="institution-brand" href="/dashboard"
-        ><span class="crest">I</span><span
-          ><strong>ICFAI University</strong><small>Faculty Reporting · Jaipur</small></span
-        ></a
-      >
+    <aside class="app-sidebar" onclick={() => { if (sidebarCollapsed) sidebarCollapsed = false; }}>
+      <div class="sidebar-top">
+        <a class="sidebar-logo" href="/dashboard">
+          <span class="crest">I</span>
+          <span class="expand-icon"><PanelLeftOpen size={18} /></span>
+        </a>
+        <button
+          class="sidebar-toggle-top"
+          aria-label="Collapse sidebar"
+          onclick={(e) => { e.stopPropagation(); sidebarCollapsed = true; }}
+        >
+          <PanelLeftClose size={18} />
+        </button>
+      </div>
       <div class="sidebar-body">
         {#if user?.role !== 'ADMIN'}
           <div class="sidebar-label">Workspace</div>
@@ -130,13 +138,7 @@ import { onDestroy, onMount } from 'svelte';
         </div>
         <a class="logout-link" href="/logout"><LogOut size={16} /><span class="nav-label">Sign out</span></a>
       </div>
-      <button
-        class="sidebar-toggle"
-        aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        onclick={() => (sidebarCollapsed = !sidebarCollapsed)}
-        >{#if sidebarCollapsed}<PanelLeftOpen size={16} />{:else}<PanelLeftClose size={16} />{/if}</button
-      >
-    </aside>
+      </aside>
     <div class="app-main">
       <div class="notif-corner">
         <button class="notif-btn" onclick={() => (showNotifications = !showNotifications)} aria-label="Notifications">
@@ -182,26 +184,7 @@ import { onDestroy, onMount } from 'svelte';
 {/if}
 
 <style>
-  .sidebar-toggle {
-    border: 0;
-    background: transparent;
-    color: #7296a5;
-    cursor: pointer;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 14px;
-    border-top: 1px solid #2a4554;
-    font: inherit;
-    font-size: 0.7rem;
-    transition: color 0.14s ease, background 0.14s ease;
-    flex: none;
-  }
-  .sidebar-toggle:hover {
-    color: #f4f6f5;
-    background: #1f3744;
-  }
+  
   .notif-corner {
     position: absolute;
     top: 20px;
