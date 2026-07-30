@@ -35,7 +35,20 @@
     if (!i.courseCode?.trim() && !i.courseName?.trim()) return true;
     return Number(i.conducted ?? 0) <= Number(i.scheduled ?? 0);
   }));
-  let completion = $derived(Math.min(100, Math.round((hasValidTeaching ? 40 : 0) + (hasValidTeaching && scheduled > 0 ? 20 : 0) + (weeklySummary?.trim() ? 30 : 0) + (hasValidTeaching && teachingValid && weeklySummary?.trim() ? 10 : 0))));
+  let researchActive = $derived(researchRecords.filter(r => r.title?.trim()).length);
+  let dutiesCount = $derived(dutiesRecords.filter(d => d.name?.trim()).length);
+  let hasResearch = $derived(researchActive > 0);
+  let hasDuties = $derived(dutiesCount > 0);
+  let deliveryOk = $derived(deliveryRate >= 90);
+  let completion = $derived(Math.min(100, Math.round(
+    (hasValidTeaching ? 30 : 0) +
+    (hasValidTeaching && scheduled > 0 ? 15 : 0) +
+    (teachingValid ? 10 : 0) +
+    (hasResearch ? 15 : 0) +
+    (hasDuties ? 10 : 0) +
+    (deliveryOk ? 10 : 0) +
+    (hasValidTeaching && hasResearch && hasDuties ? 10 : 0)
+  )));
   let isReadonly = $derived(!canEdit && reportStatus !== 'CHANGES_REQUIRED');
   let latestReview = $derived(reviews.find(r => r.decision === 'CHANGES_REQUIRED'));
   let statusClass = $derived(
@@ -89,7 +102,7 @@
   async function saveDraft(_e?: unknown, status = 'DRAFT') {
     if (!canEdit || saving) return false;
     saving = true; clearTimeout(saveTimer); savedAt = 'Saving...';
-    const res = await fetch('/api/reports', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportId, teaching, summary: weeklySummary, completion, status }) });
+    const res = await fetch('/api/reports', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportId, teaching, completion, status }) });
     const d = await res.json().catch(() => ({}));
     saving = false;
     if (!res.ok) { show(d.error ?? 'Save failed', 'err'); return false; }
@@ -181,11 +194,17 @@
       <button class:active={activeSection === 'teaching'} onclick={() => (activeSection = 'teaching')}>
         <span class="sn-num">01</span> Teaching & delivery <span class="sn-count">{teaching.length}</span>
       </button>
+      <button class:active={activeSection === 'research'} onclick={() => (activeSection = 'research')}>
+        <span class="sn-num">02</span> Research & publications <span class="sn-count">{researchRecords.length}</span>
+      </button>
+      <button class:active={activeSection === 'duties'} onclick={() => (activeSection = 'duties')}>
+        <span class="sn-num">03</span> Institutional duties <span class="sn-count">{dutiesRecords.length}</span>
+      </button>
       <button class:active={activeSection === 'summary'} onclick={() => (activeSection = 'summary')}>
-        <span class="sn-num">02</span> Weekly summary <span class="sn-count">{weeklySummary ? '1' : '0'}</span>
+        <span class="sn-num">04</span> Weekly summary <span class="sn-count">{weeklySummary ? '1' : '0'}</span>
       </button>
       <button class:active={activeSection === 'additional'} onclick={() => (activeSection = 'additional')}>
-        <span class="sn-num">03</span> Evidence & records <span class="sn-count">{attachments.length}</span>
+        <span class="sn-num">05</span> Evidence & records <span class="sn-count">{attachments.length}</span>
       </button>
     </nav>
 
@@ -255,16 +274,83 @@
           {/each}
           <button class="act-add" onclick={addTeaching}>+ Add course</button>
         </div>
+      {:else if activeSection === 'research'}
+        <div class="section-top"><h2>Research & publications</h2></div>
+        {#each researchRecords as item}
+          <div class="record-card">
+            <div class="field-grid">
+              <label>Category<select bind:value={item.category}><option>Journal Paper</option><option>Patent</option><option>Research Grant</option><option>Conference / FDP</option></select></label>
+              <label>Title<input bind:value={item.title} placeholder="Title of paper, patent or project" /></label>
+              <label>Venue / agency<input bind:value={item.venueOrAgency} /></label>
+              <label>Status<input bind:value={item.status} placeholder="In progress, submitted, published" /></label>
+            </div>
+          </div>
+        {/each}
+        <div class="record-acts">
+          <button class="act-add" onclick={() => (researchRecords = [...researchRecords, { category: 'Journal Paper', title: '', venueOrAgency: '', indexingOrQuality: '', role: '', status: '' }])}>+ Add record</button>
+          <button class="act-link" onclick={() => saveActivity('research')}>{additionalSaving ? 'Saving...' : 'Save research'}</button>
+        </div>
+      {:else if activeSection === 'duties'}
+        <div class="section-top"><h2>Institutional duties</h2></div>
+        {#each dutiesRecords as item}
+          <div class="record-card">
+            <div class="field-grid">
+              <label>Committee / body<input bind:value={item.name} /></label>
+              <label>Role<input bind:value={item.role} /></label>
+              <label>Activity<input bind:value={item.activity} /></label>
+              <label>Outcome<input bind:value={item.outcome} /></label>
+            </div>
+          </div>
+        {/each}
+        <div class="record-acts">
+          <button class="act-add" onclick={() => (dutiesRecords = [...dutiesRecords, { name: '', role: '', activity: '', reach: '', outcome: '' }])}>+ Add duty</button>
+          <button class="act-link" onclick={() => saveActivity('duties')}>{additionalSaving ? 'Saving...' : 'Save duties'}</button>
+        </div>
       {:else if activeSection === 'summary'}
         <div class="section-top">
-          <h2>Weekly summary</h2>
+          <h2>Weekly Executive Summary & Dashboard</h2>
         </div>
-        <textarea class="summary-area" bind:value={weeklySummary} oninput={saveDraft} rows="6" placeholder="Summarise the week's teaching, student engagement, and any notable academic events..."></textarea>
+        <div class="dash-summary">
+          <table class="summary-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Monthly Target</th>
+                <th>Actual Achieved</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Total Classes Scheduled vs. Taken</td>
+                <td>{scheduled}</td>
+                <td>{conducted} / {scheduled}</td>
+                <td class="status-cell">{deliveryRate >= 90 ? '✓' : deliveryRate >= 70 ? '△' : '⚠'}</td>
+              </tr>
+              <tr>
+                <td>Lecture Delivery Rate (%)</td>
+                <td>100%</td>
+                <td>{deliveryRate}%</td>
+                <td class="status-cell">{deliveryRate >= 90 ? '✓' : deliveryRate >= 70 ? '△' : '⚠'}</td>
+              </tr>
+              <tr>
+                <td>Research Papers / Patents Active</td>
+                <td>—</td>
+                <td>{researchActive}</td>
+                <td class="status-cell">{researchActive > 0 ? '✓' : '—'}</td>
+              </tr>
+              <tr>
+                <td>Club & Institutional Events Led</td>
+                <td>—</td>
+                <td>{dutiesCount}</td>
+                <td class="status-cell">{dutiesCount > 0 ? '✓' : '—'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       {:else if activeSection === 'additional'}
         <div class="sub-tabs">
           <button class:active={activeExtraSection === 'attachments'} onclick={() => (activeExtraSection = 'attachments')}>Files ({attachments.length})</button>
-          <button class:active={activeExtraSection === 'research'} onclick={() => (activeExtraSection = 'research')}>Research</button>
-          <button class:active={activeExtraSection === 'duties'} onclick={() => (activeExtraSection = 'duties')}>Duties</button>
           <button class:active={activeExtraSection === 'outreach'} onclick={() => (activeExtraSection = 'outreach')}>Outreach</button>
         </div>
         {#if activeExtraSection === 'attachments'}
@@ -288,38 +374,6 @@
           {#if canEdit}
             <label class="upload-btn">+ Upload file<input disabled={!canEdit} type="file" accept="application/pdf,image/png,image/jpeg" onchange={uploadEvidence} /></label>
           {/if}
-        {:else if activeExtraSection === 'research'}
-          <div class="section-top"><h2>Research & publications</h2></div>
-          {#each researchRecords as item}
-            <div class="record-card">
-              <div class="field-grid">
-                <label>Category<select bind:value={item.category}><option>Journal Paper</option><option>Patent</option><option>Research Grant</option><option>Conference / FDP</option></select></label>
-                <label>Title<input bind:value={item.title} placeholder="Title of paper, patent or project" /></label>
-                <label>Venue / agency<input bind:value={item.venueOrAgency} /></label>
-                <label>Status<input bind:value={item.status} placeholder="In progress, submitted, published" /></label>
-              </div>
-            </div>
-          {/each}
-          <div class="record-acts">
-            <button class="act-add" onclick={() => (researchRecords = [...researchRecords, { category: 'Journal Paper', title: '', venueOrAgency: '', indexingOrQuality: '', role: '', status: '' }])}>+ Add record</button>
-            <button class="act-link" onclick={() => saveActivity('research')}>{additionalSaving ? 'Saving...' : 'Save research'}</button>
-          </div>
-        {:else if activeExtraSection === 'duties'}
-          <div class="section-top"><h2>Institutional duties</h2></div>
-          {#each dutiesRecords as item}
-            <div class="record-card">
-              <div class="field-grid">
-                <label>Committee / body<input bind:value={item.name} /></label>
-                <label>Role<input bind:value={item.role} /></label>
-                <label>Activity<input bind:value={item.activity} /></label>
-                <label>Outcome<input bind:value={item.outcome} /></label>
-              </div>
-            </div>
-          {/each}
-          <div class="record-acts">
-            <button class="act-add" onclick={() => (dutiesRecords = [...dutiesRecords, { name: '', role: '', activity: '', reach: '', outcome: '' }])}>+ Add duty</button>
-            <button class="act-link" onclick={() => saveActivity('duties')}>{additionalSaving ? 'Saving...' : 'Save duties'}</button>
-          </div>
         {:else if activeExtraSection === 'outreach'}
           <div class="section-top"><h2>Outreach & admissions</h2></div>
           {#each outreachRecords as item}
@@ -435,6 +489,15 @@
   .preview-text { background: #f4f6f5; border-radius: 6px; padding: 14px; font-size: 0.82rem; line-height: 1.5; color: #1b2b36; white-space: pre-wrap; }
   .preview-bar { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: #eef3f5; border: 1px solid #dbe3e7; border-radius: 6px; margin-bottom: 16px; }
   .preview-bar strong { font-size: 0.8rem; color: #667477; }
+  .dash-summary { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .summary-table th { text-align: left; padding: 12px 16px; background: #eef3f5; color: #667477; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #dbe3e7; }
+  .summary-table td { padding: 14px 16px; border-bottom: 1px solid #e8eeec; color: #1b2b36; }
+  .summary-table tr:last-child td { border-bottom: 0; }
+  .summary-table td:first-child { font-weight: 700; color: #145b78; }
+  .summary-table td:nth-child(2),
+  .summary-table td:nth-child(3) { font-variant-numeric: tabular-nums; text-align: center; }
+  .status-cell { text-align: center; font-size: 1.1rem; font-weight: 800; color: #667477; }
   @media (max-width: 900px) {
     .editor-layout { grid-template-columns: 1fr; }
     .section-nav { position: static; display: flex; gap: 4px; }
