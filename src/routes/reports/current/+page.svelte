@@ -9,6 +9,7 @@
   let submitted = $state(false);
   let savedAt = $state('');
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
+  let teachingSaveTimer: ReturnType<typeof setTimeout> | undefined;
   let canEdit = $state(true);
   let periodLabel = $state('');
   let reportId = $state('');
@@ -23,6 +24,7 @@
   let dutiesRecords: any[] = $state([]);
   let outreachRecords: any[] = $state([]);
   let additionalSaving = $state(false);
+  let saveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
   let activeExtraSection = $state('attachments');
   let deadlineDate = $state('');
   let canSubmit = $derived(new Date().getDay() === 5);
@@ -49,6 +51,9 @@
     (deliveryOk ? 10 : 0) +
     (hasValidTeaching && hasResearch && hasDuties ? 10 : 0)
   )));
+  let autoSummary = $derived(
+    `This week you conducted ${conducted} of ${scheduled} scheduled classes (${deliveryRate}% delivery rate) across ${teaching.filter(t => t.courseCode?.trim()).length} course(s). ${researchActive > 0 ? `${researchActive} research record(s) active. ` : ''}${dutiesCount > 0 ? `${dutiesCount} institutional dut${dutiesCount === 1 ? 'y' : 'ies'}. ` : ''}${attachments.length > 0 ? `${attachments.length} file(s) attached.` : ''}`
+  );
   let isReadonly = $derived(!canEdit && reportStatus !== 'CHANGES_REQUIRED');
   let latestReview = $derived(reviews.find(r => r.decision === 'CHANGES_REQUIRED'));
   let statusClass = $derived(
@@ -77,7 +82,7 @@
     }
     savedAt = '';
   });
-  onDestroy(() => clearTimeout(saveTimer));
+  onDestroy(() => { clearTimeout(saveTimer); clearTimeout(teachingSaveTimer); Object.values(saveTimers).forEach(clearTimeout); });
   function flashSaved() {
     clearTimeout(saveTimer);
     savedAt = 'Draft Saved';
@@ -109,14 +114,24 @@
     if (res.ok) flashSaved(); else savedAt = 'Save failed';
     return res.ok;
   }
+  function scheduleSave(kind: 'research' | 'duties' | 'outreach') {
+    clearTimeout(saveTimers[kind]);
+    saveTimers[kind] = setTimeout(() => saveActivity(kind), 600);
+  }
   async function saveActivity(kind: 'research' | 'duties' | 'outreach') {
     if (!reportId || !canEdit || additionalSaving) return;
     additionalSaving = true; clearTimeout(saveTimer); savedAt = 'Saving...';
     await fetch(`/api/${kind}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportId, records: kind === 'research' ? researchRecords : kind === 'duties' ? dutiesRecords : outreachRecords }) });
     additionalSaving = false; flashSaved();
   }
-  function addTeaching() { teaching = [...teaching, { courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0 }]; saveDraft(); }
-  function removeTeaching(i: number) { teaching = teaching.filter((_, j) => j !== i); saveDraft(); }
+  function addTeaching() { teaching = [...teaching, { courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0 }]; scheduleTeachingSave(); }
+  function removeTeaching(i: number) { teaching = teaching.filter((_, j) => j !== i); scheduleTeachingSave(); }
+  function removeResearch(i: number) { researchRecords = researchRecords.filter((_, j) => j !== i); scheduleSave('research'); }
+  function removeDuty(i: number) { dutiesRecords = dutiesRecords.filter((_, j) => j !== i); scheduleSave('duties'); }
+  function scheduleTeachingSave() {
+    clearTimeout(teachingSaveTimer);
+    teachingSaveTimer = setTimeout(() => saveDraft(), 600);
+  }
   async function handleSubmit() { confirmSubmit = false; const ok = await saveDraft(undefined, 'SUBMITTED'); if (ok) { submitted = true; reportStatus = 'SUBMITTED'; canEdit = false; } }
   function handleKeydown(e: KeyboardEvent) { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveDraft(); } }
 </script>
@@ -222,8 +237,38 @@
           {:else}
             <p class="empty">No teaching records.</p>
           {/each}
+          <h2>Research & publications</h2>
+          {#each researchRecords as item}
+            <div class="preview-row">
+              <strong>{item.title || 'Untitled'}</strong>
+              <span>{item.category}</span>
+              <span class="preview-stat">{item.status || '—'}{item.venueOrAgency ? ` · ${item.venueOrAgency}` : ''}</span>
+            </div>
+          {:else}
+            <p class="empty">No research records.</p>
+          {/each}
+          <h2>Institutional duties</h2>
+          {#each dutiesRecords as item}
+            <div class="preview-row">
+              <strong>{item.name || 'Untitled'}</strong>
+              <span>{item.role || '—'}</span>
+              <span class="preview-stat">{item.activity || '—'}</span>
+            </div>
+          {:else}
+            <p class="empty">No duties recorded.</p>
+          {/each}
+          <h2>Outreach & admissions</h2>
+          {#each outreachRecords as item}
+            <div class="preview-row">
+              <strong>{item.activity || 'Untitled'}</strong>
+              <span>{item.audience || '—'}</span>
+              <span class="preview-stat">{item.date || '—'}</span>
+            </div>
+          {:else}
+            <p class="empty">No outreach recorded.</p>
+          {/each}
           <h2>Weekly summary</h2>
-          <div class="preview-text">{weeklySummary || 'No summary entered.'}</div>
+          <div class="preview-text">{autoSummary}</div>
         </div>
       {:else if preview}
         <div class="preview-bar">
@@ -240,8 +285,38 @@
               <span class="preview-stat">{item.conducted} / {item.scheduled} classes · {item.syllabusCompletion}% syllabus</span>
             </div>
           {/each}
+          <h2>Research & publications</h2>
+          {#each researchRecords as item}
+            <div class="preview-row">
+              <strong>{item.title || 'Untitled'}</strong>
+              <span>{item.category}</span>
+              <span class="preview-stat">{item.status || '—'}{item.venueOrAgency ? ` · ${item.venueOrAgency}` : ''}</span>
+            </div>
+          {:else}
+            <p class="empty">No research records.</p>
+          {/each}
+          <h2>Institutional duties</h2>
+          {#each dutiesRecords as item}
+            <div class="preview-row">
+              <strong>{item.name || 'Untitled'}</strong>
+              <span>{item.role || '—'}</span>
+              <span class="preview-stat">{item.activity || '—'}</span>
+            </div>
+          {:else}
+            <p class="empty">No duties recorded.</p>
+          {/each}
+          <h2>Outreach & admissions</h2>
+          {#each outreachRecords as item}
+            <div class="preview-row">
+              <strong>{item.activity || 'Untitled'}</strong>
+              <span>{item.audience || '—'}</span>
+              <span class="preview-stat">{item.date || '—'}</span>
+            </div>
+          {:else}
+            <p class="empty">No outreach recorded.</p>
+          {/each}
           <h2>Weekly summary</h2>
-          <p>{weeklySummary || 'No summary entered.'}</p>
+          <p>{autoSummary}</p>
         </div>
       {:else if activeSection === 'teaching'}
         <div class="section-top">
@@ -258,58 +333,74 @@
                 {/if}
               </div>
               <div class="field-grid">
-                <label>Course code<input bind:value={item.courseCode} oninput={saveDraft} placeholder="CSE-301" /></label>
-                <label>Course name<input bind:value={item.courseName} oninput={saveDraft} placeholder="Database Management Systems" /></label>
-                <label>Program / level<input bind:value={item.programLevel} oninput={saveDraft} placeholder="B.Tech · III Year" /></label>
-                <label>Class type<select bind:value={item.classType} onchange={saveDraft}><option>Lecture</option><option>Lab</option><option>Tutorial</option><option>Seminar</option></select></label>
+                <label>Course code<input bind:value={item.courseCode} oninput={() => scheduleTeachingSave()} placeholder="CSE-301" /></label>
+                <label>Course name<input bind:value={item.courseName} oninput={() => scheduleTeachingSave()} placeholder="Database Management Systems" /></label>
+                <label>Program / level<input bind:value={item.programLevel} oninput={() => scheduleTeachingSave()} placeholder="B.Tech · III Year" /></label>
+                <label>Class type<select bind:value={item.classType} onchange={() => scheduleTeachingSave()}><option>Lecture</option><option>Lab</option><option>Tutorial</option><option>Seminar</option></select></label>
               </div>
               <div class="number-grid">
-                <label>Scheduled<input type="number" min="0" bind:value={item.scheduled} oninput={saveDraft} placeholder="0" /></label>
-                <label>Conducted<input type="number" min="0" bind:value={item.conducted} oninput={saveDraft} placeholder="0" /></label>
-                <label>Missed<input type="number" min="0" bind:value={item.missed} oninput={saveDraft} placeholder="0" /></label>
-                <label>Syllabus %<input type="number" min="0" max="100" bind:value={item.syllabusCompletion} oninput={saveDraft} placeholder="0" /></label>
+                <label>Scheduled<input type="number" min="0" bind:value={item.scheduled} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
+                <label>Conducted<input type="number" min="0" bind:value={item.conducted} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
+                <label>Missed<input type="number" min="0" bind:value={item.missed} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
+                <label>Syllabus %<input type="number" min="0" max="100" bind:value={item.syllabusCompletion} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
               </div>
-              <label class="missed-label">Action taken for missed classes<input bind:value={item.missedAction} oninput={saveDraft} placeholder="e.g. Makeup class scheduled" /></label>
+              <label class="missed-label">Action taken for missed classes<input bind:value={item.missedAction} oninput={() => scheduleTeachingSave()} placeholder="e.g. Makeup class scheduled" /></label>
             </div>
           {/each}
           <button class="act-add" onclick={addTeaching}>+ Add course</button>
         </div>
       {:else if activeSection === 'research'}
         <div class="section-top"><h2>Research & publications</h2></div>
-        {#each researchRecords as item}
+        {#each researchRecords as item, i}
           <div class="record-card">
+            <div class="course-head">
+              <strong>Record {i + 1}</strong>
+              {#if researchRecords.length > 1}
+                <button class="act-remove" onclick={() => removeResearch(i)}>Remove</button>
+              {/if}
+            </div>
             <div class="field-grid">
-              <label>Category<select bind:value={item.category}><option>Journal Paper</option><option>Patent</option><option>Research Grant</option><option>Conference / FDP</option></select></label>
-              <label>Title<input bind:value={item.title} placeholder="Title of paper, patent or project" /></label>
-              <label>Venue / agency<input bind:value={item.venueOrAgency} /></label>
-              <label>Status<input bind:value={item.status} placeholder="In progress, submitted, published" /></label>
+              <label>Category<select bind:value={item.category} onchange={() => scheduleSave('research')}><option>Journal Paper</option><option>Patent</option><option>Research Grant</option><option>Conference / FDP</option></select></label>
+              <label>Title<input bind:value={item.title} oninput={() => scheduleSave('research')} placeholder="Title of paper, patent or project" /></label>
+              <label>Venue / agency<input bind:value={item.venueOrAgency} oninput={() => scheduleSave('research')} /></label>
+              <label>Indexing / quality<input bind:value={item.indexingOrQuality} oninput={() => scheduleSave('research')} placeholder="SCI, Scopus, UGC, etc." /></label>
+              <label>Role<input bind:value={item.role} oninput={() => scheduleSave('research')} placeholder="Lead author, Co-author, PI" /></label>
+              <label>Status<input bind:value={item.status} oninput={() => scheduleSave('research')} placeholder="In progress, submitted, published" /></label>
             </div>
           </div>
         {/each}
         <div class="record-acts">
           <button class="act-add" onclick={() => (researchRecords = [...researchRecords, { category: 'Journal Paper', title: '', venueOrAgency: '', indexingOrQuality: '', role: '', status: '' }])}>+ Add record</button>
-          <button class="act-link" onclick={() => saveActivity('research')}>{additionalSaving ? 'Saving...' : 'Save research'}</button>
+          <button class="act-link" onclick={() => saveActivity('research')}>{additionalSaving ? 'Saving…' : 'Save research'}</button>
         </div>
       {:else if activeSection === 'duties'}
         <div class="section-top"><h2>Institutional duties</h2></div>
-        {#each dutiesRecords as item}
+        {#each dutiesRecords as item, i}
           <div class="record-card">
+            <div class="course-head">
+              <strong>Duty {i + 1}</strong>
+              {#if dutiesRecords.length > 1}
+                <button class="act-remove" onclick={() => removeDuty(i)}>Remove</button>
+              {/if}
+            </div>
             <div class="field-grid">
-              <label>Committee / body<input bind:value={item.name} /></label>
-              <label>Role<input bind:value={item.role} /></label>
-              <label>Activity<input bind:value={item.activity} /></label>
-              <label>Outcome<input bind:value={item.outcome} /></label>
+              <label>Committee / body<input bind:value={item.name} oninput={() => scheduleSave('duties')} /></label>
+              <label>Role<input bind:value={item.role} oninput={() => scheduleSave('duties')} /></label>
+              <label>Activity<input bind:value={item.activity} oninput={() => scheduleSave('duties')} /></label>
+              <label>Reach / scope<input bind:value={item.reach} oninput={() => scheduleSave('duties')} placeholder="Institute-wide, department, etc." /></label>
+              <label>Outcome<input bind:value={item.outcome} oninput={() => scheduleSave('duties')} /></label>
             </div>
           </div>
         {/each}
         <div class="record-acts">
           <button class="act-add" onclick={() => (dutiesRecords = [...dutiesRecords, { name: '', role: '', activity: '', reach: '', outcome: '' }])}>+ Add duty</button>
-          <button class="act-link" onclick={() => saveActivity('duties')}>{additionalSaving ? 'Saving...' : 'Save duties'}</button>
+          <button class="act-link" onclick={() => saveActivity('duties')}>{additionalSaving ? 'Saving…' : 'Save duties'}</button>
         </div>
       {:else if activeSection === 'summary'}
         <div class="section-top">
           <h2>Weekly Executive Summary & Dashboard</h2>
         </div>
+        <div class="auto-summary">{autoSummary}</div>
         <div class="dash-summary">
           <table class="summary-table">
             <thead>
@@ -379,16 +470,16 @@
           {#each outreachRecords as item}
             <div class="record-card">
               <div class="field-grid">
-                <label>Activity<input bind:value={item.activity} /></label>
-                <label>Audience<input bind:value={item.audience} /></label>
-                <label>Date<input type="date" bind:value={item.date} /></label>
-                <label>Outcome<input bind:value={item.outcome} /></label>
+                <label>Activity<input bind:value={item.activity} oninput={() => scheduleSave('outreach')} /></label>
+                <label>Audience<input bind:value={item.audience} oninput={() => scheduleSave('outreach')} /></label>
+                <label>Date<input type="date" bind:value={item.date} onchange={() => scheduleSave('outreach')} /></label>
+                <label>Outcome<input bind:value={item.outcome} oninput={() => scheduleSave('outreach')} /></label>
               </div>
             </div>
           {/each}
           <div class="record-acts">
             <button class="act-add" onclick={() => (outreachRecords = [...outreachRecords, { activity: '', audience: '', outcome: '', date: '' }])}>+ Add outreach</button>
-            <button class="act-link" onclick={() => saveActivity('outreach')}>{additionalSaving ? 'Saving...' : 'Save outreach'}</button>
+            <button class="act-link" onclick={() => saveActivity('outreach')}>{additionalSaving ? 'Saving…' : 'Save outreach'}</button>
           </div>
         {/if}
       {/if}
@@ -489,6 +580,7 @@
   .preview-text { background: #f4f6f5; border-radius: 6px; padding: 14px; font-size: 0.82rem; line-height: 1.5; color: #1b2b36; white-space: pre-wrap; }
   .preview-bar { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: #eef3f5; border: 1px solid #dbe3e7; border-radius: 6px; margin-bottom: 16px; }
   .preview-bar strong { font-size: 0.8rem; color: #667477; }
+  .auto-summary { background: #e5f0f4; border: 1px solid #bdd3db; border-radius: 6px; padding: 14px 18px; font-size: 0.82rem; line-height: 1.5; color: #1b2b36; margin-bottom: 16px; }
   .dash-summary { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
   .summary-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
   .summary-table th { text-align: left; padding: 12px 16px; background: #eef3f5; color: #667477; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #dbe3e7; }

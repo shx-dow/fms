@@ -9,12 +9,15 @@
   let missingReports: { id: string; name: string; email: string }[] = $state([]);
   let missingPeriod = $state('');
   let error = $state('');
+  let trends: { period: string; total: number; submitted: number; submission_rate: number; avg_completion: number }[] = $state([]);
+  let currentPeriod: { period: string; faculty_count: number; submitted_count: number } | null = $state(null);
   onMount(async () => {
     try {
-      const [reviewsRes, deptsRes, missingRes] = await Promise.all([fetch('/api/reviews'), fetch('/api/departments'), fetch('/api/reports/missing')]);
+      const [reviewsRes, deptsRes, missingRes, trendsRes] = await Promise.all([fetch('/api/reviews'), fetch('/api/departments'), fetch('/api/reports/missing'), fetch('/api/dashboard/trends')]);
       const reviews = await reviewsRes.json();
       const depts = await deptsRes.json();
       const missing = await missingRes.json();
+      const trendsData = await trendsRes.json();
       items = reviews.reports ?? [];
       reviewNeeded = items.filter((r: ReviewItem) => r.status === 'SUBMITTED' || r.status === 'CHANGES_REQUIRED').length;
       submittedCount = items.filter((r: ReviewItem) => r.status === 'SUBMITTED' || r.status === 'APPROVED').length;
@@ -22,6 +25,8 @@
       facultyCount = dept?.member_count ?? 0;
       missingReports = missing.missing ?? [];
       missingPeriod = missing.periodLabel ?? '';
+      trends = trendsData.trends ?? [];
+      currentPeriod = trendsData.currentPeriod ?? null;
     } catch { error = 'Unable to load department data.'; }
     finally { loading = false; }
   });
@@ -77,6 +82,36 @@
         {/if}
       </section>
     </div>
+
+    {#if trends.length > 0}
+      <section class="trends-section">
+        <div class="panel-head"><h2>Submission trends (last {trends.length} periods)</h2></div>
+        <table class="trends-table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Submitted / Total</th>
+              <th>Submission rate</th>
+              <th>Avg completion</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each trends as t}
+              <tr>
+                <td>{t.period}</td>
+                <td>{t.submitted} / {t.total}</td>
+                <td>
+                  <span class="trend-pill" class:trend-ok={t.submission_rate >= 80} class:trend-mid={t.submission_rate >= 50 && t.submission_rate < 80} class:trend-low={t.submission_rate < 50}>
+                    {t.submission_rate}%
+                  </span>
+                </td>
+                <td>{t.avg_completion}%</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </section>
+    {/if}
   {/if}
 </main>
 
@@ -114,6 +149,15 @@
   .r-chg { background: #f4eddd; color: #8a681d; }
   .empty-state { padding: 24px 20px; color: #87969c; font-size: 0.8rem; }
   .missing-note { padding: 12px 20px; margin: 0; color: #87969c; font-size: 0.74rem; }
+  .trends-section { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; margin-top: 24px; }
+  .trends-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .trends-table th { text-align: left; padding: 12px 20px; background: #eef3f5; color: #667477; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #dbe3e7; }
+  .trends-table td { padding: 14px 20px; border-bottom: 1px solid #e8eeec; color: #1b2b36; }
+  .trends-table tr:last-child td { border-bottom: 0; }
+  .trend-pill { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 800; }
+  .trend-pill.trend-ok { background: #e4f1eb; color: #24745b; }
+  .trend-pill.trend-mid { background: #f4eddd; color: #8a681d; }
+  .trend-pill.trend-low { background: #f8e8e5; color: #a84f42; }
   @media (max-width: 800px) {
     .dash-header { flex-direction: column; align-items: start; }
     .admin-grid { grid-template-columns: 1fr; }
