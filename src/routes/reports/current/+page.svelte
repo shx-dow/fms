@@ -68,7 +68,7 @@
     const d = await res.json();
     reportId = d.report.id;
     reportStatus = d.report.status;
-    periodLabel = d.policy?.period?.label ?? periodLabel;
+    periodLabel = d.report?.period_label ?? d.policy?.period?.label ?? periodLabel;
     if (d.teaching?.length)
       teaching = d.teaching.map((t: any) => ({ courseCode: t.course_code, courseName: t.course_name, programLevel: t.program_level, classType: t.class_type, scheduled: t.scheduled, conducted: t.conducted, missed: t.missed, missedAction: t.missed_action ?? '', syllabusCompletion: t.syllabus_completion ?? 0 }));
     weeklySummary = d.report.summary ?? '';
