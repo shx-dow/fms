@@ -2,20 +2,18 @@
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
   let { data } = $props();
-  type User = { id: string; name: string; email: string; role: string; department_name?: string; is_active: number; department_id?: string };
+  type User = { id: string; name: string; email: string; role: string; is_active: number };
   let users: User[] = $state([]);
-  let departments: { id: string; name: string }[] = $state([]);
   let search = $state('');
   let loading = $state(true);
   let confirmId = $state<string | null>(null);
   let showForm = $state(false);
   let editUser: User | null = $state(null);
-  let formName = $state(''); let formEmail = $state(''); let formRole = $state('FACULTY'); let formDept = $state(''); let formPass = $state('');
+  let formName = $state(''); let formEmail = $state(''); let formRole = $state('FACULTY'); let formPass = $state('');
   onMount(async () => {
     try {
-      const [userRes, deptRes] = await Promise.all([fetch('/api/users'), fetch('/api/departments')]);
-      users = (await userRes.json()).users ?? [];
-      departments = (await deptRes.json()).departments ?? [];
+      const res = await fetch('/api/users');
+      users = (await res.json()).users ?? [];
     } catch { show('Unable to load data.', 'err'); }
     finally { loading = false; }
   });
@@ -25,12 +23,12 @@
     const res = await fetch('/api/users', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId: user.id, isActive: !user.is_active }) });
     if (res.ok) user.is_active = user.is_active ? 0 : 1; else show('Unable to update user status.', 'err');
   }
-  function openCreate() { editUser = null; formName = ''; formEmail = ''; formRole = 'FACULTY'; formDept = ''; formPass = ''; showForm = true; }
-  function openEdit(u: User) { editUser = u; formName = u.name; formEmail = u.email; formRole = u.role; formDept = u.department_id ?? ''; formPass = ''; showForm = true; }
+  function openCreate() { editUser = null; formName = ''; formEmail = ''; formRole = 'FACULTY'; formPass = ''; showForm = true; }
+  function openEdit(u: User) { editUser = u; formName = u.name; formEmail = u.email; formRole = u.role; formPass = ''; showForm = true; }
   async function saveUser() {
     if (!formName || !formEmail) { show('Name and email are required.', 'err'); return; }
     if (!editUser && !formPass) { show('Password is required for new users.', 'err'); return; }
-    const payload: any = editUser ? { action: 'UPDATE', userId: editUser.id, name: formName, email: formEmail, role: formRole, departmentId: formDept || null } : { action: 'CREATE', name: formName, email: formEmail, role: formRole, password: formPass, departmentId: formDept || null };
+    const payload: any = editUser ? { action: 'UPDATE', userId: editUser.id, name: formName, email: formEmail, role: formRole } : { action: 'CREATE', name: formName, email: formEmail, role: formRole, password: formPass };
     if (editUser && formPass) payload.password = formPass;
     const res = await fetch('/api/users', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
     const d = await res.json();
@@ -56,17 +54,16 @@
     <div class="search-bar"><input type="search" placeholder="Search by name or email…" bind:value={search} /></div>
     <section class="table-card">
       <table>
-        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
         <tbody>
           {#if !filtered.length}
-            <tr><td colspan="6" class="empty-row">{search ? 'No users match your search.' : 'No users found.'}</td></tr>
+            <tr><td colspan="5" class="empty-row">{search ? 'No users match your search.' : 'No users found.'}</td></tr>
           {:else}
             {#each filtered as user}
               <tr>
                 <td><strong>{user.name}</strong></td>
                 <td>{user.email}</td>
                 <td>{user.role}</td>
-                <td>{user.department_name ?? 'Institution-wide'}</td>
                 <td><span class="pill" class:active={user.is_active} class:inactive={!user.is_active}>{user.is_active ? 'Active' : 'Inactive'}</span></td>
                 <td class="td-acts">
                   {#if confirmId === user.id}
@@ -91,7 +88,6 @@
           <label>Full name<input bind:value={formName} placeholder="e.g. Jane Smith" /></label>
           <label>Email<input bind:value={formEmail} type="email" placeholder="jane@example.edu" /></label>
           <label>Role<select bind:value={formRole}><option value="FACULTY">Faculty</option><option value="HOD">HOD</option><option value="ADMIN">Admin</option></select></label>
-          <label>Department<select bind:value={formDept}><option value="">Institution-wide</option>{#each departments as d}<option value={d.id}>{d.name}</option>{/each}</select></label>
           <label>Password{editUser ? ' (leave blank to keep current)' : ''}<input bind:value={formPass} type="password" placeholder="Password" /></label>
         </div>
         <div class="modal-acts"><button class="btn-ghost" onclick={() => (showForm = false)}>Cancel</button><button class="dash-cta" onclick={saveUser}>{editUser ? 'Save changes' : 'Create user'}</button></div>

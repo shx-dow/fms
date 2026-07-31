@@ -34,9 +34,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     if (!body.name || !body.email || !body.role || !body.password)
       return json({ ok: false, error: 'Name, email, role and password are required.' }, { status: 400 });
     const id = randomUUID();
+    const defaultDept = sqlite.prepare('SELECT id FROM departments ORDER BY name LIMIT 1').get() as { id: string } | undefined;
     sqlite
       .prepare('INSERT INTO users (id, name, email, role, department_id, is_active) VALUES (?, ?, ?, ?, ?, 1)')
-      .run(id, body.name, body.email, body.role, body.departmentId || null);
+      .run(id, body.name, body.email, body.role, body.departmentId || defaultDept?.id || null);
     sqlite
       .prepare('INSERT INTO credentials (user_id, password_hash) VALUES (?, ?)')
       .run(id, hashPassword(body.password));

@@ -19,7 +19,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   if (event.locals.user && path === '/login')
     return new Response(null, {
       status: 303,
-      headers: { location: '/dashboard' },
+      headers: { location: event.locals.user.role === 'ADMIN' ? '/admin' : '/dashboard' },
     });
   return resolve(event);
 };

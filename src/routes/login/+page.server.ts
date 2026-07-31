@@ -12,9 +12,9 @@ export const actions: Actions = {
     const password = String(data.get('password') ?? '');
     const row = sqlite
       .prepare(
-        'SELECT u.id, c.password_hash FROM users u JOIN credentials c ON c.user_id = u.id WHERE lower(u.email) = ? AND u.is_active = 1',
+        'SELECT u.id, u.role, c.password_hash FROM users u JOIN credentials c ON c.user_id = u.id WHERE lower(u.email) = ? AND u.is_active = 1',
       )
-      .get(email) as { id: string; password_hash: string } | undefined;
+      .get(email) as { id: string; role: string; password_hash: string } | undefined;
     if (!row || !verifyPassword(password, row.password_hash)) return fail(400, { error: 'Invalid email or password' });
     const session = createSession(row.id);
     cookies.set('session', session.id, {
@@ -24,6 +24,6 @@ export const actions: Actions = {
       secure: false,
       maxAge: 60 * 60 * 8,
     });
-    throw redirect(303, '/dashboard');
+    throw redirect(303, row.role === 'ADMIN' ? '/admin' : '/dashboard');
   },
 };

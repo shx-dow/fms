@@ -10,7 +10,6 @@ import { onDestroy, onMount } from 'svelte';
   import CalendarDays from '@lucide/svelte/icons/calendar-days';
   import Building2 from '@lucide/svelte/icons/building-2';
   import Users from '@lucide/svelte/icons/users';
-  import GitBranch from '@lucide/svelte/icons/git-branch';
   import ClipboardCheck from '@lucide/svelte/icons/clipboard-check';
   import Cog from '@lucide/svelte/icons/cog';
   import History from '@lucide/svelte/icons/history';
@@ -74,7 +73,7 @@ import { onDestroy, onMount } from 'svelte';
   <div class="app-frame" class:sidebar-collapsed={sidebarCollapsed}>
     <aside class="app-sidebar" onclick={() => { if (sidebarCollapsed) sidebarCollapsed = false; }}>
       <div class="sidebar-top">
-        <a class="sidebar-logo" href="/dashboard">
+        <a class="sidebar-logo" href={user?.role === 'ADMIN' ? '/admin' : '/dashboard'}>
           <span class="crest">I</span>
           <span class="expand-icon"><PanelLeftOpen size={18} /></span>
         </a>
@@ -110,9 +109,6 @@ import { onDestroy, onMount } from 'svelte';
             <a href="/admin/faculty" class:active={page.url.pathname.startsWith('/admin/faculty')}
               ><Users size={18} /><span class="nav-label">Faculty directory</span></a
             >
-            <a href="/admin/departments" class:active={page.url.pathname.startsWith('/admin/departments')}
-              ><GitBranch size={18} /><span class="nav-label">Departments</span></a
-            >
             <a href="/admin/reports" class:active={page.url.pathname.startsWith('/admin/reports')}
               ><ClipboardCheck size={18} /><span class="nav-label">Review queue</span></a
             >
@@ -132,7 +128,7 @@ import { onDestroy, onMount } from 'svelte';
             ><strong>{user?.name ?? 'User'}</strong><small
               >{roleLabel}{user?.role === 'FACULTY'
                 ? ''
-                : ' · ' + (user?.role === 'HOD' ? user?.departmentId : 'All departments')}</small
+                : ' · ' + (user?.role === 'HOD' ? user?.departmentId : 'Institute')}</small
             ></span
           >
         </div>
