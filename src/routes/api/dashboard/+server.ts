@@ -8,7 +8,7 @@ export const GET: RequestHandler = ({ locals }) => {
   const userId = locals.user.id;
   const report = sqlite
     .prepare(
-      'SELECT r.*, p.starts_on, p.due_on FROM reports r JOIN reporting_periods p ON p.id = r.period_id WHERE r.faculty_id = ? ORDER BY p.starts_on DESC LIMIT 1',
+      'SELECT r.*, p.starts_on, p.due_on FROM reports r JOIN reporting_periods p ON p.id = r.period_id WHERE r.faculty_id = ? ORDER BY (CASE WHEN p.is_open = 1 THEN 0 ELSE 1 END), p.starts_on DESC LIMIT 1',
     )
     .get(userId) as Record<string, unknown> | undefined;
   if (!report)

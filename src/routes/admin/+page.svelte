@@ -13,20 +13,18 @@
   let currentPeriod: { period: string; faculty_count: number; submitted_count: number } | null = $state(null);
   onMount(async () => {
     try {
-      const [reviewsRes, deptsRes, missingRes, trendsRes] = await Promise.all([fetch('/api/reviews'), fetch('/api/departments'), fetch('/api/reports/missing'), fetch('/api/dashboard/trends')]);
+      const [reviewsRes, missingRes, trendsRes] = await Promise.all([fetch('/api/reviews'), fetch('/api/reports/missing'), fetch('/api/dashboard/trends')]);
       const reviews = await reviewsRes.json();
-      const depts = await deptsRes.json();
       const missing = await missingRes.json();
       const trendsData = await trendsRes.json();
       items = reviews.reports ?? [];
       reviewNeeded = items.filter((r: ReviewItem) => r.status === 'SUBMITTED' || r.status === 'CHANGES_REQUIRED').length;
       submittedCount = items.filter((r: ReviewItem) => r.status === 'SUBMITTED' || r.status === 'APPROVED').length;
-      const dept = (depts.departments ?? []).find((d: any) => d.code === 'CSE');
-      facultyCount = dept?.member_count ?? 0;
       missingReports = missing.missing ?? [];
       missingPeriod = missing.periodLabel ?? '';
       trends = trendsData.trends ?? [];
       currentPeriod = trendsData.currentPeriod ?? null;
+      facultyCount = currentPeriod?.faculty_count ?? 0;
     } catch { error = 'Unable to load department data.'; }
     finally { loading = false; }
   });

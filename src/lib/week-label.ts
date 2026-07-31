@@ -1,5 +1,5 @@
-const WEEK1_START = new Date(2026, 7, 3);
-const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const fmtMonth = (d: Date) => d.toLocaleDateString('en-US', { month: 'short' });
 
 function getMonday(d: Date): Date {
   const date = new Date(d);
@@ -16,9 +16,8 @@ export function computeWeekLabel(startsOn: string): string {
   if (day === 6) return 'Weekend (Saturday)';
   if (day === 0) return 'Weekend (Sunday)';
   const monday = getMonday(start);
-  const diff = Math.round((monday.getTime() - WEEK1_START.getTime()) / 86400000);
-  const weekNum = Math.floor(diff / 7) + 1;
+  const weekOfMonth = Math.ceil(monday.getDate() / 7);
   const friday = new Date(monday);
   friday.setDate(monday.getDate() + 4);
-  return `Week ${weekNum} (${fmt(monday)} - ${fmt(friday)})`;
+  return `Week ${weekOfMonth} of ${fmtMonth(monday)} (${fmt(monday)} - ${fmt(friday)})`;
 }

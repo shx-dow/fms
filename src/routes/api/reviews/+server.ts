@@ -5,10 +5,10 @@ import type { RequestHandler } from './$types';
 import { reviewSchema } from '$lib/server/validation';
 import { computeWeekLabel } from '$lib/week-label';
 
-export const GET: RequestHandler = ({ locals }) => {
+export const GET: RequestHandler = ({ locals, url }) => {
   if (!locals.user || !['HOD', 'ADMIN'].includes(locals.user.role))
     return json({ ok: false, error: 'Forbidden' }, { status: 403 });
-  const fmt = locals.url?.searchParams.get('format');
+  const fmt = url.searchParams.get('format');
   const scope = locals.user.role === 'HOD' ? ' AND u.department_id = ?' : '';
   const rows = sqlite
     .prepare(

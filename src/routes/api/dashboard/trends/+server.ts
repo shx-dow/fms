@@ -33,7 +33,7 @@ export const GET: RequestHandler = ({ locals }) => {
     .prepare(
       `SELECT p.starts_on, p.due_on, (SELECT COUNT(*) FROM users WHERE role = 'FACULTY' AND is_active = 1${locals.user.role === 'HOD' ? ' AND department_id = ?' : ''}) AS faculty_count, (SELECT COUNT(*) FROM reports r JOIN users u ON u.id = r.faculty_id WHERE r.period_id = p.id AND r.status IN ('SUBMITTED','APPROVED')${deptFilter}) AS submitted_count FROM reporting_periods p WHERE p.is_open = 1 LIMIT 1`,
     )
-    .all(...(locals.user.role === 'HOD' ? [locals.user.departmentId ?? ''] : [])) as Record<string, unknown>[];
+    .all(...(locals.user.role === 'HOD' ? [locals.user.departmentId ?? '', locals.user.departmentId ?? ''] : [])) as Record<string, unknown>[];
   if (current[0]) current[0].period = computeWeekLabel(String(current[0].starts_on));
 
   return json({ trends, currentPeriod: current[0] ?? null });

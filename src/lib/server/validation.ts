@@ -66,7 +66,7 @@ export const userPostSchema = z.discriminatedUnion('action', [
 
 export const periodSchema = z.object({
   id: z.string().min(1),
-  label: z.string().min(1),
+  label: z.string().optional().default(''),
   startsOn: z.string().min(1),
   endsOn: z.string().min(1),
   dueOn: z.string().min(1),
