@@ -8,6 +8,7 @@ export default defineConfig({
     alias: {
       $lib: `${root}src/lib`,
       '$env/dynamic/private': `${root}src/test/env-dynamic-private.ts`,
+      '$app/environment': `${root}src/test/app-environment.ts`,
     },
   },
   test: {

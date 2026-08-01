@@ -1,36 +1,28 @@
 import { json } from '@sveltejs/kit';
-import { sqlite } from '$lib/server/local-db';
 import type { RequestHandler } from './$types';
 import { computeWeekLabel } from '$lib/week-label';
+import { getReportByIdWithFaculty, getReviewScope } from '$lib/server/db/repositories/reports';
+import { listTeaching, listResearch, listDuties, listOutreach } from '$lib/server/db/repositories/activity';
+import { listReviewsForReport } from '$lib/server/db/repositories/reviews';
 
 export const GET: RequestHandler = ({ locals, params }) => {
   if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
   const reportId = params.id;
-  const report = sqlite
-    .prepare(
-      'SELECT r.*, u.name AS faculty_name, u.email AS faculty_email, p.starts_on AS period_starts_on FROM reports r JOIN users u ON u.id = r.faculty_id JOIN reporting_periods p ON p.id = r.period_id WHERE r.id = ?',
-    )
-    .get(reportId) as Record<string, unknown> | undefined;
+  const report = getReportByIdWithFaculty(reportId);
   if (!report) return json({ error: 'Report not found' }, { status: 404 });
   report.period_label = computeWeekLabel(String(report.period_starts_on));
   if (locals.user.role === 'FACULTY' && report.faculty_id !== locals.user.id)
     return json({ error: 'Forbidden' }, { status: 403 });
   if (locals.user.role === 'HOD') {
-    const allowed = sqlite
-      .prepare('SELECT 1 FROM reports r JOIN users u ON u.id = r.faculty_id WHERE r.id = ? AND u.department_id = ?')
-      .get(reportId, locals.user.departmentId ?? '');
+    const allowed = getReviewScope(reportId, { departmentId: locals.user.departmentId ?? '' });
     if (!allowed) return json({ error: 'Report is outside your review scope.' }, { status: 403 });
   }
   return json({
     report,
-    teaching: sqlite.prepare('SELECT * FROM teaching_records WHERE report_id = ?').all(reportId),
-    research: sqlite.prepare('SELECT * FROM research_records WHERE report_id = ?').all(reportId),
-    duties: sqlite.prepare('SELECT * FROM institutional_duties WHERE report_id = ?').all(reportId),
-    outreach: sqlite.prepare('SELECT * FROM outreach_records WHERE report_id = ?').all(reportId),
-    reviews: sqlite
-      .prepare(
-        'SELECT rv.*, u.name AS reviewer_name FROM reviews rv JOIN users u ON u.id = rv.reviewer_id WHERE rv.report_id = ? ORDER BY rv.created_at DESC',
-      )
-      .all(reportId),
+    teaching: listTeaching(reportId),
+    research: listResearch(reportId),
+    duties: listDuties(reportId),
+    outreach: listOutreach(reportId),
+    reviews: listReviewsForReport(reportId),
   });
 };

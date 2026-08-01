@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
-import { sqlite } from './local-db';
+import { createSessionRecord, deleteSessionRecord, findUserBySession } from './db/repositories/sessions';
 
 export function hashPassword(password: string) {
   const salt = randomBytes(16).toString('hex');
@@ -14,24 +14,12 @@ export function verifyPassword(password: string, stored: string) {
 export function createSession(userId: string) {
   const id = randomUUID();
   const expires = new Date(Date.now() + 1000 * 60 * 60 * 8).toISOString();
-  sqlite.prepare('INSERT INTO sessions VALUES (?, ?, ?)').run(id, userId, expires);
+  createSessionRecord(id, userId, expires);
   return { id, expires };
 }
 export function getUserFromSession(sessionId: string | undefined) {
   if (!sessionId) return null;
-  const row = sqlite
-    .prepare(
-      'SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ? AND s.expires_at > ? AND u.is_active = 1',
-    )
-    .get(sessionId, new Date().toISOString()) as
-    | {
-        id: string;
-        name: string;
-        email: string;
-        role: 'FACULTY' | 'HOD' | 'ADMIN';
-        department_id?: string;
-      }
-    | undefined;
+  const row = findUserBySession(sessionId);
   return row
     ? {
         id: row.id,
@@ -43,5 +31,5 @@ export function getUserFromSession(sessionId: string | undefined) {
     : null;
 }
 export function deleteSession(sessionId: string | undefined) {
-  if (sessionId) sqlite.prepare('DELETE FROM sessions WHERE id = ?').run(sessionId);
+  if (sessionId) deleteSessionRecord(sessionId);
 }

@@ -2,23 +2,14 @@ import { json } from '@sveltejs/kit';
 import fs from 'node:fs';
 import path from 'node:path';
 import { env } from '$env/dynamic/private';
-import { sqlite } from '$lib/server/local-db';
 import type { RequestHandler } from './$types';
+import { getAttachmentById, deleteAttachment } from '$lib/server/db/repositories/attachments';
 
 const uploadDir = env.UPLOAD_DIR || 'data/uploads';
 
 export const GET: RequestHandler = ({ locals, params }) => {
   if (!locals.user) return new Response('Unauthorized', { status: 401 });
-  const row = sqlite.prepare('SELECT * FROM attachments WHERE id = ?').get(params.id) as
-    | {
-        id: string;
-        report_id: string;
-        owner_id: string;
-        filename: string;
-        mime_type: string;
-        storage_name: string;
-      }
-    | undefined;
+  const row = getAttachmentById(params.id);
   if (!row) return new Response('Not found', { status: 404 });
   const allowed =
     locals.user.role === 'ADMIN' ||
@@ -37,8 +28,7 @@ export const GET: RequestHandler = ({ locals, params }) => {
 
 export const DELETE: RequestHandler = ({ locals, params }) => {
   if (!locals.user) return json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  const row = sqlite.prepare('SELECT * FROM attachments WHERE id = ?').get(params.id) as
-    { owner_id: string; storage_name: string } | undefined;
+  const row = getAttachmentById(params.id);
   if (!row) return json({ ok: false, error: 'Not found' }, { status: 404 });
   if (locals.user.role !== 'ADMIN' && row.owner_id !== locals.user.id)
     return json({ ok: false, error: 'Forbidden' }, { status: 403 });
@@ -46,6 +36,6 @@ export const DELETE: RequestHandler = ({ locals, params }) => {
   try {
     fs.unlinkSync(filePath);
   } catch {}
-  sqlite.prepare('DELETE FROM attachments WHERE id = ?').run(params.id);
+  deleteAttachment(params.id);
   return json({ ok: true });
 };

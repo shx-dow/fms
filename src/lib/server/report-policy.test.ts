@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { createDatabase } from './local-db';
 import { canAccessReport, currentPeriod, policyFor } from './report-policy';
 
-function makeDb(): Database.Database {
-  return createDatabase({ filename: ':memory:' });
+function makeDb(): BetterSQLite3Database {
+  return drizzle(createDatabase({ filename: ':memory:', seed: true }));
 }
 
 const withinDeadline = new Date('2026-07-30T10:00:00Z');
@@ -78,13 +80,15 @@ describe('policyFor', () => {
 describe('canAccessReport', () => {
   const reportId = 'r-access';
 
-  function dbWithReport(): Database.Database {
-    const db = makeDb();
-    db.prepare(
-      `INSERT INTO reports (id, faculty_id, period_id, status, created_at, updated_at)
-       VALUES (?, 'dev-faculty-1', 'week-2026-07-27', 'DRAFT', '2026-07-28T00:00:00Z', '2026-07-28T00:00:00Z')`,
-    ).run(reportId);
-    return db;
+  function dbWithReport(): BetterSQLite3Database {
+    const raw = createDatabase({ filename: ':memory:', seed: true });
+    raw
+      .prepare(
+        `INSERT INTO reports (id, faculty_id, period_id, status, created_at, updated_at)
+         VALUES (?, 'dev-faculty-1', 'week-2026-07-27', 'DRAFT', '2026-07-28T00:00:00Z', '2026-07-28T00:00:00Z')`,
+      )
+      .run(reportId);
+    return drizzle(raw);
   }
 
   it('allows the owning faculty member', () => {

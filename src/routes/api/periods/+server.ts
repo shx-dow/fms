@@ -1,13 +1,14 @@
 import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
-import { sqlite } from '$lib/server/local-db';
 import type { RequestHandler } from './$types';
 import { periodSchema } from '$lib/server/validation';
 import { computeWeekLabel } from '$lib/week-label';
+import { listPeriods, upsertPeriod, closeOtherOpenPeriods } from '$lib/server/db/repositories/periods';
+import { insertAuditEvent } from '$lib/server/db/repositories/audit';
 
 export const GET: RequestHandler = ({ locals }) => {
   if (!locals.user) return json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  const periods = sqlite.prepare('SELECT * FROM reporting_periods ORDER BY starts_on DESC').all() as Record<string, unknown>[];
+  const periods = listPeriods();
   for (const p of periods) p.label = computeWeekLabel(String(p.starts_on));
   return json({ periods });
 };
@@ -20,14 +21,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     return json({ ok: false, error: parsed.error.issues.map(i => i.message).join('; ') }, { status: 400 });
   const { id, startsOn, endsOn, dueOn, isOpen } = parsed.data;
   const label = computeWeekLabel(startsOn);
-  sqlite
-    .prepare(
-      'INSERT INTO reporting_periods (id, label, kind, starts_on, ends_on, due_on, is_open) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET label=excluded.label, starts_on=excluded.starts_on, ends_on=excluded.ends_on, due_on=excluded.due_on, is_open=excluded.is_open',
-    )
-    .run(id, label, 'WEEKLY', startsOn, endsOn, dueOn, isOpen ? 1 : 0);
-  if (isOpen) sqlite.prepare('UPDATE reporting_periods SET is_open = 0 WHERE is_open = 1 AND id <> ?').run(id);
-  sqlite
-    .prepare('INSERT INTO audit_events VALUES (?, ?, ?, ?, ?, ?)')
-    .run(randomUUID(), locals.user.id, 'PERIOD_UPDATED', 'REPORTING_PERIOD', id, new Date().toISOString());
+  upsertPeriod({ id, label, startsOn, endsOn, dueOn, isOpen });
+  if (isOpen) closeOtherOpenPeriods(id);
+  insertAuditEvent({
+    id: randomUUID(),
+    actorId: locals.user.id,
+    action: 'PERIOD_UPDATED',
+    entityType: 'REPORTING_PERIOD',
+    entityId: id,
+    createdAt: new Date().toISOString(),
+  });
   return json({ ok: true });
 };

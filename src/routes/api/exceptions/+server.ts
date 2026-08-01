@@ -1,8 +1,9 @@
 import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
-import { sqlite } from '$lib/server/local-db';
 import type { RequestHandler } from './$types';
 import { reopenSchema } from '$lib/server/validation';
+import { reopenReport, insertException } from '$lib/server/db/repositories/exceptions';
+import { insertAuditEvent } from '$lib/server/db/repositories/audit';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user || !['HOD', 'ADMIN'].includes(locals.user.role))
@@ -12,14 +13,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     return json({ ok: false, error: parsed.error.issues.map(i => i.message).join('; ') }, { status: 400 });
   const { reportId, reason, allowedUntil } = parsed.data;
   const now = new Date().toISOString();
-  sqlite
-    .prepare('UPDATE reports SET reopened_until = ?, reopen_reason = ?, updated_at = ? WHERE id = ?')
-    .run(allowedUntil, reason, now, reportId);
-  sqlite
-    .prepare('INSERT INTO report_exceptions VALUES (?, ?, ?, ?, ?, ?)')
-    .run(randomUUID(), reportId, locals.user.id, reason, allowedUntil, now);
-  sqlite
-    .prepare('INSERT INTO audit_events VALUES (?, ?, ?, ?, ?, ?)')
-    .run(randomUUID(), locals.user.id, 'REPORT_REOPENED', 'REPORT', reportId, now);
+  reopenReport({ reportId, allowedUntil, reason, updatedAt: now });
+  insertException({ id: randomUUID(), reportId, actorId: locals.user.id, reason, allowedUntil, createdAt: now });
+  insertAuditEvent({
+    id: randomUUID(),
+    actorId: locals.user.id,
+    action: 'REPORT_REOPENED',
+    entityType: 'REPORT',
+    entityId: reportId,
+    createdAt: now,
+  });
   return json({ ok: true });
 };

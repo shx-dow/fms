@@ -1,44 +1,30 @@
 import { error } from '@sveltejs/kit';
-import { sqlite } from '$lib/server/local-db';
 import type { RequestHandler } from './$types';
 import PDFDocument from 'pdfkit';
 import { computeWeekLabel } from '$lib/week-label';
+import { getReportByIdForPdf, getReviewScope } from '$lib/server/db/repositories/reports';
+import { listTeaching, listResearch, listDuties, listOutreach } from '$lib/server/db/repositories/activity';
+import { listReviewsForReport } from '$lib/server/db/repositories/reviews';
 
 export const GET: RequestHandler = ({ locals, params }) => {
   if (!locals.user) throw error(401, 'Sign in required');
 
   const reportId = params.id;
-  const report = sqlite
-    .prepare(
-      'SELECT r.*, u.name AS faculty_name, u.email AS faculty_email, u.department_id, d.name AS department_name, p.starts_on AS period_starts_on FROM reports r JOIN users u ON u.id = r.faculty_id LEFT JOIN departments d ON d.id = u.department_id JOIN reporting_periods p ON p.id = r.period_id WHERE r.id = ?',
-    )
-    .get(reportId) as Record<string, unknown> | undefined;
+  const report = getReportByIdForPdf(reportId);
   if (!report) throw error(404, 'Report not found');
   report.period_label = computeWeekLabel(String(report.period_starts_on));
 
   if (locals.user.role === 'FACULTY' && report.faculty_id !== locals.user.id) throw error(403, 'Forbidden');
   if (locals.user.role === 'HOD') {
-    const allowed = sqlite
-      .prepare('SELECT 1 FROM reports r JOIN users u ON u.id = r.faculty_id WHERE r.id = ? AND u.department_id = ?')
-      .get(reportId, locals.user.departmentId ?? '');
+    const allowed = getReviewScope(reportId, { departmentId: locals.user.departmentId ?? '' });
     if (!allowed) throw error(403, 'Report is outside your scope.');
   }
 
-  const teaching = sqlite
-    .prepare('SELECT * FROM teaching_records WHERE report_id = ?')
-    .all(reportId) as Record<string, unknown>[];
-  const research = sqlite
-    .prepare('SELECT * FROM research_records WHERE report_id = ?')
-    .all(reportId) as Record<string, unknown>[];
-  const duties = sqlite
-    .prepare('SELECT * FROM institutional_duties WHERE report_id = ?')
-    .all(reportId) as Record<string, unknown>[];
-  const outreach = sqlite
-    .prepare('SELECT * FROM outreach_records WHERE report_id = ?')
-    .all(reportId) as Record<string, unknown>[];
-  const reviews = sqlite
-    .prepare('SELECT rv.*, u.name AS reviewer_name FROM reviews rv JOIN users u ON u.id = rv.reviewer_id WHERE rv.report_id = ? ORDER BY rv.created_at DESC')
-    .all(reportId) as Record<string, unknown>[];
+  const teaching = listTeaching(reportId);
+  const research = listResearch(reportId);
+  const duties = listDuties(reportId);
+  const outreach = listOutreach(reportId);
+  const reviews = listReviewsForReport(reportId);
 
   const doc = new PDFDocument({ margin: 50, size: 'A4' });
   const buffers: Buffer[] = [];
