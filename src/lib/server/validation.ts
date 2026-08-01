@@ -58,12 +58,6 @@ export const userToggleSchema = z.object({
   isActive: z.boolean(),
 });
 
-export const userPostSchema = z.discriminatedUnion('action', [
-  userToggleSchema.extend({ action: z.literal(undefined).optional() }).omit({ action: true }).and(z.object({ isActive: z.boolean() })),
-  userCreateSchema,
-  userUpdateSchema,
-]);
-
 export const periodSchema = z.object({
   id: z.string().min(1),
   label: z.string().optional().default(''),
@@ -81,5 +75,5 @@ export const reopenSchema = z.object({
 
 export const activityRecordsSchema = z.object({
   reportId: z.string().min(1),
-  records: z.array(z.record(z.unknown())),
+  records: z.array(z.record(z.string(), z.unknown())),
 });

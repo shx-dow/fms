@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -34,6 +34,44 @@ export const reports = sqliteTable('reports', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
   submittedAt: text('submitted_at'),
+  reopenedUntil: text('reopened_until'),
+  reopenReason: text('reopen_reason'),
+});
+export const credentials = sqliteTable('credentials', {
+  userId: text('user_id').primaryKey(),
+  passwordHash: text('password_hash').notNull(),
+});
+export const sessions = sqliteTable('sessions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  expiresAt: text('expires_at').notNull(),
+});
+export const notificationReads = sqliteTable(
+  'notification_reads',
+  {
+    userId: text('user_id').notNull(),
+    eventId: text('event_id').notNull(),
+    readAt: text('read_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
+);
+export const reportExceptions = sqliteTable('report_exceptions', {
+  id: text('id').primaryKey(),
+  reportId: text('report_id').notNull(),
+  actorId: text('actor_id').notNull(),
+  reason: text('reason').notNull(),
+  allowedUntil: text('allowed_until').notNull(),
+  createdAt: text('created_at').notNull(),
+});
+export const attachments = sqliteTable('attachments', {
+  id: text('id').primaryKey(),
+  reportId: text('report_id').notNull(),
+  ownerId: text('owner_id').notNull(),
+  filename: text('filename').notNull(),
+  mimeType: text('mime_type').notNull(),
+  size: integer('size').notNull(),
+  storageName: text('storage_name').notNull(),
+  createdAt: text('created_at').notNull(),
 });
 export const teaching = sqliteTable('teaching_records', {
   id: text('id').primaryKey(),

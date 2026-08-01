@@ -43,7 +43,7 @@ export const GET: RequestHandler = ({ locals }) => {
   return json({
     report,
     reports: history,
-    policy: policyFor(report),
+    policy: policyFor(report as { status: string; reopened_until?: string | null }),
     teaching: sqlite.prepare('SELECT * FROM teaching_records WHERE report_id = ?').all(report.id),
     research: sqlite.prepare('SELECT * FROM research_records WHERE report_id = ?').all(report.id),
     duties: sqlite.prepare('SELECT * FROM institutional_duties WHERE report_id = ?').all(report.id),
