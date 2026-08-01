@@ -133,8 +133,8 @@
   {/if}
 
   {#if showCreate}
-    <div class="overlay" onclick={() => (showCreate = false)}>
-      <div class="modal" onclick={(e) => e.stopPropagation()}>
+    <div class="overlay" role="presentation" onclick={() => (showCreate = false)} onkeydown={(e) => { if (e.key === 'Escape') showCreate = false; }}>
+      <div class="modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
         <h3>Create reporting period</h3>
         <div class="modal-fields">
           <label>Period starts<input type="date" bind:value={newStarts} /></label>

@@ -81,8 +81,8 @@
     </section>
   {/if}
   {#if showForm}
-    <div class="overlay" onclick={() => (showForm = false)}>
-      <div class="modal" onclick={(e) => e.stopPropagation()}>
+    <div class="overlay" role="presentation" onclick={() => (showForm = false)} onkeydown={(e) => { if (e.key === 'Escape') showForm = false; }}>
+      <div class="modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
         <h3>{editUser ? 'Edit user' : 'Add user'}</h3>
         <div class="modal-fields">
           <label>Full name<input bind:value={formName} placeholder="e.g. Jane Smith" /></label>

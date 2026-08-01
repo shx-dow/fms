@@ -134,10 +134,14 @@
   }
   async function handleSubmit() { confirmSubmit = false; const ok = await saveDraft(undefined, 'SUBMITTED'); if (ok) { submitted = true; reportStatus = 'SUBMITTED'; canEdit = false; } }
   function handleKeydown(e: KeyboardEvent) { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveDraft(); } }
+  onMount(() => {
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  });
 </script>
 
 <svelte:head><title>Report · Faculty Reporting System</title></svelte:head>
-<main class="shell" onkeydown={handleKeydown}>
+<main class="shell">
   {#if submitted}
     <div class="success-banner">
       <strong>Report submitted for review.</strong>
@@ -176,8 +180,8 @@
   <div class="progress-track"><i style="width:{completion}%"></i></div>
 
   {#if confirmSubmit}
-    <div class="overlay" onclick={() => (confirmSubmit = false)}>
-      <div class="confirm-dialog" onclick={(e) => e.stopPropagation()}>
+    <div class="overlay" role="presentation" onclick={() => (confirmSubmit = false)} onkeydown={(e) => { if (e.key === 'Escape') confirmSubmit = false; }}>
+      <div class="confirm-dialog" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
         <h3>Submit this report?</h3>
         <p>Once submitted you will not be able to edit it unless an HOD or Admin reopens it.</p>
         <div class="confirm-actions">

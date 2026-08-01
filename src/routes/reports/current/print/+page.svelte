@@ -11,7 +11,7 @@
       reviews: Record<string, any>[];
     };
   } = $props();
-  const r = data.report;
+  const r = $derived(data.report);
 </script>
 
 <svelte:head><title>Printable faculty report · {r.period_label}</title></svelte:head>
@@ -66,7 +66,7 @@
     size: A4;
     margin: 16mm;
   }
-  body {
+  :global(body) {
     background: #fff;
     color: #1f2a2e;
     font:
@@ -177,7 +177,7 @@
     font-size: 9px;
   }
   @media print {
-    body {
+    :global(body) {
       background: #fff;
     }
     .print-page {

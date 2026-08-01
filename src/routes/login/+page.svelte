@@ -21,7 +21,6 @@
           autocomplete="username"
           required
           placeholder="name@university.edu"
-          autofocus
         /></label
       >
       <label for="password"

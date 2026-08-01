@@ -18,7 +18,7 @@ import { onDestroy, onMount } from 'svelte';
   import Bell from '@lucide/svelte/icons/bell';
   import LogOut from '@lucide/svelte/icons/log-out';
   let { data, children } = $props();
-  let sidebarCollapsed = $state(false);
+  let sidebarCollapsed = $state(browser ? localStorage.getItem('sidebarCollapsed') === 'true' : false);
   let notifCount = $state(0);
   let showNotifications = $state(false);
   let showCount = $state(6);
@@ -31,6 +31,10 @@ import { onDestroy, onMount } from 'svelte';
   function closeNotifs(e: MouseEvent) {
     const target = e.target as HTMLElement;
     if (!target.closest('.notif-corner')) showNotifications = false;
+  }
+  function toggleSidebar() {
+    sidebarCollapsed = !sidebarCollapsed;
+    localStorage.setItem('sidebarCollapsed', String(sidebarCollapsed));
   }
   onMount(async () => {
     try {
@@ -71,18 +75,22 @@ import { onDestroy, onMount } from 'svelte';
   {@render children()}
 {:else}
   <div class="app-frame" class:sidebar-collapsed={sidebarCollapsed}>
-    <aside class="app-sidebar" onclick={() => { if (sidebarCollapsed) sidebarCollapsed = false; }}>
+    <aside class="app-sidebar">
       <div class="sidebar-top">
         <a class="sidebar-logo" href={user?.role === 'ADMIN' ? '/admin' : '/dashboard'}>
           <span class="crest">I</span>
-          <span class="expand-icon"><PanelLeftOpen size={18} /></span>
         </a>
         <button
           class="sidebar-toggle-top"
-          aria-label="Collapse sidebar"
-          onclick={(e) => { e.stopPropagation(); sidebarCollapsed = true; }}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-expanded={!sidebarCollapsed}
+          onclick={toggleSidebar}
         >
-          <PanelLeftClose size={18} />
+          {#if sidebarCollapsed}
+            <PanelLeftOpen size={18} />
+          {:else}
+            <PanelLeftClose size={18} />
+          {/if}
         </button>
       </div>
       <div class="sidebar-body">

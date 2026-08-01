@@ -112,7 +112,6 @@
   .reports-panel { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
   .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #dbe3e7; }
   .panel-head h2 { font-size: 0.9rem; margin: 0; letter-spacing: -0.01em; }
-  .panel-head a { color: #145b78; text-decoration: none; font-size: 0.73rem; font-weight: 700; }
   .report-row-link { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid #e8eeec; text-decoration: none; transition: background 0.1s ease; }
   .report-row-link:last-child { border-bottom: 0; }
   .report-row-link:hover { background: #f4f6f5; }

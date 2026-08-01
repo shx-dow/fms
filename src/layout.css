@@ -59,11 +59,6 @@ body {
   color: #eaf0f1;
   font-weight: 850;
 }
-.sidebar-logo .expand-icon {
-  display: none;
-  width: 31px;
-  height: 31px;
-}
 .sidebar-toggle-top {
   border: 0;
   background: transparent;
@@ -238,17 +233,27 @@ body {
   margin-left: 76px;
 }
 .sidebar-collapsed .sidebar-top {
-  justify-content: flex-start;
+  position: relative;
+  justify-content: center;
+}
+.sidebar-collapsed .sidebar-logo {
+  padding-inline: 4px;
 }
 .sidebar-collapsed .sidebar-toggle-top {
   display: none;
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 31px;
+  height: 31px;
+  padding: 0;
 }
-.sidebar-collapsed .app-sidebar:hover .sidebar-logo .crest {
-  display: none;
+.sidebar-collapsed .app-sidebar:hover .sidebar-logo {
+  visibility: hidden;
 }
-.sidebar-collapsed .app-sidebar:hover .sidebar-logo .expand-icon {
+.sidebar-collapsed .app-sidebar:hover .sidebar-toggle-top {
   display: grid;
-  place-items: center;
 }
 .sidebar-collapsed .sidebar-nav a .nav-label {
   display: none;
