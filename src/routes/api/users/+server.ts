@@ -12,6 +12,7 @@ import {
   defaultDepartmentId,
 } from '$lib/server/db/repositories/users';
 import { insertAuditEvent } from '$lib/server/db/repositories/audit';
+import { deleteSessionsForUser } from '$lib/server/db/repositories/sessions';
 
 export const GET: RequestHandler = ({ locals }) => {
   if (!locals.user || locals.user.role !== 'ADMIN')
@@ -28,6 +29,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     if (typeof body.isActive !== 'boolean' || typeof body.userId !== 'string')
       return json({ ok: false, error: 'Invalid userId or isActive value.' }, { status: 400 });
     setUserActive(body.userId, body.isActive);
+    if (!body.isActive) deleteSessionsForUser(body.userId);
     insertAuditEvent({
       id: randomUUID(),
       actorId: locals.user.id,
@@ -65,7 +67,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       ...(body.role ? { role: body.role } : {}),
       ...('departmentId' in body ? { departmentId: body.departmentId || null } : {}),
     });
-    if (body.password) upsertCredentials(body.userId, hashPassword(body.password));
+    if (body.password) {
+      upsertCredentials(body.userId, hashPassword(body.password));
+      deleteSessionsForUser(body.userId);
+    }
     insertAuditEvent({
       id: randomUUID(),
       actorId: locals.user.id,

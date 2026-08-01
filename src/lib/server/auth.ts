@@ -1,5 +1,10 @@
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
-import { createSessionRecord, deleteSessionRecord, findUserBySession } from './db/repositories/sessions';
+import {
+  createSessionRecord,
+  deleteSessionRecord,
+  deleteExpiredSessions,
+  findUserBySession,
+} from './db/repositories/sessions';
 
 export function hashPassword(password: string) {
   const salt = randomBytes(16).toString('hex');
@@ -14,6 +19,7 @@ export function verifyPassword(password: string, stored: string) {
 export function createSession(userId: string) {
   const id = randomUUID();
   const expires = new Date(Date.now() + 1000 * 60 * 60 * 8).toISOString();
+  deleteExpiredSessions();
   createSessionRecord(id, userId, expires);
   return { id, expires };
 }

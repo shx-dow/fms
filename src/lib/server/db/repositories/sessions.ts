@@ -24,3 +24,11 @@ export function findUserBySession(sessionId: string, db: Db = defaultDb): Sessio
 export function deleteSessionRecord(sessionId: string, db: Db = defaultDb) {
   db.run(sql`DELETE FROM sessions WHERE id = ${sessionId}`);
 }
+
+export function deleteExpiredSessions(db: Db = defaultDb) {
+  db.run(sql`DELETE FROM sessions WHERE expires_at <= ${new Date().toISOString()}`);
+}
+
+export function deleteSessionsForUser(userId: string, db: Db = defaultDb) {
+  db.run(sql`DELETE FROM sessions WHERE user_id = ${userId}`);
+}
