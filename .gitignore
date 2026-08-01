@@ -5,6 +5,7 @@ data/
 docs/
 .svelte-kit/
 build/
+backups/
 .DS_Store
 *.db
 *.log
