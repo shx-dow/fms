@@ -12,12 +12,26 @@ export function insertAuditEvent(
   `);
 }
 
-export function listAuditEvents(db: Db = defaultDb): Record<string, unknown>[] {
-  return db.all(sql`
-    SELECT a.*, u.name AS actor_name
+export function listAuditEvents(
+  opts: { search?: string; action?: string; from?: string; to?: string; limit: number; offset: number },
+  db: Db = defaultDb,
+): { events: Record<string, unknown>[]; total: number } {
+  const where: SQL[] = [];
+  if (opts.search) where.push(sql`(u.name LIKE ${'%' + opts.search + '%'} OR a.actor_id LIKE ${'%' + opts.search + '%'})`);
+  if (opts.action) where.push(sql`a.action = ${opts.action}`);
+  if (opts.from) where.push(sql`a.created_at >= ${opts.from}`);
+  if (opts.to) where.push(sql`a.created_at <= ${opts.to}`);
+  const whereSql = where.length ? sql`WHERE ${sql.join(where, sql` AND `)}` : sql``;
+  const rows = db.all(sql`
+    SELECT a.*, u.name AS actor_name, COUNT(*) OVER () AS _total
     FROM audit_events a LEFT JOIN users u ON u.id = a.actor_id
-    ORDER BY a.created_at DESC LIMIT 100
+    ${whereSql}
+    ORDER BY a.created_at DESC
+    LIMIT ${opts.limit} OFFSET ${opts.offset}
   `) as Record<string, unknown>[];
+  const total = rows.length ? Number(rows[0]._total) : 0;
+  const events = rows.map(({ _total: _t, ...e }) => e);
+  return { events, total };
 }
 
 export function listNotifications(
