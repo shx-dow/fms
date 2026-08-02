@@ -1,8 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { dev } from '$app/environment';
+import { env } from '$env/dynamic/private';
 import { createSession, verifyPassword } from '$lib/server/auth';
 import { findByEmailWithCredentials } from '$lib/server/db/repositories/users';
 import type { Actions } from './$types';
+
+const cookieSecure = env.COOKIE_SECURE === 'true' ? true : env.COOKIE_SECURE === 'false' ? false : !dev;
 
 export const actions: Actions = {
   default: async ({ request, cookies }) => {
@@ -18,7 +21,7 @@ export const actions: Actions = {
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
-      secure: !dev,
+      secure: cookieSecure,
       maxAge: 60 * 60 * 8,
     });
     throw redirect(303, row.role === 'ADMIN' ? '/admin' : '/dashboard');

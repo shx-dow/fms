@@ -35,12 +35,7 @@
           syllabus_completion: Number(t.syllabus_completion) || 0,
         }));
       } else {
-        teaching = [
-          { course_code: 'CS201', course_name: 'Data Structures', class_type: 'Lecture', scheduled: 5, conducted: 4, syllabus_completion: 80 },
-          { course_code: 'CS301', course_name: 'Algorithms', class_type: 'Lecture', scheduled: 3, conducted: 3, syllabus_completion: 65 },
-          { course_code: 'CS401', course_name: 'Computer Networks', class_type: 'Tutorial', scheduled: 2, conducted: 2, syllabus_completion: 90 },
-          { course_code: 'CS250', course_name: 'Database Systems', class_type: 'Lab', scheduled: 4, conducted: 3, syllabus_completion: 45 },
-        ];
+        teaching = [];
       }
       scheduled = teaching.reduce((a, t) => a + t.scheduled, 0);
       conducted = teaching.reduce((a, t) => a + t.conducted, 0);
