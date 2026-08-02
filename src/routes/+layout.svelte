@@ -4,6 +4,7 @@
 import { page } from '$app/state';
 import { browser } from '$app/environment';
 import Toast from '$lib/components/Toast.svelte';
+import { show } from '$lib/stores/toast.svelte.ts';
 import { onDestroy, onMount } from 'svelte';
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
   import FileText from '@lucide/svelte/icons/file-text';
@@ -16,10 +17,18 @@ import { onDestroy, onMount } from 'svelte';
   import PanelLeftOpen from '@lucide/svelte/icons/panel-left-open';
   import Bell from '@lucide/svelte/icons/bell';
   import LogOut from '@lucide/svelte/icons/log-out';
+  import KeyRound from '@lucide/svelte/icons/key-round';
   let { data, children } = $props();
   let sidebarCollapsed = $state(browser ? localStorage.getItem('sidebarCollapsed') === 'true' : false);
   let notifCount = $state(0);
   let showNotifications = $state(false);
+  let showProfileMenu = $state(false);
+  let showPasswordModal = $state(false);
+  let pwCurrent = $state('');
+  let pwNext = $state('');
+  let pwConfirm = $state('');
+  let pwSaving = $state(false);
+  let pwError = $state('');
   let showCount = $state(6);
   let notifications = $state<{ id: string; action: string; actor_name: string; created_at: string; is_read: number }[]>([]);
   const user = $derived(data.user);
@@ -30,6 +39,7 @@ import { onDestroy, onMount } from 'svelte';
   function closeNotifs(e: MouseEvent) {
     const target = e.target as HTMLElement;
     if (!target.closest('.notif-corner')) showNotifications = false;
+    if (!target.closest('.profile-wrap')) showProfileMenu = false;
   }
   function toggleSidebar() {
     sidebarCollapsed = !sidebarCollapsed;
@@ -67,6 +77,28 @@ import { onDestroy, onMount } from 'svelte';
   }
   function fmtDate(iso: string) {
     return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  }
+  function openPasswordModal() {
+    showProfileMenu = false;
+    pwCurrent = '';
+    pwNext = '';
+    pwConfirm = '';
+    pwError = '';
+    showPasswordModal = true;
+  }
+  async function changePassword() {
+    if (!pwCurrent || !pwNext || !pwConfirm) { pwError = 'Fill in all three fields.'; return; }
+    if (pwNext !== pwConfirm) { pwError = 'New passwords do not match.'; return; }
+    pwSaving = true;
+    pwError = '';
+    try {
+      const res = await fetch('/api/me/password', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ currentPassword: pwCurrent, newPassword: pwNext }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { pwError = d.error ?? 'Could not change password.'; return; }
+      showPasswordModal = false;
+      show('Password changed.', 'ok');
+    } catch { pwError = 'Could not change password.'; }
+    finally { pwSaving = false; }
   }
 </script>
 
@@ -126,15 +158,30 @@ import { onDestroy, onMount } from 'svelte';
         {/if}
       </div>
       <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <span class="sidebar-user-avatar">{avatarLetter}</span>
-          <span class="sidebar-user-info"
-            ><strong>{user?.name ?? 'User'}</strong><small
-              >{roleLabel}{user?.role === 'FACULTY'
-                ? ''
-                : ' · ' + (user?.role === 'HOD' ? user?.departmentId : 'Institute')}</small
-            ></span
+        <div class="profile-wrap">
+          <button
+            class="sidebar-user"
+            onclick={() => (showProfileMenu = !showProfileMenu)}
+            aria-haspopup="menu"
+            aria-expanded={showProfileMenu}
           >
+            <span class="sidebar-user-avatar">{avatarLetter}</span>
+            <span class="sidebar-user-info"
+              ><strong>{user?.name ?? 'User'}</strong><small
+                >{roleLabel}{user?.role === 'FACULTY'
+                  ? ''
+                  : ' · ' + (user?.role === 'HOD' ? user?.departmentId : 'Institute')}</small
+              ></span
+            >
+          </button>
+          {#if showProfileMenu}
+            <div class="profile-popover" role="menu">
+              <div class="profile-email">{user?.email}</div>
+              <button class="profile-item" onclick={openPasswordModal} role="menuitem">
+                <KeyRound size={15} /><span>Change password</span>
+              </button>
+            </div>
+          {/if}
         </div>
         <a class="logout-link" href="/logout"><LogOut size={16} /><span class="nav-label">Sign out</span></a>
       </div>
@@ -180,6 +227,22 @@ import { onDestroy, onMount } from 'svelte';
       {@render children()}
     </div>
   </div>
+  {#if showPasswordModal}
+    <div class="pw-overlay" role="presentation" onclick={() => (showPasswordModal = false)} onkeydown={(e) => { if (e.key === 'Escape') showPasswordModal = false; }}>
+      <div class="pw-dialog" role="dialog" aria-modal="true" aria-labelledby="pw-title" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+        <h3 id="pw-title">Change password</h3>
+        <p class="pw-sub">You will stay signed in. Use the new password next time.</p>
+        <label class="pw-field">Current password<input type="password" bind:value={pwCurrent} autocomplete="current-password" onkeydown={(e) => { if (e.key === 'Enter') changePassword(); }} /></label>
+        <label class="pw-field">New password<input type="password" bind:value={pwNext} autocomplete="new-password" onkeydown={(e) => { if (e.key === 'Enter') changePassword(); }} /></label>
+        <label class="pw-field">Confirm new password<input type="password" bind:value={pwConfirm} autocomplete="new-password" onkeydown={(e) => { if (e.key === 'Enter') changePassword(); }} /></label>
+        {#if pwError}<p class="pw-error" role="alert">{pwError}</p>{/if}
+        <div class="pw-actions">
+          <button class="pw-cancel" onclick={() => (showPasswordModal = false)}>Cancel</button>
+          <button class="pw-submit" disabled={pwSaving} onclick={changePassword}>{pwSaving ? 'Saving…' : 'Update password'}</button>
+        </div>
+      </div>
+    </div>
+  {/if}
   <Toast />
 {/if}
 
@@ -362,4 +425,117 @@ import { onDestroy, onMount } from 'svelte';
       margin-left: 0;
     }
   }
+  .profile-wrap { position: relative; }
+  .sidebar-user {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px;
+    transition: background 0.12s ease;
+  }
+  .sidebar-user:hover { background: #29465a; }
+  .profile-popover {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 0;
+    min-width: 210px;
+    background: #17252d;
+    border: 1px solid #2a4554;
+    border-radius: 8px;
+    padding: 6px;
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.35);
+    z-index: 130;
+  }
+  .profile-email {
+    font-size: 0.7rem;
+    color: #aec6ce;
+    padding: 8px 10px 6px;
+    /*border-bottom: 1px solid #2a4554;*/
+    margin-bottom: 4px;
+    word-break: break-all;
+  }
+  .profile-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: #e2eaed;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 9px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s ease;
+  }
+  .profile-item:hover { background: #29465a; color: #ffffff; }
+  .pw-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(23, 37, 45, 0.35);
+    display: grid;
+    place-items: center;
+    z-index: 200;
+  }
+  .pw-dialog {
+    background: #fdfcf9;
+    border: 1px solid #dbe3e7;
+    border-radius: 10px;
+    padding: 26px 28px;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  }
+  .pw-dialog h3 { margin: 0 0 4px; font-size: 1.05rem; color: #1b2b36; }
+  .pw-sub { margin: 0 0 18px; color: #71818a; font-size: 0.78rem; }
+  .pw-field { display: block; color: #667477; font-size: 0.72rem; font-weight: 700; margin-bottom: 12px; }
+  .pw-field input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 5px;
+    padding: 9px 10px;
+    border: 1px solid #dbe3e7;
+    border-radius: 5px;
+    background: #fbfcfc;
+    color: #1b2b36;
+    font: inherit;
+    font-size: 0.84rem;
+  }
+  .pw-field input:focus { outline: 2px solid rgba(20, 91, 120, 0.2); border-color: #aacfd7; }
+  .pw-error { margin: 0 0 12px; color: #a84f42; font-size: 0.76rem; font-weight: 700; }
+  .pw-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+  .pw-cancel {
+    border: 1px solid #dbe3e7;
+    border-radius: 6px;
+    padding: 8px 13px;
+    background: #fdfcf9;
+    color: #667477;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .pw-cancel:hover { background: #f0f3f3; }
+  .pw-submit {
+    border: 1px solid #17252d;
+    border-radius: 6px;
+    padding: 8px 14px;
+    background: #17252d;
+    color: #f4f6f5;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .pw-submit:hover { background: #294a5a; }
+  .pw-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

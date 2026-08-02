@@ -11,6 +11,7 @@ import {
   updateUser,
   createCredentials,
   upsertCredentials,
+  getPasswordHash,
   defaultDepartmentId,
 } from './users';
 
@@ -71,6 +72,13 @@ describe('users', () => {
       password_hash: string;
     };
     expect(row.password_hash).toBe('hash-b');
+  });
+
+  it('fetches the password hash for a user and returns undefined when missing', () => {
+    const db = makeDb();
+    const row = getPasswordHash('dev-faculty-1', db);
+    expect(row?.password_hash).toBeTruthy();
+    expect(getPasswordHash('u-does-not-exist', db)).toBeUndefined();
   });
 
   it('returns the default department id', () => {

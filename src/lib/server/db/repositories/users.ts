@@ -64,6 +64,12 @@ export function upsertCredentials(userId: string, passwordHash: string, db: Db =
   db.run(sql`INSERT OR REPLACE INTO credentials (user_id, password_hash) VALUES (${userId}, ${passwordHash})`);
 }
 
+export function getPasswordHash(userId: string, db: Db = defaultDb) {
+  return db.get(sql`SELECT password_hash FROM credentials WHERE user_id = ${userId}`) as
+    | { password_hash: string }
+    | undefined;
+}
+
 export function defaultDepartmentId(db: Db = defaultDb): string | null {
   const row = db.get(sql`SELECT id FROM departments ORDER BY name LIMIT 1`) as { id: string } | undefined;
   return row?.id ?? null;
