@@ -18,6 +18,8 @@
   let weeklySummary = $state('');
   let saving = $state(false);
   let confirmSubmit = $state(false);
+  let confirmCopy = $state(false);
+  let history: any[] = $state([]);
   let reviews: { decision: string; remarks: string; created_at: string; reviewer_name: string }[] = $state([]);
   let attachments: { id: string; filename: string; mime_type: string; size: number; created_at: string }[] = $state([]);
   let researchRecords: any[] = $state([]);
@@ -55,6 +57,8 @@
     `This week you conducted ${conducted} of ${scheduled} scheduled classes (${deliveryRate}% delivery rate) across ${teaching.filter(t => t.courseCode?.trim()).length} course(s). ${researchActive > 0 ? `${researchActive} research record(s) active. ` : ''}${dutiesCount > 0 ? `${dutiesCount} institutional dut${dutiesCount === 1 ? 'y' : 'ies'}. ` : ''}${attachments.length > 0 ? `${attachments.length} file(s) attached.` : ''}`
   );
   let isReadonly = $derived(!canEdit && reportStatus !== 'CHANGES_REQUIRED');
+  let prevReport = $derived(history.find(r => r.id !== reportId));
+  let prevReportLabel = $derived(prevReport?.period_label ?? '');
   let latestReview = $derived(reviews.find(r => r.decision === 'CHANGES_REQUIRED'));
   let statusClass = $derived(
     reportStatus === 'APPROVED' ? 'approved' : reportStatus === 'SUBMITTED' ? 'submitted' : reportStatus === 'CHANGES_REQUIRED' ? 'changes' : 'draft'
@@ -68,6 +72,7 @@
     const d = await res.json();
     reportId = d.report.id;
     reportStatus = d.report.status;
+    history = d.reports ?? [];
     periodLabel = d.report?.period_label ?? d.policy?.period?.label ?? periodLabel;
     if (d.teaching?.length)
       teaching = d.teaching.map((t: any) => ({ courseCode: t.course_code, courseName: t.course_name, programLevel: t.program_level, classType: t.class_type, scheduled: t.scheduled, conducted: t.conducted, missed: t.missed, missedAction: t.missed_action ?? '', syllabusCompletion: t.syllabus_completion ?? 0 }));
@@ -82,7 +87,7 @@
     }
     savedAt = '';
   });
-  onDestroy(() => { clearTimeout(saveTimer); clearTimeout(teachingSaveTimer); Object.values(saveTimers).forEach(clearTimeout); });
+  onDestroy(() => { clearTimeout(saveTimer); clearTimeout(teachingSaveTimer); Object.values(saveTimers).forEach(clearTimeout); Object.values(removalTimers).forEach(clearTimeout); });
   function flashSaved() {
     clearTimeout(saveTimer);
     savedAt = 'Draft Saved';
@@ -125,14 +130,54 @@
     additionalSaving = false; flashSaved();
   }
   function addTeaching() { teaching = [...teaching, { courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0 }]; scheduleTeachingSave(); }
-  function removeTeaching(i: number) { teaching = teaching.filter((_, j) => j !== i); scheduleTeachingSave(); }
-  function removeResearch(i: number) { researchRecords = researchRecords.filter((_, j) => j !== i); scheduleSave('research'); }
-  function removeDuty(i: number) { dutiesRecords = dutiesRecords.filter((_, j) => j !== i); scheduleSave('duties'); }
+  const UNDO_MS = 8000;
+  let removalTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+  function removeRow(kind: 'teaching' | 'research' | 'duties' | 'outreach', i: number) {
+    const arr = kind === 'teaching' ? teaching : kind === 'research' ? researchRecords : kind === 'duties' ? dutiesRecords : outreachRecords;
+    const record = arr[i];
+    const setArr = kind === 'teaching' ? (v: any[]) => (teaching = v) : kind === 'research' ? (v: any[]) => (researchRecords = v) : kind === 'duties' ? (v: any[]) => (dutiesRecords = v) : (v: any[]) => (outreachRecords = v);
+    setArr(arr.filter((_, j) => j !== i));
+    clearTimeout(removalTimers[kind]);
+    show('Removed', 'ok', { label: 'Undo', onClick: () => undoRow(kind, i, record) }, UNDO_MS);
+    removalTimers[kind] = setTimeout(() => { if (kind === 'teaching') saveDraft(); else saveActivity(kind); }, UNDO_MS);
+  }
+  function undoRow(kind: 'teaching' | 'research' | 'duties' | 'outreach', i: number, record: any) {
+    clearTimeout(removalTimers[kind]);
+    const arr = kind === 'teaching' ? teaching : kind === 'research' ? researchRecords : kind === 'duties' ? dutiesRecords : outreachRecords;
+    const setArr = kind === 'teaching' ? (v: any[]) => (teaching = v) : kind === 'research' ? (v: any[]) => (researchRecords = v) : kind === 'duties' ? (v: any[]) => (dutiesRecords = v) : (v: any[]) => (outreachRecords = v);
+    const at = Math.min(i, arr.length);
+    setArr([...arr.slice(0, at), record, ...arr.slice(at)]);
+    if (kind === 'teaching') scheduleTeachingSave(); else scheduleSave(kind);
+    show('Restored');
+  }
+  function removeTeaching(i: number) { removeRow('teaching', i); }
+  function removeResearch(i: number) { removeRow('research', i); }
+  function removeDuty(i: number) { removeRow('duties', i); }
+  function removeOutreach(i: number) { removeRow('outreach', i); }
   function scheduleTeachingSave() {
     clearTimeout(teachingSaveTimer);
     teachingSaveTimer = setTimeout(() => saveDraft(), 600);
   }
   async function handleSubmit() { confirmSubmit = false; const ok = await saveDraft(undefined, 'SUBMITTED'); if (ok) { submitted = true; reportStatus = 'SUBMITTED'; canEdit = false; } }
+  async function copyFromLastWeek() {
+    confirmCopy = false;
+    if (!prevReport) { show('No previous report to copy from.', 'err'); return; }
+    try {
+      const res = await fetch(`/api/reports/${prevReport.id}`);
+      const d = await res.json();
+      if (!res.ok) { show(d.error ?? 'Could not load last week\u2019s report.', 'err'); return; }
+      teaching = (d.teaching ?? []).map((t: any) => ({ courseCode: t.course_code, courseName: t.course_name, programLevel: t.program_level, classType: t.class_type, scheduled: t.scheduled, conducted: t.conducted, missed: t.missed, missedAction: t.missed_action ?? '', syllabusCompletion: t.syllabus_completion ?? 0 }));
+      researchRecords = (d.research ?? []).map((r: any) => ({ category: r.category, title: r.title, venueOrAgency: r.venue_or_agency ?? '', indexingOrQuality: r.indexing_or_quality ?? '', role: r.role ?? '', status: r.status ?? '' }));
+      dutiesRecords = (d.duties ?? []).map((r: any) => ({ name: r.name, role: r.role, activity: r.activity ?? '', reach: r.reach ?? '', outcome: r.outcome ?? '' }));
+      outreachRecords = (d.outreach ?? []).map((r: any) => ({ activity: r.activity, audience: r.audience ?? '', outcome: r.outcome ?? '', date: r.date ?? '' }));
+      if (!teaching.length) teaching = [{ courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0 }];
+      await saveDraft();
+      await saveActivity('research');
+      await saveActivity('duties');
+      await saveActivity('outreach');
+      show(`Copied from ${prevReportLabel}. Update the numbers for this week.`);
+    } catch { show('Could not load last week\u2019s report.', 'err'); }
+  }
   function handleKeydown(e: KeyboardEvent) { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveDraft(); } }
   onMount(() => {
     window.addEventListener('keydown', handleKeydown);
@@ -169,6 +214,9 @@
     </div>
     <div class="editor-actions">
       <span class="save-note">{savedAt}</span>
+      {#if !isReadonly && prevReport}
+        <button class="act-link" onclick={() => (confirmCopy = true)} title={`Fill this report from ${prevReportLabel}`}>Copy from last week</button>
+      {/if}
       <a class="act-link" href="/api/reports/{reportId}/pdf" target="_blank">PDF</a>
       <a class="act-link" href="/api/reports/current/export">CSV</a>
       {#if !isReadonly}
@@ -187,6 +235,19 @@
         <div class="confirm-actions">
           <button class="act-link" onclick={() => (confirmSubmit = false)}>Cancel</button>
           <button class="act-submit" disabled={!canSubmit} onclick={handleSubmit}>Confirm →</button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if confirmCopy}
+    <div class="overlay" role="presentation" onclick={() => (confirmCopy = false)} onkeydown={(e) => { if (e.key === 'Escape') confirmCopy = false; }}>
+      <div class="confirm-dialog" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+        <h3>Copy from last week?</h3>
+        <p>This will replace all the data you currently have across all sections (Teaching, Research, Duties, Outreach) with the report from {prevReportLabel}. Do you still want to copy?</p>
+        <div class="confirm-actions">
+          <button class="act-link" onclick={() => (confirmCopy = false)}>Cancel</button>
+          <button class="act-submit" onclick={copyFromLastWeek}>Copy →</button>
         </div>
       </div>
     </div>
@@ -366,19 +427,20 @@
             <div class="field-grid">
               <label>Category<select bind:value={item.category} onchange={() => scheduleSave('research')}><option>Journal Paper</option><option>Patent</option><option>Research Grant</option><option>Conference / FDP</option></select></label>
               <label>Title<input bind:value={item.title} oninput={() => scheduleSave('research')} placeholder="Title of paper, patent or project" /></label>
-              <label>Venue / agency<input bind:value={item.venueOrAgency} oninput={() => scheduleSave('research')} /></label>
+              <label>Venue / agency<input bind:value={item.venueOrAgency} oninput={() => scheduleSave('research')} placeholder="Journal name, conference, or funding body" /></label>
               <label>Indexing / quality<input bind:value={item.indexingOrQuality} oninput={() => scheduleSave('research')} placeholder="SCI, Scopus, UGC, etc." /></label>
               <label>Role<input bind:value={item.role} oninput={() => scheduleSave('research')} placeholder="Lead author, Co-author, PI" /></label>
               <label>Status<input bind:value={item.status} oninput={() => scheduleSave('research')} placeholder="In progress, submitted, published" /></label>
             </div>
           </div>
+        {:else}
+          <p class="empty-hint">No research records yet. Add papers, patents, grants, or conferences you worked on this week.</p>
         {/each}
         <div class="record-acts">
           <button class="act-add" onclick={() => (researchRecords = [...researchRecords, { category: 'Journal Paper', title: '', venueOrAgency: '', indexingOrQuality: '', role: '', status: '' }])}>+ Add record</button>
           <button class="act-link" onclick={() => saveActivity('research')}>{additionalSaving ? 'Saving…' : 'Save research'}</button>
         </div>
       {:else if activeSection === 'duties'}
-        <div class="section-top"><h2>Institutional duties</h2></div>
         {#each dutiesRecords as item, i}
           <div class="record-card">
             <div class="course-head">
@@ -388,13 +450,15 @@
               {/if}
             </div>
             <div class="field-grid">
-              <label>Committee / body<input bind:value={item.name} oninput={() => scheduleSave('duties')} /></label>
-              <label>Role<input bind:value={item.role} oninput={() => scheduleSave('duties')} /></label>
-              <label>Activity<input bind:value={item.activity} oninput={() => scheduleSave('duties')} /></label>
+              <label>Committee / body<input bind:value={item.name} oninput={() => scheduleSave('duties')} placeholder="e.g. Exam Cell, NAAC, IQAC" /></label>
+              <label>Role<input bind:value={item.role} oninput={() => scheduleSave('duties')} placeholder="e.g. Member, Convenor, Coordinator" /></label>
+              <label>Activity<input bind:value={item.activity} oninput={() => scheduleSave('duties')} placeholder="e.g. Invigilation, event coordination" /></label>
               <label>Reach / scope<input bind:value={item.reach} oninput={() => scheduleSave('duties')} placeholder="Institute-wide, department, etc." /></label>
-              <label>Outcome<input bind:value={item.outcome} oninput={() => scheduleSave('duties')} /></label>
+              <label>Outcome<input bind:value={item.outcome} oninput={() => scheduleSave('duties')} placeholder="e.g. Completed, report submitted" /></label>
             </div>
           </div>
+        {:else}
+          <p class="empty-hint">No institutional duties yet. Add committees, events, or responsibilities you took on this week.</p>
         {/each}
         <div class="record-acts">
           <button class="act-add" onclick={() => (dutiesRecords = [...dutiesRecords, { name: '', role: '', activity: '', reach: '', outcome: '' }])}>+ Add duty</button>
@@ -471,15 +535,23 @@
           {/if}
         {:else if activeExtraSection === 'outreach'}
           <div class="section-top"><h2>Outreach & admissions</h2></div>
-          {#each outreachRecords as item}
+          {#each outreachRecords as item, i}
             <div class="record-card">
+              <div class="course-head">
+                <strong>Outreach {i + 1}</strong>
+                {#if outreachRecords.length > 1}
+                  <button class="act-remove" onclick={() => removeOutreach(i)}>Remove</button>
+                {/if}
+              </div>
               <div class="field-grid">
-                <label>Activity<input bind:value={item.activity} oninput={() => scheduleSave('outreach')} /></label>
-                <label>Audience<input bind:value={item.audience} oninput={() => scheduleSave('outreach')} /></label>
+                <label>Activity<input bind:value={item.activity} oninput={() => scheduleSave('outreach')} placeholder="e.g. School visit, counselling drive" /></label>
+                <label>Audience<input bind:value={item.audience} oninput={() => scheduleSave('outreach')} placeholder="e.g. Students, parents, industry" /></label>
                 <label>Date<input type="date" bind:value={item.date} onchange={() => scheduleSave('outreach')} /></label>
-                <label>Outcome<input bind:value={item.outcome} oninput={() => scheduleSave('outreach')} /></label>
+                <label>Outcome<input bind:value={item.outcome} oninput={() => scheduleSave('outreach')} placeholder="e.g. Registrations, queries resolved" /></label>
               </div>
             </div>
+          {:else}
+            <p class="empty-hint">No outreach activity yet. Add visits, drives, or events you were part of this week.</p>
           {/each}
           <div class="record-acts">
             <button class="act-add" onclick={() => (outreachRecords = [...outreachRecords, { activity: '', audience: '', outcome: '', date: '' }])}>+ Add outreach</button>
@@ -575,6 +647,7 @@
   .record-card .field-grid { margin-bottom: 0; }
   .record-acts { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 14px; }
   .empty { color: #87969c; font-size: 0.8rem; padding: 10px 0; }
+  .empty-hint { color: #87969c; font-size: 0.8rem; background: #f4f6f5; border: 1px dashed #dbe3e7; border-radius: 8px; padding: 16px 18px; margin: 0 0 14px; }
   .preview-paper { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; padding: 28px; }
   .preview-kicker { font-size: 0.7rem; font-weight: 800; color: #145b78; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px; }
   .preview-paper h2 { font-size: 1rem; margin: 16px 0 8px; }

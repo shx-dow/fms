@@ -194,23 +194,6 @@ export function listMissing(periodId: string, opts: { departmentId?: string }, d
   `) as Record<string, unknown>[];
 }
 
-export function listCalendar(
-  opts: { day?: string; facultyId?: string; departmentId?: string },
-  db: Db = defaultDb,
-): Record<string, unknown>[] {
-  const clauses: SQL[] = [sql`r.status IN ('SUBMITTED', 'CHANGES_REQUIRED', 'APPROVED')`];
-  if (opts.day) clauses.push(sql`substr(COALESCE(r.submitted_at, r.updated_at), 1, 10) = ${opts.day}`);
-  if (opts.facultyId) clauses.push(sql`r.faculty_id = ${opts.facultyId}`);
-  if (opts.departmentId) clauses.push(sql`u.department_id = ${opts.departmentId}`);
-  return db.all(sql`
-    SELECT r.id, r.status, r.completion, r.submitted_at, r.updated_at, u.name AS faculty_name,
-           u.email AS faculty_email, p.starts_on AS period_starts_on
-    FROM reports r JOIN users u ON u.id = r.faculty_id JOIN reporting_periods p ON p.id = r.period_id
-    WHERE ${sql.join(clauses, sql` AND `)}
-    ORDER BY COALESCE(r.submitted_at, r.updated_at) DESC
-  `) as Record<string, unknown>[];
-}
-
 export function listWeeksForFaculty(facultyId: string, db: Db = defaultDb): Record<string, unknown>[] {
   return db.all(sql`
     SELECT p.id, p.label, p.starts_on, p.ends_on, p.due_on, p.is_open,

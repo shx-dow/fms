@@ -7,7 +7,6 @@ import Toast from '$lib/components/Toast.svelte';
 import { onDestroy, onMount } from 'svelte';
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
   import FileText from '@lucide/svelte/icons/file-text';
-  import CalendarDays from '@lucide/svelte/icons/calendar-days';
   import Building2 from '@lucide/svelte/icons/building-2';
   import Users from '@lucide/svelte/icons/users';
   import ClipboardCheck from '@lucide/svelte/icons/clipboard-check';
@@ -102,9 +101,6 @@ import { onDestroy, onMount } from 'svelte';
             >
             <a href="/reports" class:active={page.url.pathname.startsWith('/reports')}
               ><FileText size={18} /><span class="nav-label">My reports</span></a
-            >
-            <a href="/calendar" class:active={page.url.pathname.startsWith('/calendar')}
-              ><CalendarDays size={18} /><span class="nav-label">Calendar</span></a
             >
           </nav>
         {/if}
