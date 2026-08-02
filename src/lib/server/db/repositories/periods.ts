@@ -16,6 +16,10 @@ export function listPeriods(db: Db = defaultDb): Record<string, unknown>[] {
   return db.all(sql`SELECT * FROM reporting_periods ORDER BY starts_on DESC`) as Record<string, unknown>[];
 }
 
+export function getPeriod(id: string, db: Db = defaultDb): ReportingPeriod | undefined {
+  return db.get(sql`SELECT * FROM reporting_periods WHERE id = ${id}`) as ReportingPeriod | undefined;
+}
+
 export function currentOpenPeriod(db: Db = defaultDb): ReportingPeriod | undefined {
   return db.get(sql`
     SELECT * FROM reporting_periods WHERE is_open = 1 ORDER BY starts_on DESC LIMIT 1

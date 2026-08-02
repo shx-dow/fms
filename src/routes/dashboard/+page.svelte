@@ -1,5 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  let { data } = $props();
+  const user = $derived(data.user);
+  const isFaculty = $derived(user?.role === 'FACULTY');
   let completion = $state(0);
   let scheduled = $state(0);
   let conducted = $state(0);
@@ -51,6 +54,158 @@
   const deadlineHours = $derived(Math.round(deadlineMs / 3600000));
   const deadlineUrgent = $derived(deadlineMs > 0 && deadlineHours < 24 && (status === 'Draft' || status === 'No report' || status === 'Changes required'));
   const deadlinePassed = $derived(deadlineMs < 0 && (status === 'Draft' || status === 'No report' || status === 'Changes required'));
+
+  type Week = {
+    id: string;
+    starts_on: string;
+    ends_on: string;
+    due_on: string;
+    is_open: number;
+    week_label: string;
+    status?: string | null;
+    completion?: number;
+    total?: number;
+    submitted?: number;
+    approved?: number;
+    level?: number;
+    late?: number;
+  };
+  let weeks = $state<Week[]>([]);
+  let weeksLoading = $state(true);
+  let selectedPeriod = $state<string | null>(null);
+  let weekDetail = $state<any>(null);
+  let detailLoading = $state(false);
+  let timelineEl = $state<HTMLElement | null>(null);
+  let tooltipText = $state('');
+  let tooltipVisible = $state(false);
+  let tooltipX = $state(0);
+  let tooltipY = $state(0);
+  let canScrollLeft = $state(false);
+  let canScrollRight = $state(false);
+  const currentPeriodId = $derived(weeks.find((w) => Number(w.is_open) === 1)?.id ?? null);
+  const years = $derived(
+    [...new Set(weeks.map((w) => new Date(w.starts_on + 'T00:00:00').getFullYear()))].sort((a, b) => b - a),
+  );
+  let selectedYear = $state<number | null>(null);
+  const activeYear = $derived(selectedYear ?? years[0] ?? new Date().getFullYear());
+  type WeekGroup = { label: string; weeks: Week[] };
+  const activeWeeks = $derived(
+    weeks
+      .filter((w) => new Date(w.starts_on + 'T00:00:00').getFullYear() === activeYear)
+      .sort((a, b) => a.starts_on.localeCompare(b.starts_on)),
+  );
+  const weekGroups = $derived.by((): WeekGroup[] => {
+    const yearWeeks = weeks
+      .filter((w) => new Date(w.starts_on + 'T00:00:00').getFullYear() === activeYear)
+      .sort((a, b) => a.starts_on.localeCompare(b.starts_on));
+    const groups = new Map<string, WeekGroup>();
+    for (const week of yearWeeks) {
+      const date = new Date(week.starts_on + 'T00:00:00');
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      const group = groups.get(key) ?? {
+        label: date.toLocaleDateString('en-US', { month: 'short' }),
+        weeks: [],
+      };
+      group.weeks.push(week);
+      groups.set(key, group);
+    }
+    return [...groups.values()];
+  });
+  const activeWeekCount = $derived(activeWeeks.length);
+  async function loadWeeks() {
+    try {
+      const res = await fetch('/api/dashboard/weeks');
+      const d = await res.json();
+      weeks = d.weeks ?? [];
+      if (currentPeriodId) selectWeek(currentPeriodId);
+    } finally { weeksLoading = false; }
+  }
+  async function selectWeek(id: string) {
+    selectedPeriod = id;
+    detailLoading = true;
+    weekDetail = null;
+    try {
+      const res = await fetch(`/api/dashboard/weeks?period=${id}`);
+      const d = await res.json();
+      weekDetail = d;
+    } finally { detailLoading = false; }
+  }
+  function pickYear(y: number) {
+    selectedYear = y;
+    selectedPeriod = null;
+    weekDetail = null;
+    const openPeriod = weeks.find(
+      (w) => Number(w.is_open) === 1 && new Date(w.starts_on + 'T00:00:00').getFullYear() === y,
+    );
+    if (openPeriod) selectWeek(openPeriod.id);
+  }
+  onMount(() => {
+    loadWeeks();
+    const onScroll = () => {
+      if (!timelineEl) return;
+      const maxScroll = timelineEl.scrollWidth - timelineEl.clientWidth;
+      if (timelineEl.scrollLeft > maxScroll) timelineEl.scrollLeft = maxScroll;
+      updateArrows();
+    };
+    timelineEl?.addEventListener('scroll', onScroll);
+    return () => timelineEl?.removeEventListener('scroll', onScroll);
+  });
+  $effect(() => {
+    if (weeks.length && timelineEl) {
+      queueMicrotask(() => {
+        if (!timelineEl) return;
+        const currentCell = timelineEl.querySelector('.week-cell.current');
+        if (currentCell) {
+          const rect = currentCell.getBoundingClientRect();
+          const tlRect = timelineEl.getBoundingClientRect();
+          timelineEl.scrollLeft = timelineEl.scrollLeft + (rect.right - tlRect.right) + 24;
+        }
+        updateArrows();
+      });
+    }
+  });
+  function updateArrows() {
+    if (!timelineEl) return;
+    const maxScroll = timelineEl.scrollWidth - timelineEl.clientWidth;
+    canScrollLeft = timelineEl.scrollLeft > 4;
+    canScrollRight = maxScroll > 4 && timelineEl.scrollLeft < maxScroll - 4;
+  }
+  function scrollWeeks(direction: number) {
+    timelineEl?.scrollBy({ left: direction * 320, behavior: 'smooth' });
+  }
+  const statusLabel = (s: string | null | undefined) =>
+    s === 'APPROVED' ? 'Approved' : s === 'SUBMITTED' ? 'Submitted' : s === 'CHANGES_REQUIRED' ? 'Changes' : 'Not started';
+  function weekCellClass(w: Week) {
+    if (isFaculty) {
+      if (w.status === 'APPROVED') return 'c-approved';
+      if (w.status === 'SUBMITTED') return 'c-submitted';
+      if (w.status === 'CHANGES_REQUIRED') return 'c-changes';
+      return 'c-none';
+    }
+    if (Number(w.level) === 4) return 'c-approved';
+    if (Number(w.level) === 3) return 'c-full';
+    if (Number(w.level) === 2) return 'c-mid';
+    if (Number(w.level) === 1) return 'c-low';
+    return 'c-none';
+  }
+  function weekTip(w: Week) {
+    if (isFaculty) return `${w.week_label}${w.status ? ` · ${statusLabel(w.status)}` : ''}`;
+    const done = Number(w.submitted) + Number(w.approved);
+    const parts = [`${w.week_label}`, `${done}/${w.total} submitted`];
+    if (Number(w.approved)) parts.push(`${w.approved} approved`);
+    if (Number(w.late)) parts.push('overdue');
+    return parts.join(' · ');
+  }
+  function showTip(e: MouseEvent, w: Week) {
+    tooltipText = weekTip(w);
+    tooltipVisible = true;
+    positionTip(e);
+  }
+  function positionTip(e: MouseEvent) {
+    tooltipX = e.clientX;
+    tooltipY = e.clientY - 10;
+  }
+  function hideTip() { tooltipVisible = false; }
 </script>
 
 <svelte:head><title>Dashboard · Faculty Reporting System</title></svelte:head>
@@ -100,6 +255,91 @@
         <strong class="status-badge" class:draft={status === 'Draft'} class:submitted={status === 'Submitted'} class:approved={status === 'Approved'} class:changes={status === 'Changes required'}>{status}</strong>
       </div>
     </div>
+
+    <section class="weeks-card">
+      <div class="panel-head weeks-head">
+        <div class="weeks-title">
+          <h2>Reporting weeks</h2>
+          {#if !weeksLoading && weeks.length}
+            <span class="weeks-count">{activeWeekCount} week{activeWeekCount === 1 ? '' : 's'} · {activeYear}</span>
+          {/if}
+        </div>
+        {#if years.length > 1}
+          <div class="weeks-years">
+            {#each years as y}
+              <button class="year-pill" class:active={y === activeYear} onclick={() => pickYear(y)}>{y}</button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+      {#if weeksLoading}
+        <div class="weeks-loading"><span class="spinner"></span></div>
+      {:else if !weeks.length}
+        <div class="weeks-empty">No reporting weeks yet.</div>
+      {:else}
+        <div class="weeks-body">
+          <div class="weeks-timeline-row">
+            <button class="scroll-arrow scroll-left" class:hidden={!canScrollLeft} onclick={() => scrollWeeks(-1)} aria-label="Scroll earlier">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="weeks-timeline" bind:this={timelineEl} aria-label={`Reporting weeks for ${activeYear}`}>
+              <span class="weeks-empty-label">New Semester Begins</span>
+              {#each weekGroups as group}
+                <div class="week-month">
+                  <span class="week-month-label">{group.label}</span>
+                  <div class="week-strip">
+                    {#each group.weeks as week}
+                      <button
+                        class="week-cell {weekCellClass(week)}"
+                        class:current={week.id === currentPeriodId}
+                        class:sel={week.id === selectedPeriod}
+                        class:late={Number(week.late) === 1}
+                        aria-label={weekTip(week)}
+                        onclick={() => selectWeek(week.id)}
+                        onmouseenter={(e) => showTip(e, week)}
+                        onmousemove={positionTip}
+                        onmouseleave={hideTip}
+                      >
+                        <span>{new Date(week.starts_on + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric' })}</span>
+                      </button>
+                    {/each}
+                  </div>
+                </div>
+              {/each}
+            </div>
+            <button class="scroll-arrow scroll-right" class:hidden={!canScrollRight} onclick={() => scrollWeeks(1)} aria-label="Scroll forward">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          {#if detailLoading}
+            <span class="spinner"></span>
+          {:else if weekDetail}
+            <div class="selected-status">
+              <span class="wp-pill {weekDetail.report ? 'wp-' + (weekDetail.report.status === 'APPROVED' ? 'ok' : weekDetail.report.status === 'SUBMITTED' ? 'sub' : weekDetail.report.status === 'CHANGES_REQUIRED' ? 'chg' : 'draft') : 'wp-none'}">{weekDetail.report ? statusLabel(weekDetail.report.status) : 'Not started'}</span>
+              {#if isFaculty && weekDetail.report}
+                <span class="selected-pct">{weekDetail.report.completion}%</span>
+              {/if}
+            </div>
+          {/if}
+        </div>
+        {#if !isFaculty && weekDetail?.reports?.length}
+          <div class="weeks-reports">
+            {#each weekDetail.reports as r}
+              <a class="report-row" href={r.status === 'DRAFT' ? '/admin/reports' : `/admin/reports?report=${r.id}`}>
+                <div class="report-name">
+                  <strong>{r.faculty_name}</strong>
+                  <small>{r.faculty_email}</small>
+                </div>
+                <div class="report-right">
+                  <span class="wp-pill {r.status === 'APPROVED' ? 'wp-ok' : r.status === 'SUBMITTED' ? 'wp-sub' : r.status === 'CHANGES_REQUIRED' ? 'wp-chg' : 'wp-draft'}">{statusLabel(r.status)}</span>
+                  <span class="report-pct">{r.completion}%</span>
+                </div>
+              </a>
+            {/each}
+          </div>
+        {/if}
+      {/if}
+    </section>
 
     <div class="dash-bottom">
       <section class="teaching-panel">
@@ -201,6 +441,9 @@
       </aside>
     </div>
   {/if}
+  {#if tooltipVisible}
+    <div class="week-tooltip" style="left:{tooltipX}px;top:{tooltipY}px">{tooltipText}</div>
+  {/if}
 </main>
 
 <style>
@@ -231,7 +474,7 @@
   .status-badge.submitted { background: #e5f0f4; color: #145b78; }
   .status-badge.approved { background: #e4f1eb; color: #24745b; }
   .status-badge.changes { background: #f4eddd; color: #8a681d; }
-  .dash-bottom { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+  .dash-bottom { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; }
   .teaching-panel { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
   .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #dbe3e7; }
   .panel-head h2 { font-size: 0.9rem; margin: 0; letter-spacing: -0.01em; }
@@ -255,7 +498,7 @@
   .course-mark.mid { color: #b48632; }
   .course-mark.low { color: #a84f42; }
   .teaching-empty { padding: 32px 20px; text-align: center; color: #87969c; font-size: 0.8rem; }
-  .side-stack { display: grid; gap: 16px; position: sticky; top: 20px; }
+  .side-stack { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
   .side-card { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
   .attn-row { display: flex; gap: 13px; padding: 16px 18px; align-items: start; }
   .attn-icon { width: 23px; height: 23px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.72rem; flex: none; margin-top: 1px; }
@@ -275,8 +518,72 @@
   .hist-ok { background: #e4f1eb; color: #24745b; }
   .hist-chg { background: #f4eddd; color: #8a681d; }
   .hist-empty { padding: 24px 18px; text-align: center; color: #87969c; font-size: 0.78rem; }
+  .weeks-card { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; margin-bottom: 24px; min-width: 0; }
+  .weeks-head { gap: 14px; flex-wrap: wrap; overflow: hidden; border-radius: 8px 8px 0 0; }
+  .weeks-title { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
+  .weeks-title h2 { white-space: nowrap; }
+  .weeks-count { font-size: 0.68rem; font-weight: 600; color: #87969c; white-space: nowrap; }
+  .weeks-years { display: flex; align-items: center; gap: 2px; padding: 2px; background: #eef1f2; border: 1px solid #dbe3e7; border-radius: 7px; flex: none; }
+  .year-pill { border: 0; background: transparent; font: inherit; font-size: 0.7rem; font-weight: 700; color: #667477; cursor: pointer; padding: 3px 11px; border-radius: 5px; transition: background 0.12s ease, color 0.12s ease; }
+  .year-pill:hover { color: #17252d; }
+  .year-pill.active { background: #17252d; color: #f4f6f5; }
+  .weeks-loading, .weeks-empty { padding: 28px 20px; display: flex; align-items: center; gap: 12px; color: #87969c; font-size: 0.8rem; justify-content: center; }
+  .weeks-body { padding: 18px 24px 22px; background: #fbfcfb; min-width: 0; display: flex; flex-direction: column; }
+  .weeks-timeline-row { display: flex; align-items: center; gap: 6px; position: relative; }
+  .scroll-arrow { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid #dbe3e7; border-radius: 50%; background: #fdfcf9; color: #667477; cursor: pointer; flex: none; transition: opacity 0.15s ease, background 0.12s ease, color 0.12s ease, border-color 0.12s ease; }
+  .scroll-arrow.hidden { opacity: 0; pointer-events: none; }
+  .scroll-arrow:hover { background: #17252d; color: #f4f6f5; border-color: #17252d; }
+  .weeks-timeline { display: flex; align-items: flex-end; gap: 32px; flex: 1; min-width: 0; overflow-x: auto; padding: 6px 4px 8px; scrollbar-width: thin; scroll-behavior: auto; justify-content: flex-end; }
+  .weeks-empty-label { color: #9aa8ae; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; align-self: flex-end; margin-bottom: 8px; margin-right: 32px; }
+  .week-month { display: grid; gap: 10px; flex: none; }
+  .week-month-label { color: #87969c; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+  .week-strip { display: flex; gap: 10px; }
+  .week-cell { width: 42px; height: 42px; border: 1px solid transparent; border-radius: 8px; padding: 0; cursor: pointer; position: relative; color: #667477; font: inherit; font-size: 0.75rem; font-weight: 800; transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease; }
+  .week-cell:hover { transform: translateY(-2px); border-color: #8aabb8; z-index: 2; }
+  .week-cell.c-none { background: #f0f3f4; color: #71818a; }
+  .week-cell.c-low { background: #edf4f6; color: #47778d; }
+  .week-cell.c-mid { background: #d8e9f1; color: #286681; }
+  .week-cell.c-full { background: #bddae7; color: #145b78; }
+  .week-cell.c-submitted { background: #dcecf3; color: #145b78; }
+  .week-cell.c-approved { background: #dceee5; color: #24745b; }
+  .week-cell.c-changes { background: #f4ecd8; color: #8a681d; }
+  .week-cell.late { border-color: #b25b4e; }
+  .week-cell.current { box-shadow: 0 0 0 2px #145b78; }
+  .week-cell.sel { border-color: #17252d; box-shadow: 0 0 0 2px #17252d; }
+  .week-cell.sel.current { box-shadow: 0 0 0 2px #17252d; }
+  .selected-status { display: flex; align-items: center; gap: 8px; padding-top: 12px; margin-left: auto; }
+  .selected-pct { font-size: 0.68rem; font-weight: 700; color: #87969c; }
+  .weeks-reports { padding: 12px 16px; border-top: 1px solid #eef2f3; display: grid; }
+  .report-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #eef2f3; text-decoration: none; }
+  .report-row:last-child { border-bottom: 0; }
+  .report-name strong { display: block; font-size: 0.78rem; color: #1b2b36; }
+  .report-name small { font-size: 0.66rem; color: #71818a; }
+  .report-right { display: flex; align-items: center; gap: 10px; flex: none; }
+  .report-pct { font-size: 0.74rem; color: #87969c; font-weight: 700; }
+  .week-tooltip {
+    position: fixed;
+    transform: translate(-50%, -100%);
+    background: #17252d;
+    color: #f4f6f5;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 6px 10px;
+    border-radius: 6px;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  .wp-pill { font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; }
+  .wp-ok { background: #e4f1eb; color: #24745b; }
+  .wp-sub { background: #e5f0f4; color: #145b78; }
+  .wp-chg { background: #f4eddd; color: #8a681d; }
+  .wp-draft { background: #eef1f2; color: #667477; }
+  .wp-none { background: #eef1f2; color: #87969c; }
   @media (max-width: 900px) {
     .dash-bottom { grid-template-columns: 1fr; }
+    .side-stack { grid-template-columns: 1fr; }
     .side-stack { position: static; }
   }
   @media (max-width: 800px) {
@@ -286,6 +593,8 @@
   @media (max-width: 600px) {
     .course-row { flex-wrap: wrap; }
     .course-bar { display: none; }
+    .weeks-timeline-row { flex-direction: column; align-items: stretch; gap: 10px; }
+    .selected-status { justify-content: flex-end; }
   }
   @media (max-width: 500px) {
     .dash-metrics { grid-template-columns: 1fr; }

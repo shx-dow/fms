@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { createDatabase } from '../../local-db';
 import type { Db } from '../client';
-import { insertReportOrIgnore, saveReport } from './reports';
+import { insertReportOrIgnore, saveReport, listWeeksForFaculty, listWeeksAggregate, listReportsForPeriod } from './reports';
 import { replaceResearch, listResearch } from './activity';
 
 function makeDb(): Db {
@@ -129,5 +129,38 @@ describe('replaceResearch', () => {
     const rows = listResearch(reportId, db) as { title: string; role: string | null }[];
     expect(rows).toHaveLength(2);
     expect(rows.map((r) => r.title).sort()).toEqual(['Paper C', 'Patent B']);
+  });
+});
+
+describe('weekly grid', () => {
+  it('lists every period with the faculty member own report status', () => {
+    const db = makeDb();
+    const weeks = listWeeksForFaculty('dev-faculty-1', db) as { id: string; status: string | null; completion: number | null }[];
+    expect(weeks.map((w) => w.id).sort()).toEqual(['week-2026-07-20', 'week-2026-07-27', 'week-2026-08-03']);
+    const past = weeks.find((w) => w.id === 'week-2026-07-20');
+    expect(past).toMatchObject({ status: 'SUBMITTED', completion: 82 });
+    const open = weeks.find((w) => w.id === 'week-2026-07-27');
+    expect(open?.status).toBeNull();
+  });
+
+  it('aggregates submitted and approved counts per period, scoped by department', () => {
+    const db = makeDb();
+    const weeks = listWeeksAggregate({}, db) as { id: string; total: number; submitted: number; approved: number }[];
+    const week = weeks.find((w) => w.id === 'week-2026-07-20');
+    expect(week).toMatchObject({ total: 3, submitted: 1, approved: 1 });
+
+    const cse = listWeeksAggregate({ departmentId: 'cse' }, db) as { id: string; total: number }[];
+    expect(cse.find((w) => w.id === 'week-2026-07-20')?.total).toBe(3);
+  });
+
+  it('lists faculty reports for a given period with names', () => {
+    const db = makeDb();
+    const rows = listReportsForPeriod('week-2026-07-20', {}, db) as {
+      faculty_name: string;
+      status: string;
+      completion: number;
+    }[];
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.faculty_name).sort()).toEqual(['Faculty User 1', 'Faculty User 2']);
   });
 });
