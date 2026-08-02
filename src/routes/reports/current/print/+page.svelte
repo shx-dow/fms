@@ -68,7 +68,7 @@
   }
   :global(body) {
     background: #fff;
-    color: #1f2a2e;
+    color: var(--ink);
     font:
       11px/1.5 'Segoe UI',
       Arial,
@@ -79,7 +79,7 @@
     margin: 0 auto;
   }
   .kicker {
-    color: #145b78;
+    color: var(--blue);
     text-transform: uppercase;
     letter-spacing: 0.13em;
     font-size: 9px;
@@ -91,20 +91,20 @@
     letter-spacing: -0.03em;
   }
   .print-page header > p {
-    color: #667477;
+    color: var(--muted);
     margin: 0 0 18px;
   }
   .person {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
-    border-block: 1px solid #cbd8d1;
+    border-block: 1px solid var(--line);
     padding: 12px 0;
     margin: 18px 0;
   }
   .person b {
     display: block;
-    color: #667477;
+    color: var(--muted);
     font-size: 9px;
     text-transform: uppercase;
   }
@@ -116,19 +116,19 @@
   }
   .print-page h2 {
     font-size: 14px;
-    border-bottom: 2px solid #145b78;
+    border-bottom: 2px solid var(--blue);
     padding-bottom: 5px;
     margin: 0 0 10px;
   }
   .print-page p,
   .summary-box {
-    color: #47646b;
+    color: var(--muted-2);
     font-size: 11px;
     line-height: 1.55;
   }
   .summary-box {
-    background: #f7f9fa;
-    border: 1px solid #dce2dc;
+    background: var(--bg-input);
+    border: 1px solid var(--line-light);
     border-radius: 4px;
     padding: 12px;
     white-space: pre-wrap;
@@ -140,13 +140,13 @@
   }
   .print-page th,
   .print-page td {
-    border: 1px solid #dce2dc;
+    border: 1px solid var(--line-light);
     text-align: left;
     padding: 6px 5px;
   }
   .print-page th {
-    background: #f5f7f8;
-    color: #667477;
+    background: var(--bg-input);
+    color: var(--muted);
     font-size: 9px;
     text-transform: uppercase;
   }
@@ -155,7 +155,7 @@
     gap: 8px;
     align-items: baseline;
     padding: 6px 0;
-    border-bottom: 1px solid #eef3f5;
+    border-bottom: 1px solid var(--bg-hover);
     font-size: 10px;
   }
   .rv-decision {
@@ -167,13 +167,13 @@
   .review-line p {
     width: 100%;
     margin: 4px 0 0;
-    color: #71818a;
+    color: var(--muted-3);
   }
   .print-page footer {
-    border-top: 1px solid #dce2dc;
+    border-top: 1px solid var(--line-light);
     margin-top: 40px;
     padding-top: 10px;
-    color: #667477;
+    color: var(--muted);
     font-size: 9px;
   }
   @media print {

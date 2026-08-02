@@ -5,8 +5,8 @@
     system-ui,
     -apple-system,
     sans-serif;
-  color: #17252d;
-  background: #f4f6f5;
+  color: var(--navy);
+  background: var(--paper);
   font-synthesis: none;
 }
 * {

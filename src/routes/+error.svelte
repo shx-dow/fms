@@ -26,25 +26,25 @@
     z-index: 9999;
     display: grid;
     place-items: center;
-    background: #f4f6f5;
+    background: var(--paper);
     padding: 24px;
   }
   .error-card {
-    background: #fdfcf9;
-    border: 1px solid #dbe3e7;
+    background: var(--panel);
+    border: 1px solid var(--line);
     border-radius: 12px;
     padding: 48px 56px;
     max-width: 460px;
     text-align: center;
-    box-shadow: 0 10px 30px rgba(23, 37, 45, 0.08);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
   }
   .error-code {
     display: inline-block;
     font-size: 0.72rem;
     font-weight: 800;
     letter-spacing: 0.1em;
-    color: #145b78;
-    background: #e5f0f4;
+    color: var(--blue);
+    background: var(--bg-hover);
     padding: 4px 10px;
     border-radius: 6px;
     margin-bottom: 18px;
@@ -52,19 +52,19 @@
   .error-card h1 {
     font-size: 1.5rem;
     letter-spacing: -0.03em;
-    color: #17252d;
+    color: var(--navy);
     margin: 0 0 10px;
   }
   .error-card p {
     font-size: 0.88rem;
-    color: #667477;
+    color: var(--muted);
     margin: 0 0 24px;
     line-height: 1.5;
   }
   .error-detail {
     text-align: left;
-    background: #17252d;
-    color: #eaf0f1;
+    background: var(--navy);
+    color: #cbd5e1;
     font-size: 0.72rem;
     padding: 12px;
     border-radius: 7px;
@@ -74,7 +74,7 @@
   }
   .error-home {
     display: inline-block;
-    background: #145b78;
+    background: var(--blue);
     color: #fff;
     text-decoration: none;
     font-size: 0.85rem;
@@ -83,5 +83,5 @@
     border-radius: 7px;
     transition: background 0.14s ease;
   }
-  .error-home:hover { background: #0f4a63; }
+  .error-home:hover { background: var(--navy-3); }
 </style>

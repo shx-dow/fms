@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
+  import NotificationBell from '$lib/components/NotificationBell.svelte';
   const PAGE_SIZE = 50;
   type Event = { action: string; entity_type: string; entity_id: string; created_at: string; actor_name?: string };
   const ACTIONS = [
@@ -73,6 +74,9 @@
       <h1>Audit history</h1>
       <span class="dash-period">{total} event{total === 1 ? '' : 's'}</span>
     </div>
+    <div class="dash-actions">
+      <NotificationBell />
+    </div>
   </header>
   <section class="filter-bar">
     <input class="filter-search" type="search" placeholder="Search actor…" bind:value={search} oninput={onSearchInput} />
@@ -124,41 +128,42 @@
 </main>
 
 <style>
-  .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: #71818a; font-size: 0.88rem; }
-  .spinner { width: 18px; height: 18px; border: 2px solid #dbe3e7; border-top-color: #145b78; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .dash-error { padding: 16px 20px; background: #f9e9e7; color: #8f413b; border-radius: 7px; font-size: 0.88rem; }
+  .dash-error { padding: 16px 20px; background: var(--red-bg); color: var(--red); border-radius: 7px; font-size: 0.88rem; }
   .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 28px; }
   .dash-header h1 { font-size: 1.65rem; letter-spacing: -0.03em; margin: 0 0 3px; }
-  .dash-period { font-size: 0.82rem; color: #667477; }
+  .dash-actions { display: flex; align-items: center; gap: 14px; }
+  .dash-period { font-size: 0.82rem; color: var(--muted); }
   .filter-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
   .filter-search, .filter-select, .filter-date input {
-    border: 1px solid #dbe3e7; border-radius: 6px; background: #fff; color: #1b2b36;
+    border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink-2);
     font-size: 0.8rem; padding: 7px 10px;
   }
   .filter-search { width: 200px; }
-  .filter-date { display: inline-flex; align-items: center; gap: 6px; color: #667477; font-size: 0.78rem; }
+  .filter-date { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.78rem; }
   .filter-date input { padding: 6px 8px; }
   .btn-link {
-    border: 0; background: none; color: #145b78; font-size: 0.8rem; font-weight: 700; cursor: pointer; padding: 6px 8px;
+    border: 0; background: none; color: var(--blue); font-size: 0.8rem; font-weight: 700; cursor: pointer; padding: 6px 8px;
   }
   .btn-link:hover:not(:disabled) { text-decoration: underline; }
-  .btn-link:disabled { color: #b8c4c8; cursor: default; }
-  .table-card { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: auto; }
+  .btn-link:disabled { color: var(--muted-3); cursor: default; }
+  .table-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: auto; }
   .table-card table { width: 100%; border-collapse: collapse; min-width: 600px; font-size: 0.78rem; }
-  .table-card th, .table-card td { padding: 13px 16px; text-align: left; border-bottom: 1px solid #e8eeec; }
-  .table-card th { text-transform: uppercase; letter-spacing: 0.08em; color: #87969c; font-size: 0.62rem; font-weight: 800; }
-  .table-card td { color: #667477; }
-  .table-card td strong { color: #1b2b36; }
+  .table-card th, .table-card td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--line-2); }
+  .table-card th { text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-2); font-size: 0.62rem; font-weight: 800; }
+  .table-card td { color: var(--muted); }
+  .table-card td strong { color: var(--ink-2); }
   .td-time { min-width: 140px; }
-  .time-ago { display: block; font-size: 0.78rem; color: #1b2b36; }
-  .time-full { display: block; color: #87969c; font-size: 0.65rem; margin-top: 2px; }
+  .time-ago { display: block; font-size: 0.78rem; color: var(--ink-2); }
+  .time-full { display: block; color: var(--muted-2); font-size: 0.65rem; margin-top: 2px; }
   .audit-pill { display: inline-block; font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; }
-  .audit-pill.pill-ok { background: #7fbf97; color: #1a5a3a; }
-  .audit-pill.pill-sub { background: #8bbdd9; color: #1a5a7a; }
-  .entity-label { color: #667477; font-size: 0.76rem; }
-  .empty-row { text-align: center; padding: 24px; color: #87969c; font-size: 0.8rem; }
+  .audit-pill.pill-ok { background: var(--green-soft); color: var(--green); }
+  .audit-pill.pill-sub { background: var(--blue-soft); color: var(--blue-dark); }
+  .entity-label { color: var(--muted); font-size: 0.76rem; }
+  .empty-row { text-align: center; padding: 24px; color: var(--muted-2); font-size: 0.8rem; }
   .pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 18px; }
-  .pager-info { font-size: 0.78rem; color: #667477; }
+  .pager-info { font-size: 0.78rem; color: var(--muted); }
   @media (max-width: 800px) { .dash-header { flex-direction: column; align-items: start; } }
 </style>
