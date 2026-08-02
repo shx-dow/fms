@@ -1,11 +1,11 @@
 import { tick } from 'svelte';
 
 export type ToastAction = { label: string; onClick: () => void };
-type Toast = { id: number; text: string; type: 'ok' | 'err'; action?: ToastAction; leaving?: boolean };
+type Toast = { id: number; text: string; type: 'ok' | 'err' | 'info'; action?: ToastAction; leaving?: boolean };
 let toasts = $state<Toast[]>([]);
 let nextId = 0;
 
-export function show(text: string, type: 'ok' | 'err' = 'ok', action?: ToastAction, duration = 3000) {
+export function show(text: string, type: 'ok' | 'err' | 'info' = 'ok', action?: ToastAction, duration = 3000) {
   const id = nextId++;
   toasts.push({ id, text, type, action });
   tick().then(() => {

@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { createDatabase } from '../../local-db';
 import type { Db } from '../client';
-import { listPeriods, currentOpenPeriod, upsertPeriod, closeOtherOpenPeriods } from './periods';
+import { listPeriods, ensureCurrentPeriod, upsertPeriod, closeOtherOpenPeriods } from './periods';
 import { listDepartments, upsertDepartment } from './departments';
 import { insertAttachment, listAttachments, getAttachmentById, deleteAttachment } from './attachments';
 import { insertReview, listReviewsForReport } from './reviews';
@@ -20,7 +20,7 @@ describe('periods', () => {
   it('lists seeded periods and returns the open one', () => {
     const db = makeDb();
     expect(listPeriods(db)).toHaveLength(3);
-    expect(currentOpenPeriod(db)?.id).toBe('week-2026-07-27');
+    expect(ensureCurrentPeriod(db)?.id).toBe('week-2026-07-27');
   });
 
   it('upserts a period and closes the others when opened', () => {

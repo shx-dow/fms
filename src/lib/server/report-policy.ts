@@ -1,7 +1,7 @@
 import type { Db } from './db/client';
 import { db as defaultDb } from './db/client';
 import { getOwnerContext } from './db/repositories/reports';
-import { currentOpenPeriod } from './db/repositories/periods';
+import { ensureCurrentPeriod } from './db/repositories/periods';
 
 export function canAccessReport(
   user: { id: string; role: string; departmentId?: string },
@@ -16,7 +16,7 @@ export function canAccessReport(
 }
 
 export function currentPeriod(db: Db = defaultDb) {
-  return currentOpenPeriod(db);
+  return ensureCurrentPeriod(db);
 }
 
 export function policyFor(

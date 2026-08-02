@@ -29,7 +29,7 @@
   let saveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
   let activeExtraSection = $state('attachments');
   let deadlineDate = $state('');
-  let canSubmit = $derived(new Date().getDay() === 5);
+  let canSubmit = $derived(Boolean(deadlineDate && new Date(deadlineDate) > new Date()));
 
   let scheduled = $derived(teaching.reduce((s, i) => s + Number(i.scheduled || 0), 0));
   let conducted = $derived(teaching.reduce((s, i) => s + Number(i.conducted || 0), 0));
@@ -81,6 +81,7 @@
     dutiesRecords = (d.duties ?? []).map((r: any) => ({ name: r.name, role: r.role, activity: r.activity ?? '', reach: r.reach ?? '', outcome: r.outcome ?? '' }));
     outreachRecords = (d.outreach ?? []).map((r: any) => ({ activity: r.activity, audience: r.audience ?? '', outcome: r.outcome ?? '', date: r.date ?? '' }));
     canEdit = d.policy?.canEdit ?? true;
+    deadlineDate = d.policy?.deadline ?? '';
     if (reportId) {
       try { const r = await fetch(`/api/reports/${reportId}`); const rd = await r.json(); reviews = rd.reviews ?? []; } catch {}
       loadAttachments();
@@ -221,7 +222,7 @@
       <a class="act-link" href="/api/reports/current/export">CSV</a>
       {#if !isReadonly}
         <button class="act-link" onclick={() => (preview = !preview)}>{preview ? 'Edit' : 'Preview'}</button>
-        <button class="act-submit" disabled={!canEdit || saving || !canSubmit} title={!canSubmit ? 'Opens Friday' : ''} onclick={() => (confirmSubmit = true)}>Submit →</button>
+        <button class="act-submit" disabled={!canEdit || saving || !canSubmit} title={!canSubmit ? `Closes ${new Date(deadlineDate).toLocaleString()}` : ''} onclick={() => (confirmSubmit = true)}>Submit →</button>
       {/if}
     </div>
   </header>

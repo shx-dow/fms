@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { show } from '$lib/stores/toast.svelte.ts';
   let currentPeriod = $state('');
   let currentStatus = $state('');
   let loading = $state(true);
+  let loadError = $state('');
   let history: {
     id: string;
     period_label: string;
@@ -15,6 +17,7 @@
     try {
       const res = await fetch('/api/reports');
       const d = await res.json();
+      if (!res.ok) throw new Error(d.error ?? 'Unable to load reports.');
       currentPeriod = d.policy?.period?.label ?? '';
       currentStatus =
         d.report?.status === 'SUBMITTED' ? 'Submitted'
@@ -22,7 +25,10 @@
         : d.report?.status === 'CHANGES_REQUIRED' ? 'Changes required'
         : d.report?.status ? 'Draft' : '—';
       history = d.reports ?? [];
-    } catch {} finally { loading = false; }
+    } catch (e) {
+      loadError = e instanceof Error ? e.message : 'Unable to load reports.';
+      show(loadError, 'err');
+    } finally { loading = false; }
   });
   const total = $derived(history.length);
   const draft = $derived(history.filter(r => r.status === 'DRAFT').length);
@@ -34,6 +40,12 @@
 <main class="shell app-shell">
   {#if loading}
     <div class="loading-panel"><span class="spinner"></span><span>Loading reports…</span></div>
+  {:else if loadError}
+    <div class="load-error" role="alert">
+      <strong>Could not load reports.</strong>
+      <span>{loadError}</span>
+      <a href="/reports" onclick={(e) => { e.preventDefault(); location.reload(); }}>Try again</a>
+    </div>
   {:else}
     <header class="dash-header">
       <div>
@@ -96,6 +108,9 @@
 
 <style>
   .loading-panel { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: #71818a; font-size: 0.88rem; }
+  .load-error { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border: 1px solid #e8d4d4; border-radius: 8px; background: #fdf0ef; color: #8f413b; font-size: 0.82rem; flex-wrap: wrap; }
+  .load-error strong { font-weight: 800; }
+  .load-error a { margin-left: auto; color: #a84f42; font-weight: 800; text-decoration: none; }
   .spinner { width: 18px; height: 18px; border: 2px solid #dbe3e7; border-top-color: #145b78; border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 28px; }

@@ -70,6 +70,15 @@
     showCreate = false; newStarts = ''; newEnds = ''; newDue = ''; newOpen = true;
     load();
   }
+  async function deletePeriodConfirm(p: Period) {
+    if (!confirm(`Delete ${p.label || p.id}? This cannot be undone.`)) return;
+    saving = true;
+    const res = await fetch(`/api/periods?id=${encodeURIComponent(p.id)}`, { method: 'DELETE' });
+    saving = false;
+    if (!res.ok) { show('Unable to delete period.', 'err'); return; }
+    show('Period deleted.');
+    load();
+  }
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   const fmtDateTime = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 </script>
@@ -123,7 +132,10 @@
                 <td>{fmtDate(p.ends_on)}</td>
                 <td>{fmtDateTime(p.due_on)}</td>
                 <td><span class="status-pill" class:open={p.is_open} class:closed={!p.is_open}>{p.is_open ? 'Open' : 'Closed'}</span></td>
-                <td class="td-acts"><button class="btn-ghost" onclick={() => toggleOpen(p)} disabled={saving}>{p.is_open ? 'Close' : 'Open'}</button></td>
+                <td class="td-acts">
+                  <button class="btn-ghost" onclick={() => toggleOpen(p)} disabled={saving}>{p.is_open ? 'Close' : 'Open'}</button>
+                  <button class="btn-ghost btn-del" onclick={() => deletePeriodConfirm(p)} disabled={saving}>Delete</button>
+                </td>
               </tr>
             {/each}
           </tbody>
@@ -188,6 +200,7 @@
   .td-acts { text-align: right; white-space: nowrap; }
   .btn-ghost { border: 0; background: transparent; font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; margin-left: 6px; color: #145b78; }
   .btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-del { color: #a84f42; }
   .empty-state { padding: 24px; color: #87969c; font-size: 0.82rem; }
   .overlay { position: fixed; inset: 0; background: rgba(23, 37, 45, 0.35); display: grid; place-items: center; z-index: 100; }
   .modal { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 10px; padding: 28px; max-width: 440px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.12); }

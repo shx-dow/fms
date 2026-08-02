@@ -47,7 +47,7 @@ export function listNotifications(
     where = sql`a.actor_id = ${opts.userId} OR (a.entity_type = 'REPORT' AND a.entity_id IN (SELECT id FROM reports WHERE faculty_id = ${opts.userId}))`;
   }
   return db.all(sql`
-    SELECT a.id, a.action, a.entity_id, a.created_at, u.name AS actor_name,
+    SELECT a.id, a.actor_id, a.action, a.entity_id, a.created_at, u.name AS actor_name,
       CASE WHEN nr.event_id IS NULL THEN 0 ELSE 1 END AS is_read
     FROM audit_events a
     LEFT JOIN users u ON u.id = a.actor_id

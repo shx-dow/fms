@@ -30,7 +30,9 @@ import { onDestroy, onMount } from 'svelte';
   let pwSaving = $state(false);
   let pwError = $state('');
   let showCount = $state(6);
-  let notifications = $state<{ id: string; action: string; actor_name: string; created_at: string; is_read: number }[]>([]);
+  let notifications = $state<{ id: string; actor_id: string; action: string; actor_name: string; created_at: string; is_read: number }[]>([]);
+  let knownIds = $state(new Set<string>());
+  let notifPollTimer: ReturnType<typeof setInterval> | undefined;
   const user = $derived(data.user);
   const roleLabel = $derived(user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'HOD' ? 'HOD' : 'Faculty');
   const avatarLetter = $derived(user?.name?.charAt(0)?.toUpperCase() ?? 'U');
@@ -45,16 +47,43 @@ import { onDestroy, onMount } from 'svelte';
     sidebarCollapsed = !sidebarCollapsed;
     localStorage.setItem('sidebarCollapsed', String(sidebarCollapsed));
   }
-  onMount(async () => {
+  async function fetchNotifications() {
     try {
       const res = await fetch('/api/notifications');
       const d = await res.json();
-      notifCount = d.notifications?.filter((n: any) => !n.is_read).length ?? 0;
-      notifications = d.notifications ?? [];
+      const list = d.notifications ?? [];
+      if (knownIds.size > 0) {
+        const newOnes = list.filter((n: any) => !knownIds.has(n.id) && n.actor_id !== user?.id);
+        for (const n of newOnes) {
+          const label = n.action === 'REPORT_SUBMITTED'
+            ? `${n.actor_name ?? 'Someone'} submitted a report`
+            : notifLabel(n.action);
+          show(`${label} — ${fmtDate(n.created_at)}`, 'info', undefined, 4000);
+        }
+      }
+      notifications = list;
+      knownIds = new Set(list.map((n: any) => n.id));
+      notifCount = list.filter((n: any) => !n.is_read).length;
     } catch {}
-    if (browser) document.addEventListener('click', closeNotifs);
+  }
+  function handleVisibility() {
+    if (document.visibilityState === 'visible') fetchNotifications();
+  }
+  onMount(async () => {
+    await fetchNotifications();
+    notifPollTimer = setInterval(fetchNotifications, 5000);
+    if (browser) {
+      document.addEventListener('click', closeNotifs);
+      document.addEventListener('visibilitychange', handleVisibility);
+    }
   });
-  onDestroy(() => { if (browser) document.removeEventListener('click', closeNotifs); });
+  onDestroy(() => {
+    if (notifPollTimer) clearInterval(notifPollTimer);
+    if (browser) {
+      document.removeEventListener('click', closeNotifs);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    }
+  });
   function notifLabel(action: string) {
     const labels: Record<string, string> = { REPORT_SUBMITTED: 'Submitted', APPROVED: 'Approved', CHANGES_REQUIRED: 'Changes', REPORT_REOPENED: 'Reopened' };
     return labels[action] ?? action.replaceAll('_', ' ');
@@ -142,18 +171,22 @@ import { onDestroy, onMount } from 'svelte';
             <a href="/admin" class:active={page.url.pathname === '/admin'}
               ><Building2 size={18} /><span class="nav-label">Department overview</span></a
             >
-            <a href="/admin/faculty" class:active={page.url.pathname.startsWith('/admin/faculty')}
-              ><Users size={18} /><span class="nav-label">Faculty directory</span></a
-            >
+            {#if user?.role === 'ADMIN'}
+              <a href="/admin/faculty" class:active={page.url.pathname.startsWith('/admin/faculty')}
+                ><Users size={18} /><span class="nav-label">Faculty directory</span></a
+              >
+            {/if}
             <a href="/admin/reports" class:active={page.url.pathname.startsWith('/admin/reports')}
               ><ClipboardCheck size={18} /><span class="nav-label">Review queue</span></a
             >
-            <a href="/admin/settings" class:active={page.url.pathname.startsWith('/admin/settings')}
-              ><Cog size={18} /><span class="nav-label">Reporting periods</span></a
-            >
-            <a href="/admin/audit" class:active={page.url.pathname.startsWith('/admin/audit')}
-              ><History size={18} /><span class="nav-label">Audit history</span></a
-            >
+            {#if user?.role === 'ADMIN'}
+              <a href="/admin/settings" class:active={page.url.pathname.startsWith('/admin/settings')}
+                ><Cog size={18} /><span class="nav-label">Reporting periods</span></a
+              >
+              <a href="/admin/audit" class:active={page.url.pathname.startsWith('/admin/audit')}
+                ><History size={18} /><span class="nav-label">Audit history</span></a
+              >
+            {/if}
           </nav>
         {/if}
       </div>

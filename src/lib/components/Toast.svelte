@@ -6,7 +6,7 @@
 {#if toasts.length}
   <div class="toast-stack" role="status" aria-live="polite">
     {#each toasts as t (t.id)}
-      <div class="toast" class:toast-ok={t.type === 'ok'} class:toast-err={t.type === 'err'} class:leaving={t.leaving}>
+      <div class="toast" class:toast-ok={t.type === 'ok'} class:toast-err={t.type === 'err'} class:toast-info={t.type === 'info'} class:leaving={t.leaving}>
         <span class="toast-text">{t.text}</span>
         {#if t.action}
           <button class="toast-act" onclick={() => { t.action!.onClick(); dismissToast(t.id); }}>{t.action.label}</button>
@@ -19,7 +19,7 @@
 <style>
   .toast-stack {
     position: fixed;
-    top: 18px;
+    bottom: 18px;
     right: 18px;
     z-index: 9999;
     display: grid;
@@ -50,6 +50,7 @@
   }
   .toast-ok { background: #7fbf97; color: #1a5a3a; }
   .toast-err { background: #f9e9e7; color: #8f413b; }
+  .toast-info { background: #8bbdd9; color: #1a5a7a; }
   @keyframes toast-in {
     from { opacity: 0; transform: translateX(30px); }
     to { opacity: 1; transform: translateX(0); }

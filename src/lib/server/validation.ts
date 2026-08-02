@@ -34,30 +34,6 @@ export const departmentSchema = z.object({
   name: z.string().min(1, 'Department name is required'),
 });
 
-export const userCreateSchema = z.object({
-  action: z.literal('CREATE'),
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Valid email is required'),
-  role: z.enum(['FACULTY', 'HOD', 'ADMIN'], { message: 'Role must be FACULTY, HOD, or ADMIN' }),
-  password: z.string().min(4, 'Password must be at least 4 characters'),
-  departmentId: z.string().optional().nullable().default(null),
-});
-
-export const userUpdateSchema = z.object({
-  action: z.literal('UPDATE'),
-  userId: z.string().min(1, 'User ID is required'),
-  name: z.string().optional(),
-  email: z.string().email().optional(),
-  role: z.enum(['FACULTY', 'HOD', 'ADMIN']).optional(),
-  departmentId: z.string().optional().nullable(),
-  password: z.string().min(4).optional(),
-});
-
-export const userToggleSchema = z.object({
-  userId: z.string().min(1),
-  isActive: z.boolean(),
-});
-
 export const periodSchema = z.object({
   id: z.string().min(1),
   label: z.string().optional().default(''),
@@ -73,7 +49,26 @@ export const reopenSchema = z.object({
   allowedUntil: z.string().min(1, 'Expiry date is required'),
 });
 
-export const activityRecordsSchema = z.object({
-  reportId: z.string().min(1),
-  records: z.array(z.record(z.string(), z.unknown())),
+export const researchRecordSchema = z.object({
+  category: z.enum(['Journal Paper', 'Patent', 'Research Grant', 'Conference / FDP']),
+  title: z.string().optional().default(''),
+  venueOrAgency: z.string().optional().nullable().default(null),
+  indexingOrQuality: z.string().optional().nullable().default(null),
+  role: z.string().optional().nullable().default(null),
+  status: z.string().optional().nullable().default(null),
+});
+
+export const dutyRecordSchema = z.object({
+  name: z.string().optional().default(''),
+  role: z.string().optional().default(''),
+  activity: z.string().optional().nullable().default(null),
+  reach: z.string().optional().nullable().default(null),
+  outcome: z.string().optional().nullable().default(null),
+});
+
+export const outreachRecordSchema = z.object({
+  activity: z.string().optional().default(''),
+  audience: z.string().optional().nullable().default(null),
+  outcome: z.string().optional().nullable().default(null),
+  date: z.string().optional().nullable().default(null),
 });

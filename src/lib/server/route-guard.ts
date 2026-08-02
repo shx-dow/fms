@@ -10,6 +10,18 @@ export function computeRouteRedirect(path: string, user: GuardUser | null): stri
     return null;
   }
   if (user.role === 'FACULTY' && path.startsWith('/admin')) return '/dashboard';
+  if (user.role === 'HOD' && isAdminOnlyPath(path)) return '/admin';
   if (path === '/login') return user.role === 'ADMIN' ? '/admin' : '/dashboard';
   return null;
+}
+
+export function isAdminOnlyPath(path: string): boolean {
+  return (
+    path === '/admin/faculty' ||
+    path.startsWith('/admin/faculty') ||
+    path === '/admin/settings' ||
+    path.startsWith('/admin/settings') ||
+    path === '/admin/audit' ||
+    path.startsWith('/admin/audit')
+  );
 }
