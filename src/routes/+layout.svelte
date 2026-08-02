@@ -311,9 +311,9 @@ import { onDestroy, onMount } from 'svelte';
     border-radius: 3px;
     letter-spacing: 0.03em;
   }
-  .pill-sub { background: #e5f0f4; color: #145b78; }
-  .pill-ok { background: #e4f1eb; color: #24745b; }
-  .pill-chg { background: #f4eddd; color: #8a681d; }
+  .pill-sub { background: #8bbdd9; color: #1a5a7a; }
+  .pill-ok { background: #7fbf97; color: #1a5a3a; }
+  .pill-chg { background: #e09080; color: #7a3028; }
   .notif-time {
     color: #87969c;
     font-size: 0.65rem;

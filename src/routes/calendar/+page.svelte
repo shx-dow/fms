@@ -156,9 +156,9 @@
   .cal-avatar { width: 26px; height: 26px; border-radius: 50%; background: #e5f0f4; color: #145b78; display: grid; place-items: center; font-size: 0.68rem; font-weight: 800; flex: none; }
   .cal-row-right { display: flex; align-items: center; gap: 12px; flex: none; }
   .report-pill { font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; letter-spacing: 0.02em; }
-  .r-sub { background: #e5f0f4; color: #145b78; }
-  .r-ok { background: #e4f1eb; color: #24745b; }
-  .r-chg { background: #f4eddd; color: #8a681d; }
+  .r-sub { background: #8bbdd9; color: #1a5a7a; }
+  .r-ok { background: #7fbf97; color: #1a5a3a; }
+  .r-chg { background: #e09080; color: #7a3028; }
   .cal-completion { color: #87969c; font-size: 0.76rem; font-weight: 700; }
   .cal-empty { padding: 44px 20px; text-align: center; color: #87969c; font-size: 0.8rem; }
   .spinner { width: 18px; height: 18px; border: 2px solid #dbe3e7; border-top-color: #145b78; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }

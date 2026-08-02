@@ -39,7 +39,7 @@
     opacity: 0;
     transform: translateX(30px);
   }
-  .toast-ok { background: #e4f1eb; color: #24745b; }
+  .toast-ok { background: #7fbf97; color: #1a5a3a; }
   .toast-err { background: #f9e9e7; color: #8f413b; }
   @keyframes toast-in {
     from { opacity: 0; transform: translateX(30px); }

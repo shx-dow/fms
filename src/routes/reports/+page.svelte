@@ -119,10 +119,10 @@
   .report-period { display: block; font-size: 0.82rem; color: #1b2b36; margin-bottom: 2px; }
   .report-date { display: block; font-size: 0.7rem; color: #87969c; }
   .report-pill { flex: none; font-size: 0.65rem; font-weight: 800; padding: 4px 8px; border-radius: 4px; letter-spacing: 0.02em; }
-  .r-draft { background: #f4eddd; color: #8a681d; }
-  .r-sub { background: #e5f0f4; color: #145b78; }
-  .r-ok { background: #e4f1eb; color: #24745b; }
-  .r-chg { background: #f4eddd; color: #8a681d; }
+  .r-draft { background: #f0d48a; color: #7a6420; }
+  .r-sub { background: #8bbdd9; color: #1a5a7a; }
+  .r-ok { background: #7fbf97; color: #1a5a3a; }
+  .r-chg { background: #e09080; color: #7a3028; }
   .report-view { flex: none; font-size: 0.73rem; font-weight: 700; color: #145b78; }
   .reports-empty { padding: 40px 20px; text-align: center; color: #87969c; font-size: 0.8rem; }
   .reports-empty a { color: #145b78; text-decoration: none; font-weight: 700; }

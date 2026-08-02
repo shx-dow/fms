@@ -115,7 +115,7 @@
   .table-card td { color: #667477; }
   .table-card td strong { color: #1b2b36; }
   .pill { display: inline-block; padding: 3px 7px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; }
-  .pill.active { background: #e4f1eb; color: #24745b; }
+  .pill.active { background: #7fbf97; color: #1a5a3a; }
   .pill.inactive { background: #eef3f5; color: #71818a; }
   .td-acts { text-align: right; white-space: nowrap; }
   .btn-ghost { border: 0; background: transparent; font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; margin-left: 6px; color: #145b78; }

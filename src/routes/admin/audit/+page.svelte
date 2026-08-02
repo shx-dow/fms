@@ -154,8 +154,8 @@
   .time-ago { display: block; font-size: 0.78rem; color: #1b2b36; }
   .time-full { display: block; color: #87969c; font-size: 0.65rem; margin-top: 2px; }
   .audit-pill { display: inline-block; font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; }
-  .audit-pill.pill-ok { background: #e4f1eb; color: #24745b; }
-  .audit-pill.pill-sub { background: #e5f0f4; color: #145b78; }
+  .audit-pill.pill-ok { background: #7fbf97; color: #1a5a3a; }
+  .audit-pill.pill-sub { background: #8bbdd9; color: #1a5a7a; }
   .entity-label { color: #667477; font-size: 0.76rem; }
   .empty-row { text-align: center; padding: 24px; color: #87969c; font-size: 0.8rem; }
   .pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 18px; }

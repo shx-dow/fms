@@ -168,7 +168,7 @@
   .settings-card h2 { margin: 0; font-size: 1.1rem; }
   .setting-deadline { color: #667477; margin: 5px 0 0; font-size: 0.78rem; }
   .status-pill { flex: none; font-size: 0.65rem; font-weight: 800; padding: 4px 8px; border-radius: 4px; align-self: start; }
-  .status-pill.open { background: #e4f1eb; color: #24745b; }
+  .status-pill.open { background: #7fbf97; color: #1a5a3a; }
   .status-pill.closed { background: #eef3f5; color: #71818a; }
   .setting-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 20px; }
   .setting-form label { font-size: 0.74rem; font-weight: 700; color: #667477; }

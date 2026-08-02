@@ -183,9 +183,8 @@
       return 'c-none';
     }
     if (Number(w.level) === 4) return 'c-approved';
-    if (Number(w.level) === 3) return 'c-full';
-    if (Number(w.level) === 2) return 'c-mid';
-    if (Number(w.level) === 1) return 'c-low';
+    if (Number(w.level) === 3) return 'c-submitted';
+    if (Number(w.level) === 2) return 'c-draft';
     return 'c-none';
   }
   function weekTip(w: Week) {
@@ -217,229 +216,169 @@
   {:else}
     <header class="dash-header">
       <div>
-        <h1>Dashboard</h1>
+        <h1>{user?.name ? `Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, ${user.name.split(' ')[0]}` : 'Dashboard'}</h1>
         <span class="dash-period">{periodLabel}</span>
       </div>
       <div class="dash-actions">
-        {#if deadlinePassed}
-          <span class="dash-badge passed">Deadline passed</span>
-        {:else if deadlineUrgent}
-          <span class="dash-badge urgent">{deadlineHours}h remaining</span>
-        {:else if deadline}
-          <span class="dash-badge quiet">{deadline}</span>
-        {/if}
         <a href="/reports/current" class="dash-cta"
           >{status === 'Approved' ? 'View report' : status === 'Submitted' ? 'View submitted' : 'Continue report'} →</a
         >
       </div>
     </header>
 
-    <div class="dash-metrics">
-      <div>
-        <span>Classes conducted</span>
-        <strong>{conducted}<em> / {scheduled}</em></strong>
-        <small>{deliveryRate !== null ? `${deliveryRate}% delivery` : 'No classes'}</small>
-      </div>
-      <div>
-        <span>Syllabus progress</span>
-        <strong>{syllabus}<em>%</em></strong>
-        <small>Across {teaching.length} course{teaching.length === 1 ? '' : 's'}</small>
-      </div>
-      <div>
-        <span>Completion</span>
-        <strong>{completion}<em>%</em></strong>
-        <div class="dash-track"><i style="width:{completion}%"></i></div>
-      </div>
-      <div>
-        <span>Report status</span>
-        <strong class="status-badge" class:draft={status === 'Draft'} class:submitted={status === 'Submitted'} class:approved={status === 'Approved'} class:changes={status === 'Changes required'}>{status}</strong>
-      </div>
+    <div class="dash-status-line">
+      <span>{conducted}<em> / {scheduled}</em> classes</span>
+      {#if deadline}
+        <span class="dash-sep">·</span>
+        <span class:urgent={deadlineUrgent} class:passed={deadlinePassed}>{deadlinePassed ? 'Deadline passed' : deadlineUrgent ? `${deadlineHours}h left` : `Due ${deadline}`}</span>
+      {/if}
+      <span class="dash-sep">·</span>
+      <span class="dash-pill dash-pill-{status === 'Draft' ? 'draft' : status === 'Submitted' ? 'submitted' : status === 'Approved' ? 'approved' : status === 'Changes required' ? 'changes' : 'none'}">{status}</span>
     </div>
 
-    <section class="weeks-card">
-      <div class="panel-head weeks-head">
-        <div class="weeks-title">
-          <h2>Reporting weeks</h2>
-          {#if !weeksLoading && weeks.length}
-            <span class="weeks-count">{activeWeekCount} week{activeWeekCount === 1 ? '' : 's'} · {activeYear}</span>
-          {/if}
-        </div>
-        {#if years.length > 1}
-          <div class="weeks-years">
-            {#each years as y}
-              <button class="year-pill" class:active={y === activeYear} onclick={() => pickYear(y)}>{y}</button>
-            {/each}
+    <div class="dash-row">
+      <section class="weeks-card">
+        <div class="panel-head weeks-head">
+          <div class="weeks-title">
+            <h2>Reporting weeks</h2>
+            {#if !weeksLoading && weeks.length}
+              <span class="weeks-count">{activeWeekCount} week{activeWeekCount === 1 ? '' : 's'} · {activeYear}</span>
+            {/if}
           </div>
-        {/if}
-      </div>
-      {#if weeksLoading}
-        <div class="weeks-loading"><span class="spinner"></span></div>
-      {:else if !weeks.length}
-        <div class="weeks-empty">No reporting weeks yet.</div>
-      {:else}
-        <div class="weeks-body">
-          <div class="weeks-timeline-row">
-            <button class="scroll-arrow scroll-left" class:hidden={!canScrollLeft} onclick={() => scrollWeeks(-1)} aria-label="Scroll earlier">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <div class="weeks-timeline" bind:this={timelineEl} aria-label={`Reporting weeks for ${activeYear}`}>
-              <span class="weeks-empty-label">New Semester Begins</span>
-              {#each weekGroups as group}
-                <div class="week-month">
-                  <span class="week-month-label">{group.label}</span>
-                  <div class="week-strip">
-                    {#each group.weeks as week}
-                      <button
-                        class="week-cell {weekCellClass(week)}"
-                        class:current={week.id === currentPeriodId}
-                        class:sel={week.id === selectedPeriod}
-                        class:late={Number(week.late) === 1}
-                        aria-label={weekTip(week)}
-                        onclick={() => selectWeek(week.id)}
-                        onmouseenter={(e) => showTip(e, week)}
-                        onmousemove={positionTip}
-                        onmouseleave={hideTip}
-                      >
-                        <span>{new Date(week.starts_on + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric' })}</span>
-                      </button>
-                    {/each}
-                  </div>
-                </div>
+          {#if years.length > 1}
+            <div class="weeks-years">
+              {#each years as y}
+                <button class="year-pill" class:active={y === activeYear} onclick={() => pickYear(y)}>{y}</button>
               {/each}
             </div>
-            <button class="scroll-arrow scroll-right" class:hidden={!canScrollRight} onclick={() => scrollWeeks(1)} aria-label="Scroll forward">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+          {/if}
+          <div class="weeks-legend">
+            <span class="legend-dot" style="background:#e2e2e2"></span><span>No report</span>
+            <span class="legend-dot" style="background:#f0d48a"></span><span>Draft</span>
+            <span class="legend-dot" style="background:#8bbdd9"></span><span>Submitted</span>
+            <span class="legend-dot" style="background:#7fbf97"></span><span>Approved</span>
+            <span class="legend-dot" style="background:#e09080"></span><span>Changes</span>
           </div>
-          {#if detailLoading}
-            <span class="spinner"></span>
-          {:else if weekDetail}
-            <div class="selected-status">
-              <span class="wp-pill {weekDetail.report ? 'wp-' + (weekDetail.report.status === 'APPROVED' ? 'ok' : weekDetail.report.status === 'SUBMITTED' ? 'sub' : weekDetail.report.status === 'CHANGES_REQUIRED' ? 'chg' : 'draft') : 'wp-none'}">{weekDetail.report ? statusLabel(weekDetail.report.status) : 'Not started'}</span>
-              {#if isFaculty && weekDetail.report}
-                <span class="selected-pct">{weekDetail.report.completion}%</span>
-              {/if}
+        </div>
+        {#if weeksLoading}
+          <div class="weeks-loading"><span class="spinner"></span></div>
+        {:else if !weeks.length}
+          <div class="weeks-empty">No reporting weeks yet.</div>
+        {:else}
+          <div class="weeks-body">
+            <div class="weeks-timeline-row">
+              <button class="scroll-arrow scroll-left" class:hidden={!canScrollLeft} onclick={() => scrollWeeks(-1)} aria-label="Scroll earlier">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="weeks-timeline" bind:this={timelineEl} aria-label={`Reporting weeks for ${activeYear}`}>
+                <span class="weeks-empty-label">New Semester Begins</span>
+                {#each weekGroups as group}
+                  <div class="week-month">
+                    <span class="week-month-label">{group.label}</span>
+                    <div class="week-strip">
+                      {#each group.weeks as week}
+                        <button
+                          class="week-cell {weekCellClass(week)}"
+                          class:current={week.id === currentPeriodId}
+                          class:sel={week.id === selectedPeriod}
+                          class:late={Number(week.late) === 1}
+                          aria-label={weekTip(week)}
+                          onclick={() => selectWeek(week.id)}
+                          onmouseenter={(e) => showTip(e, week)}
+                          onmousemove={positionTip}
+                          onmouseleave={hideTip}
+                        >
+                          <span>{new Date(week.starts_on + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric' })}</span>
+                        </button>
+                      {/each}
+                    </div>
+                  </div>
+                {/each}
+              </div>
+              <button class="scroll-arrow scroll-right" class:hidden={!canScrollRight} onclick={() => scrollWeeks(1)} aria-label="Scroll forward">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+            {#if detailLoading}
+              <span class="spinner"></span>
+            {:else if weekDetail}
+              <div class="selected-status">
+                <span class="wp-pill {weekDetail.report ? 'wp-' + (weekDetail.report.status === 'APPROVED' ? 'ok' : weekDetail.report.status === 'SUBMITTED' ? 'sub' : weekDetail.report.status === 'CHANGES_REQUIRED' ? 'chg' : 'draft') : 'wp-none'}">{weekDetail.report ? statusLabel(weekDetail.report.status) : 'Not started'}</span>
+              </div>
+            {/if}
+          </div>
+          {#if !isFaculty && weekDetail?.reports?.length}
+            {@const submitted = weekDetail.reports.filter((r: any) => r.status === 'SUBMITTED').length}
+            {@const approved = weekDetail.reports.filter((r: any) => r.status === 'APPROVED').length}
+            {@const total = weekDetail.reports.length}
+            <div class="weeks-reports-summary">
+              <span>{approved}/{total} approved · {submitted} pending review</span>
+              <a href="/admin/reports">View all →</a>
             </div>
           {/if}
-        </div>
-        {#if !isFaculty && weekDetail?.reports?.length}
-          <div class="weeks-reports">
-            {#each weekDetail.reports as r}
-              <a class="report-row" href={r.status === 'DRAFT' ? '/admin/reports' : `/admin/reports?report=${r.id}`}>
-                <div class="report-name">
-                  <strong>{r.faculty_name}</strong>
-                  <small>{r.faculty_email}</small>
-                </div>
-                <div class="report-right">
-                  <span class="wp-pill {r.status === 'APPROVED' ? 'wp-ok' : r.status === 'SUBMITTED' ? 'wp-sub' : r.status === 'CHANGES_REQUIRED' ? 'wp-chg' : 'wp-draft'}">{statusLabel(r.status)}</span>
-                  <span class="report-pct">{r.completion}%</span>
-                </div>
-              </a>
-            {/each}
-          </div>
-        {/if}
-      {/if}
-    </section>
-
-    <div class="dash-bottom">
-      <section class="teaching-panel">
-        <div class="panel-head">
-          <h2>This week's teaching</h2>
-          <a href="/reports/current">Open report →</a>
-        </div>
-        {#if teaching.length}
-          {#each teaching as c, i}
-            <div class="course-row">
-              <div class="course-info">
-                <strong class="course-code">{c.course_code}</strong>
-                <span class="course-name">{c.course_name}</span>
-                <span class="course-type">{c.class_type}</span>
-              </div>
-              <div class="course-stats">
-                <div class="course-classes">
-                  <span>Classes</span>
-                  <strong>{c.conducted}<em> / {c.scheduled}</em></strong>
-                </div>
-                <div class="course-syll">
-                  <span>Syllabus</span>
-                  <strong>{c.syllabus_completion}<em>%</em></strong>
-                </div>
-              </div>
-              <div class="course-bar">
-                <div class="cbar-track"><i class="cbar-fill" style="width:{c.scheduled ? Math.round((c.conducted / c.scheduled) * 100) : 0}%"></i></div>
-              </div>
-              <span class="course-mark" class:ok={c.scheduled && c.conducted >= c.scheduled} class:mid={c.scheduled && c.conducted > 0 && c.conducted < c.scheduled} class:low={!c.scheduled || c.conducted === 0}>
-                {c.scheduled && c.conducted >= c.scheduled ? '✓' : c.scheduled && c.conducted > 0 ? '△' : '⚠'}
-              </span>
-            </div>
-          {/each}
-        {:else}
-          <div class="teaching-empty">No courses added to this period yet.</div>
         {/if}
       </section>
 
-      <aside class="side-stack">
-        <div class="side-card">
-          <div class="panel-head">
-            <h2>Attention</h2>
-          </div>
-          {#if status === 'No report' || status === 'Draft'}
-            <div class="attn-row">
-              <span class="attn-icon warn">!</span>
-              <div>
-                <strong>Report is {status === 'No report' ? 'not started' : 'incomplete'}</strong>
-                <p>Add this week's activity and submit before the deadline.</p>
-                <a href="/reports/current">Open report →</a>
-              </div>
-            </div>
-          {:else if status === 'Submitted'}
-            <div class="attn-row">
-              <span class="attn-icon info">i</span>
-              <div>
-                <strong>Report under review</strong>
-                <p>Your HOD will review it shortly.</p>
-                <a href="/reports/current">View submitted →</a>
-              </div>
-            </div>
-          {:else if status === 'Approved'}
-            <div class="attn-row">
-              <span class="attn-icon ok">✓</span>
-              <div>
-                <strong>Report approved</strong>
-                <p>No action needed for {periodLabel}.</p>
-                <a href="/reports/current">View report →</a>
-              </div>
-            </div>
-          {:else if status === 'Changes required'}
-            <div class="attn-row">
-              <span class="attn-icon warn">!</span>
-              <div>
-                <strong>Changes requested</strong>
-                <p>Review HOD feedback and resubmit.</p>
-                <a href="/reports/current">Review →</a>
-              </div>
-            </div>
-          {/if}
+      <div class="attention-card">
+        <div class="panel-head">
+          <h2>Attention</h2>
         </div>
-
-        <div class="side-card">
-          <div class="panel-head">
-            <h2>Recent reports</h2>
-            <a href="/reports">View all</a>
+        {#if status === 'No report' || status === 'Draft'}
+          <div class="attn-row">
+            <span class="attn-icon warn">!</span>
+            <div>
+              <strong>Report is {status === 'No report' ? 'not started' : 'incomplete'}</strong>
+              <p>Add this week's activity and submit before the deadline.</p>
+            </div>
           </div>
-          {#if history.length}
-            {#each history as r}
-              <a class="hist-row" href="/reports/current">
-                <strong>{r.period_label}</strong>
-                <span class="hist-pill" class:hist-draft={r.status === 'DRAFT'} class:hist-sub={r.status === 'SUBMITTED'} class:hist-ok={r.status === 'APPROVED'} class:hist-chg={r.status === 'CHANGES_REQUIRED'}>{r.status === 'DRAFT' ? 'Draft' : r.status === 'SUBMITTED' ? 'Submitted' : r.status === 'APPROVED' ? 'Approved' : 'Changes'}</span>
-              </a>
-            {/each}
-          {:else}
-            <div class="hist-empty">No past reports yet.</div>
-          {/if}
-        </div>
-      </aside>
+          <a href="/reports/current" class="attn-action">Open report →</a>
+        {:else if status === 'Submitted'}
+          <div class="attn-row">
+            <span class="attn-icon info">i</span>
+            <div>
+              <strong>Report under review</strong>
+              <p>Your HOD will review it shortly.</p>
+            </div>
+          </div>
+          <a href="/reports/current" class="attn-action">View submitted →</a>
+        {:else if status === 'Approved'}
+          <div class="attn-row">
+            <span class="attn-icon ok">✓</span>
+            <div>
+              <strong>Report approved</strong>
+              <p>No action needed for {periodLabel}.</p>
+            </div>
+          </div>
+          <a href="/reports/current" class="attn-action">View report →</a>
+        {:else if status === 'Changes required'}
+          <div class="attn-row">
+            <span class="attn-icon warn">!</span>
+            <div>
+              <strong>Changes requested</strong>
+              <p>Review HOD feedback and resubmit.</p>
+            </div>
+          </div>
+          <a href="/reports/current" class="attn-action">Review →</a>
+        {/if}
+      </div>
     </div>
+
+    <section class="reports-panel">
+      <div class="panel-head">
+        <h2>Recent reports</h2>
+      </div>
+      {#if history.length}
+        {#each history as r}
+          <a class="hist-row" href="/reports/current">
+            <strong>{r.period_label}</strong>
+            <span class="hist-pill" class:hist-draft={r.status === 'DRAFT'} class:hist-sub={r.status === 'SUBMITTED'} class:hist-ok={r.status === 'APPROVED'} class:hist-chg={r.status === 'CHANGES_REQUIRED'}>{r.status === 'DRAFT' ? 'Draft' : r.status === 'SUBMITTED' ? 'Submitted' : r.status === 'APPROVED' ? 'Approved' : 'Changes'}</span>
+          </a>
+        {/each}
+      {:else}
+        <div class="hist-empty">No past reports yet.</div>
+      {/if}
+      <a href="/reports" class="reports-viewall">View all reports →</a>
+    </section>
   {/if}
   {#if tooltipVisible}
     <div class="week-tooltip" style="left:{tooltipX}px;top:{tooltipY}px">{tooltipText}</div>
@@ -451,74 +390,51 @@
   .spinner { width: 18px; height: 18px; border: 2px solid #dbe3e7; border-top-color: #145b78; border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .error-panel { padding: 16px 20px; background: #f9e9e7; color: #8f413b; border-radius: 7px; font-size: 0.88rem; }
-  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 28px; }
-  .dash-header h1 { font-size: 1.65rem; letter-spacing: -0.03em; margin: 0 0 3px; }
+  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 16px; }
+  .dash-header h1 { font-size: 1.5rem; letter-spacing: -0.03em; margin: 0 0 3px; font-weight: 700; }
   .dash-period { font-size: 0.82rem; color: #667477; }
   .dash-actions { display: flex; align-items: center; gap: 14px; }
-  .dash-badge { font-size: 0.72rem; font-weight: 700; padding: 5px 10px; border-radius: 5px; white-space: nowrap; }
-  .dash-badge.passed { background: #f8e8e5; color: #a84f42; }
-  .dash-badge.urgent { background: #f4eddd; color: #8a681d; }
-  .dash-badge.quiet { background: #e5f0f4; color: #145b78; }
   .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; background: #17252d; color: #f4f6f5; text-decoration: none; font-size: 0.78rem; font-weight: 700; white-space: nowrap; transition: background 0.14s ease; }
   .dash-cta:hover { background: #294a5a; }
-  .dash-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #dbe3e7; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
-  .dash-metrics > div { background: #fdfcf9; padding: 18px 20px; }
-  .dash-metrics span:first-child { display: block; color: #71818a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; margin-bottom: 8px; }
-  .dash-metrics strong { display: block; font-size: 1.7rem; letter-spacing: -0.04em; line-height: 1.1; color: #1b2b36; }
-  .dash-metrics strong em { font-style: normal; font-size: 1rem; color: #71818a; letter-spacing: 0; }
-  .dash-metrics small { display: block; color: #71818a; font-size: 0.7rem; margin-top: 5px; }
-  .dash-track { height: 5px; background: #dbe3e7; border-radius: 3px; margin-top: 9px; overflow: hidden; }
-  .dash-track i { display: block; height: 100%; background: #145b78; border-radius: 3px; }
-  .status-badge { display: inline-block; padding: 6px 10px; border-radius: 5px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.02em; }
-  .status-badge.draft { background: #f4eddd; color: #8a681d; }
-  .status-badge.submitted { background: #e5f0f4; color: #145b78; }
-  .status-badge.approved { background: #e4f1eb; color: #24745b; }
-  .status-badge.changes { background: #f4eddd; color: #8a681d; }
-  .dash-bottom { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; }
-  .teaching-panel { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
+  .dash-status-line { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #667477; margin-bottom: 24px; }
+  .dash-status-line em { font-style: normal; color: #87969c; }
+  .dash-sep { color: #c4cdd0; }
+  .dash-status-line .urgent { color: #8a681d; font-weight: 700; }
+  .dash-status-line .passed { color: #a84f42; font-weight: 700; }
+  .dash-pill { display: inline-block; padding: 3px 10px; border-radius: 5px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.01em; }
+  .dash-pill-draft { background: #f0d48a; color: #7a6420; }
+  .dash-pill-submitted { background: #8bbdd9; color: #1a5a7a; }
+  .dash-pill-approved { background: #7fbf97; color: #1a5a3a; }
+  .dash-pill-changes { background: #e09080; color: #7a3028; }
+  .dash-pill-none { background: #e2e2e2; color: #6b6b6b; }
+  .dash-row { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; margin-bottom: 24px; }
   .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #dbe3e7; }
   .panel-head h2 { font-size: 0.9rem; margin: 0; letter-spacing: -0.01em; }
-  .panel-head a { color: #145b78; text-decoration: none; font-size: 0.73rem; font-weight: 700; }
-  .course-row { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid #e8eeec; }
-  .course-row:last-child { border-bottom: 0; }
-  .course-info { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; min-width: 0; flex: 1; }
-  .course-code { grid-row: 1; font-size: 0.78rem; color: #145b78; font-weight: 800; letter-spacing: 0.02em; }
-  .course-name { grid-row: 1; font-size: 0.82rem; color: #1b2b36; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .course-type { grid-row: 2; grid-column: 2; font-size: 0.66rem; color: #87969c; }
-  .course-stats { display: flex; gap: 16px; flex: none; }
-  .course-stats > div { text-align: right; }
-  .course-stats span { display: block; font-size: 0.62rem; color: #87969c; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; margin-bottom: 2px; }
-  .course-stats strong { font-size: 0.82rem; color: #1b2b36; }
-  .course-stats strong em { font-style: normal; font-size: 0.7rem; color: #87969c; }
-  .course-bar { width: 80px; flex: none; }
-  .cbar-track { height: 4px; background: #dbe3e7; border-radius: 2px; overflow: hidden; }
-  .cbar-fill { display: block; height: 100%; background: #145b78; border-radius: 2px; }
-  .course-mark { width: 20px; text-align: center; font-size: 0.85rem; font-weight: 800; flex: none; }
-  .course-mark.ok { color: #24745b; }
-  .course-mark.mid { color: #b48632; }
-  .course-mark.low { color: #a84f42; }
-  .teaching-empty { padding: 32px 20px; text-align: center; color: #87969c; font-size: 0.8rem; }
-  .side-stack { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-  .side-card { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; }
+  .attention-card { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; align-self: stretch; display: flex; flex-direction: column; }
+  .attention-card .attn-row { flex: 1; }
+  .reports-panel { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+  .reports-viewall { display: block; text-align: center; padding: 14px 20px; border-top: 1px solid #dbe3e7; color: #145b78; text-decoration: none; font-size: 0.78rem; font-weight: 700; transition: background 0.12s ease; }
+  .reports-viewall:hover { background: #f4f6f5; }
   .attn-row { display: flex; gap: 13px; padding: 16px 18px; align-items: start; }
   .attn-icon { width: 23px; height: 23px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.72rem; flex: none; margin-top: 1px; }
-  .attn-icon.warn { background: #f4eddd; color: #8a681d; }
-  .attn-icon.info { background: #e5f0f4; color: #145b78; }
-  .attn-icon.ok { background: #e4f1eb; color: #24745b; }
+  .attn-icon.warn { background: #f0d48a; color: #7a6420; }
+  .attn-icon.info { background: #8bbdd9; color: #1a5a7a; }
+  .attn-icon.ok { background: #7fbf97; color: #1a5a3a; }
   .attn-row strong { display: block; font-size: 0.8rem; margin-bottom: 2px; }
   .attn-row p { margin: 0 0 5px; color: #667477; font-size: 0.74rem; line-height: 1.4; }
-  .attn-row a { color: #145b78; text-decoration: none; font-weight: 700; font-size: 0.74rem; }
+  .attn-action { display: block; text-align: center; padding: 14px 20px; border-top: 1px solid #dbe3e7; color: #145b78; text-decoration: none; font-size: 0.78rem; font-weight: 700; transition: background 0.12s ease; }
+  .attn-action:hover { background: #f4f6f5; }
   .hist-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; text-decoration: none; border-bottom: 1px solid #e8eeec; transition: background 0.1s ease; }
   .hist-row:last-child { border-bottom: 0; }
   .hist-row:hover { background: #f4f6f5; }
   .hist-row strong { font-size: 0.78rem; color: #1b2b36; }
   .hist-pill { font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; }
-  .hist-draft { background: #f4eddd; color: #8a681d; }
-  .hist-sub { background: #e5f0f4; color: #145b78; }
-  .hist-ok { background: #e4f1eb; color: #24745b; }
-  .hist-chg { background: #f4eddd; color: #8a681d; }
+  .hist-draft { background: #f0d48a; color: #7a6420; }
+  .hist-sub { background: #8bbdd9; color: #1a5a7a; }
+  .hist-ok { background: #7fbf97; color: #1a5a3a; }
+  .hist-chg { background: #e09080; color: #7a3028; }
   .hist-empty { padding: 24px 18px; text-align: center; color: #87969c; font-size: 0.78rem; }
-  .weeks-card { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; margin-bottom: 24px; min-width: 0; }
+  .weeks-card { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; min-width: 0; overflow: hidden; }
   .weeks-head { gap: 14px; flex-wrap: wrap; overflow: hidden; border-radius: 8px 8px 0 0; }
   .weeks-title { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
   .weeks-title h2 { white-space: nowrap; }
@@ -527,6 +443,8 @@
   .year-pill { border: 0; background: transparent; font: inherit; font-size: 0.7rem; font-weight: 700; color: #667477; cursor: pointer; padding: 3px 11px; border-radius: 5px; transition: background 0.12s ease, color 0.12s ease; }
   .year-pill:hover { color: #17252d; }
   .year-pill.active { background: #17252d; color: #f4f6f5; }
+  .weeks-legend { display: flex; align-items: center; gap: 4px 10px; font-size: 0.62rem; color: #87969c; margin-left: auto; white-space: nowrap; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; border: 1px solid #dbe3e7; }
   .weeks-loading, .weeks-empty { padding: 28px 20px; display: flex; align-items: center; gap: 12px; color: #87969c; font-size: 0.8rem; justify-content: center; }
   .weeks-body { padding: 18px 24px 22px; background: #fbfcfb; min-width: 0; display: flex; flex-direction: column; }
   .weeks-timeline-row { display: flex; align-items: center; gap: 6px; position: relative; }
@@ -540,26 +458,18 @@
   .week-strip { display: flex; gap: 10px; }
   .week-cell { width: 42px; height: 42px; border: 1px solid transparent; border-radius: 8px; padding: 0; cursor: pointer; position: relative; color: #667477; font: inherit; font-size: 0.75rem; font-weight: 800; transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease; }
   .week-cell:hover { transform: translateY(-2px); border-color: #8aabb8; z-index: 2; }
-  .week-cell.c-none { background: #f0f3f4; color: #71818a; }
-  .week-cell.c-low { background: #edf4f6; color: #47778d; }
-  .week-cell.c-mid { background: #d8e9f1; color: #286681; }
-  .week-cell.c-full { background: #bddae7; color: #145b78; }
-  .week-cell.c-submitted { background: #dcecf3; color: #145b78; }
-  .week-cell.c-approved { background: #dceee5; color: #24745b; }
-  .week-cell.c-changes { background: #f4ecd8; color: #8a681d; }
+  .week-cell.c-none { background: #e2e2e2; color: #6b6b6b; }
+  .week-cell.c-draft { background: #f0d48a; color: #7a6420; }
+  .week-cell.c-submitted { background: #8bbdd9; color: #1a5a7a; }
+  .week-cell.c-approved { background: #7fbf97; color: #1a5a3a; }
+  .week-cell.c-changes { background: #e09080; color: #7a3028; }
   .week-cell.late { border-color: #b25b4e; }
   .week-cell.current { box-shadow: 0 0 0 2px #145b78; }
   .week-cell.sel { border-color: #17252d; box-shadow: 0 0 0 2px #17252d; }
   .week-cell.sel.current { box-shadow: 0 0 0 2px #17252d; }
   .selected-status { display: flex; align-items: center; gap: 8px; padding-top: 12px; margin-left: auto; }
-  .selected-pct { font-size: 0.68rem; font-weight: 700; color: #87969c; }
-  .weeks-reports { padding: 12px 16px; border-top: 1px solid #eef2f3; display: grid; }
-  .report-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #eef2f3; text-decoration: none; }
-  .report-row:last-child { border-bottom: 0; }
-  .report-name strong { display: block; font-size: 0.78rem; color: #1b2b36; }
-  .report-name small { font-size: 0.66rem; color: #71818a; }
-  .report-right { display: flex; align-items: center; gap: 10px; flex: none; }
-  .report-pct { font-size: 0.74rem; color: #87969c; font-weight: 700; }
+  .weeks-reports-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid #eef2f3; font-size: 0.74rem; color: #667477; }
+  .weeks-reports-summary a { color: #145b78; text-decoration: none; font-weight: 700; font-size: 0.73rem; }
   .week-tooltip {
     position: fixed;
     transform: translate(-50%, -100%);
@@ -576,28 +486,19 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
   .wp-pill { font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; }
-  .wp-ok { background: #e4f1eb; color: #24745b; }
-  .wp-sub { background: #e5f0f4; color: #145b78; }
-  .wp-chg { background: #f4eddd; color: #8a681d; }
-  .wp-draft { background: #eef1f2; color: #667477; }
-  .wp-none { background: #eef1f2; color: #87969c; }
-  @media (max-width: 900px) {
-    .dash-bottom { grid-template-columns: 1fr; }
-    .side-stack { grid-template-columns: 1fr; }
-    .side-stack { position: static; }
-  }
+  .wp-ok { background: #7fbf97; color: #1a5a3a; }
+  .wp-sub { background: #8bbdd9; color: #1a5a7a; }
+  .wp-chg { background: #e09080; color: #7a3028; }
+  .wp-draft { background: #f0d48a; color: #7a6420; }
+  .wp-none { background: #e2e2e2; color: #6b6b6b; }
   @media (max-width: 800px) {
     .dash-header { flex-direction: column; align-items: start; }
-    .dash-metrics { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 600px) {
-    .course-row { flex-wrap: wrap; }
-    .course-bar { display: none; }
     .weeks-timeline-row { flex-direction: column; align-items: stretch; gap: 10px; }
     .selected-status { justify-content: flex-end; }
   }
   @media (max-width: 500px) {
-    .dash-metrics { grid-template-columns: 1fr; }
     .dash-actions { flex-wrap: wrap; }
   }
 </style>

@@ -326,10 +326,10 @@
   .row-date { flex: none; color: #87969c; font-size: 0.7rem; }
   .row-act { flex: none; font-size: 0.73rem; font-weight: 700; color: #145b78; }
   .report-pill { flex: none; font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; letter-spacing: 0.02em; }
-  .r-sub { background: #e5f0f4; color: #145b78; }
-  .r-ok { background: #e4f1eb; color: #24745b; }
-  .r-chg { background: #f4eddd; color: #8a681d; }
-  .r-drf { background: #eef3f5; color: #71818a; }
+  .r-sub { background: #8bbdd9; color: #1a5a7a; }
+  .r-ok { background: #7fbf97; color: #1a5a3a; }
+  .r-chg { background: #e09080; color: #7a3028; }
+  .r-drf { background: #e2e2e2; color: #6b6b6b; }
   .empty-state { padding: 24px 20px; color: #87969c; font-size: 0.8rem; }
   .missing-note { padding: 12px 20px; margin: 0; color: #87969c; font-size: 0.74rem; }
   .trends-section { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; overflow: hidden; margin-top: 24px; }
@@ -338,9 +338,9 @@
   .trends-table td { padding: 14px 20px; border-bottom: 1px solid #e8eeec; color: #1b2b36; }
   .trends-table tr:last-child td { border-bottom: 0; }
   .trend-pill { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 800; }
-  .trend-pill.trend-ok { background: #e4f1eb; color: #24745b; }
-  .trend-pill.trend-mid { background: #f4eddd; color: #8a681d; }
-  .trend-pill.trend-low { background: #f8e8e5; color: #a84f42; }
+  .trend-pill.trend-ok { background: #7fbf97; color: #1a5a3a; }
+  .trend-pill.trend-mid { background: #f0d48a; color: #7a6420; }
+  .trend-pill.trend-low { background: #e09080; color: #7a3028; }
   .audit-card { margin-top: 24px; }
   @media (max-width: 900px) {
     .dash-metrics.wide { grid-template-columns: repeat(2, 1fr); }

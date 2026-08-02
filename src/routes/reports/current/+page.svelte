@@ -498,10 +498,10 @@
   .editor-head-left h1 { font-size: 1.65rem; letter-spacing: -0.03em; margin: 0; }
   .head-period { font-size: 0.82rem; color: #667477; }
   .status-pill { font-size: 0.7rem; font-weight: 800; padding: 4px 8px; border-radius: 5px; letter-spacing: 0.02em; }
-  .status-pill.draft { background: #f4eddd; color: #8a681d; }
-  .status-pill.submitted { background: #e5f0f4; color: #145b78; }
-  .status-pill.approved { background: #e4f1eb; color: #24745b; }
-  .status-pill.changes { background: #f4eddd; color: #8a681d; }
+  .status-pill.draft { background: #f0d48a; color: #7a6420; }
+  .status-pill.submitted { background: #8bbdd9; color: #1a5a7a; }
+  .status-pill.approved { background: #7fbf97; color: #1a5a3a; }
+  .status-pill.changes { background: #e09080; color: #7a3028; }
   .editor-actions { display: flex; align-items: center; gap: 8px; }
   .save-note { font-size: 0.72rem; color: #87969c; white-space: nowrap; }
   .act-link { border: 1px solid #dbe3e7; border-radius: 6px; padding: 7px 12px; background: #fdfcf9; color: #145b78; font: inherit; font-size: 0.73rem; font-weight: 700; cursor: pointer; text-decoration: none; white-space: nowrap; transition: all 0.12s; }
@@ -516,9 +516,9 @@
   .progress-track { height: 4px; background: #dbe3e7; border-radius: 2px; overflow: hidden; margin-bottom: 24px; }
   .progress-track i { display: block; height: 100%; background: #145b78; border-radius: 2px; transition: width 0.3s ease; }
   .success-banner, .state-banner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 7px; font-size: 0.82rem; margin-bottom: 16px; flex-wrap: wrap; }
-  .success-banner { background: #e4f1eb; border: 1px solid #bcdccc; color: #24745b; }
-  .state-banner.locked { background: #f4eddd; border: 1px solid #e5d4a5; color: #8a681d; }
-  .state-banner.changes { background: #f4eddd; border: 1px solid #e5d4a5; color: #8a681d; }
+  .success-banner { background: #7fbf971a; border: 1px solid #7fbf9766; color: #1a5a3a; }
+  .state-banner.locked { background: #f0d48a1a; border: 1px solid #f0d48a66; color: #7a6420; }
+  .state-banner.changes { background: #e090801a; border: 1px solid #e0908066; color: #7a3028; }
   .success-banner a, .state-banner a { color: #145b78; text-decoration: none; font-weight: 700; }
   .overlay { position: fixed; inset: 0; background: rgba(23, 37, 45, 0.35); display: grid; place-items: center; z-index: 100; }
   .confirm-dialog { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 10px; padding: 28px; max-width: 400px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
@@ -530,8 +530,8 @@
   .review-row { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #e8eeec; font-size: 0.8rem; }
   .review-row:last-child { border-bottom: 0; }
   .review-pill { flex: none; padding: 3px 7px; border-radius: 4px; font-size: 0.62rem; font-weight: 800; align-self: start; }
-  .rv-ok { background: #e4f1eb; color: #24745b; }
-  .rv-chg { background: #f4eddd; color: #8a681d; }
+  .rv-ok { background: #7fbf97; color: #1a5a3a; }
+  .rv-chg { background: #e09080; color: #7a3028; }
   .review-body strong { display: block; font-size: 0.78rem; }
   .review-date { display: block; font-size: 0.68rem; color: #87969c; margin-top: 2px; }
   .review-body p { margin: 6px 0 0; color: #667477; font-size: 0.78rem; line-height: 1.4; }
@@ -546,7 +546,7 @@
   .form-area { min-height: 300px; }
   .section-top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
   .section-top h2 { font-size: 1.1rem; margin: 0; letter-spacing: -0.02em; }
-  .metric-badge { font-size: 0.68rem; font-weight: 800; padding: 4px 8px; border-radius: 4px; background: #e4f1eb; color: #24745b; }
+  .metric-badge { font-size: 0.68rem; font-weight: 800; padding: 4px 8px; border-radius: 4px; background: #7fbf97; color: #1a5a3a; }
   .course-list { display: grid; gap: 14px; }
   .course-card { background: #fdfcf9; border: 1px solid #dbe3e7; border-radius: 8px; padding: 18px; }
   .course-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
