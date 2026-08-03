@@ -3,6 +3,13 @@
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   let { data } = $props();
   const user = $derived(data.user);
+  function greetingName(name: string | undefined) {
+    if (!name) return '';
+    const parts = name.trim().split(/\s+/);
+    const title = /^(Mr|Mrs|Ms|Miss|Dr|Prof)\.?$/i.test(parts[0]) ? parts.shift() : '';
+    const firstName = parts[0] ?? '';
+    return title ? `${title} ${firstName}` : firstName;
+  }
   const isFaculty = $derived(user?.role === 'FACULTY');
   let completion = $state(0);
   let scheduled = $state(0);
@@ -212,7 +219,7 @@
   {:else}
     <header class="dash-header">
       <div>
-        <h1>{user?.name ? `Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, ${user.name.split(' ')[0]}` : 'Dashboard'}</h1>
+        <h1>{user?.name ? `Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, ${greetingName(user.name)}` : 'Dashboard'}</h1>
         <span class="dash-period">{periodLabel}</span>
       </div>
       <div class="dash-actions">

@@ -8,6 +8,13 @@
       "when": 1785562439394,
       "tag": "0000_daffy_senator_kelly",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785570000000,
+      "tag": "0001_tech_faculty_fields",
+      "breakpoints": true
     }
   ]
 }

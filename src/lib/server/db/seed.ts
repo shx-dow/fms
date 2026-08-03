@@ -1,12 +1,12 @@
 import type Database from 'better-sqlite3';
 
 export function seedDatabase(sqlite: Database.Database) {
-  sqlite.prepare("INSERT OR IGNORE INTO departments VALUES ('cse', 'CSE', 'Computer Science and Engineering')").run();
+  sqlite.prepare("INSERT OR IGNORE INTO departments VALUES ('tech', 'TECH', 'IcfaiTech')").run();
   sqlite.prepare("DELETE FROM credentials WHERE user_id = 'dev-faculty-1'").run();
   sqlite.prepare("DELETE FROM users WHERE id = 'dev-faculty-1'").run();
   sqlite
     .prepare(
-      "INSERT OR IGNORE INTO users VALUES ('dev-faculty-1', 'Faculty User 1', 'faculty1@example.edu', 'FACULTY', 'cse', 1), ('dev-faculty-2', 'Faculty User 2', 'faculty2@example.edu', 'FACULTY', 'cse', 1), ('dev-faculty-3', 'Faculty User 3', 'faculty3@example.edu', 'FACULTY', 'cse', 1), ('dev-hod-1', 'Department HOD', 'hod.cse@example.edu', 'HOD', 'cse', 1), ('dev-admin-1', 'System Administrator', 'admin@example.edu', 'ADMIN', NULL, 1)",
+      "INSERT OR IGNORE INTO users (id, name, email, role, department_id, is_active) VALUES ('dev-faculty-1', 'Faculty User 1', 'faculty1@example.edu', 'FACULTY', 'tech', 1), ('dev-faculty-2', 'Faculty User 2', 'faculty2@example.edu', 'FACULTY', 'tech', 1), ('dev-faculty-3', 'Faculty User 3', 'faculty3@example.edu', 'FACULTY', 'tech', 1), ('dev-hod-1', 'Department HOD', 'hod.cse@example.edu', 'HOD', 'tech', 1), ('dev-admin-1', 'System Administrator', 'admin@example.edu', 'ADMIN', NULL, 1)",
     )
     .run();
   const facultyPassword =

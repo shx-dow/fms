@@ -14,14 +14,14 @@
     <div class="card-divider"></div>
     <form method="POST" onsubmit={() => (submitting = true)}>
       <label for="email">
-        Email address
+        Official email or employee code
         <input
           id="email"
           name="email"
-          type="email"
+          type="text"
           autocomplete="username"
           required
-          placeholder="name@university.edu"
+          placeholder="name@iujaipur.edu.in or 39L03347"
         />
       </label>
       <label for="password">

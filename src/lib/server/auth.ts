@@ -31,6 +31,10 @@ export function getUserFromSession(sessionId: string | undefined) {
         id: row.id,
         name: row.name,
         email: row.email,
+        employeeCode: row.employee_code,
+        personalEmail: row.personal_email,
+        mobile: row.mobile,
+        specialization: row.specialization,
         role: row.role,
         departmentId: row.department_id,
       }

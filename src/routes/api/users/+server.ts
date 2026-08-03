@@ -46,7 +46,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       return json({ ok: false, error: 'Name, email, role and password are required.' }, { status: 400 });
     const id = randomUUID();
     const defaultDept = defaultDepartmentId();
-    createUser({ id, name: body.name, email: body.email, role: body.role, departmentId: body.departmentId || defaultDept || null });
+    createUser({ id, name: body.name, email: body.email, employeeCode: body.employeeCode || null, personalEmail: body.personalEmail || null, mobile: body.mobile || null, specialization: body.specialization || null, role: body.role, departmentId: body.departmentId || defaultDept || null });
     createCredentials(id, hashPassword(body.password));
     insertAuditEvent({
       id: randomUUID(),
@@ -64,6 +64,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     updateUser(body.userId, {
       ...(body.name ? { name: body.name } : {}),
       ...(body.email ? { email: body.email } : {}),
+      ...('employeeCode' in body ? { employeeCode: body.employeeCode || null } : {}),
+      ...('personalEmail' in body ? { personalEmail: body.personalEmail || null } : {}),
+      ...('mobile' in body ? { mobile: body.mobile || null } : {}),
+      ...('specialization' in body ? { specialization: body.specialization || null } : {}),
       ...(body.role ? { role: body.role } : {}),
       ...('departmentId' in body ? { departmentId: body.departmentId || null } : {}),
     });

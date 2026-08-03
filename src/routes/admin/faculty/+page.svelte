@@ -3,7 +3,7 @@
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   let { data } = $props();
-  type User = { id: string; name: string; email: string; role: string; is_active: number };
+  type User = { id: string; name: string; email: string; employee_code?: string | null; specialization?: string | null; role: string; is_active: number };
   let users: User[] = $state([]);
   let search = $state('');
   let loading = $state(true);
@@ -55,15 +55,17 @@
     <div class="search-bar"><input type="search" placeholder="Search by name or email…" bind:value={search} /></div>
     <section class="table-card">
       <table>
-        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Login</th><th>Employee code</th><th>Specialization</th><th>Role</th><th>Status</th><th></th></tr></thead>
         <tbody>
           {#if !filtered.length}
-            <tr><td colspan="5" class="empty-row">{search ? 'No users match your search.' : 'No users found.'}</td></tr>
+            <tr><td colspan="7" class="empty-row">{search ? 'No users match your search.' : 'No users found.'}</td></tr>
           {:else}
             {#each filtered as user}
               <tr>
                 <td><strong>{user.name}</strong></td>
                 <td>{user.email}</td>
+                <td>{user.employee_code ?? '—'}</td>
+                <td>{user.specialization ?? '—'}</td>
                 <td>{user.role}</td>
                 <td><span class="pill" class:active={user.is_active} class:inactive={!user.is_active}>{user.is_active ? 'Active' : 'Inactive'}</span></td>
                 <td class="td-acts">

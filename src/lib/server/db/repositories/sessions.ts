@@ -6,6 +6,10 @@ export interface SessionUser {
   id: string;
   name: string;
   email: string;
+  employee_code: string | null;
+  personal_email: string | null;
+  mobile: string | null;
+  specialization: string | null;
   role: 'FACULTY' | 'HOD' | 'ADMIN';
   department_id?: string;
 }

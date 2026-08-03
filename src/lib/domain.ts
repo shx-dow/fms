@@ -6,6 +6,10 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  employeeCode?: string | null;
+  personalEmail?: string | null;
+  mobile?: string | null;
+  specialization?: string | null;
   role: Role;
   departmentId?: string;
 }
