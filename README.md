@@ -28,6 +28,8 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
+The development server binds to `0.0.0.0`, so it can be reached by other devices on the same network at `http://<computer-ip>:5173`. Set `HOST` and `PORT` in `.env` to override the defaults. On WSL2, use the Windows host's LAN IPv4 address; the WSL virtual address may not be reachable from phones or other computers without Windows port forwarding.
+
 In development the database is created at `data/faculty-reporting.db` and migrations run automatically. To load demo data set `SEED=true` (see Environment variables).
 
 ```bash
@@ -155,3 +157,14 @@ docs/                           # architecture & production notes (gitignored)
 - [ ] Schedule `npm run backup` on a timer
 - [ ] Run behind a reverse proxy (nginx/caddy) if TLS is required
 - [ ] Ensure `data/` and `backups/` are writable by the service account and backed up
+
+### Cross-platform network access
+
+The application uses the same network settings on Linux, WSL, and Windows:
+
+```env
+HOST=0.0.0.0
+PORT=3000
+```
+
+Use `PORT=5173` while running `npm run dev`, or `PORT=3000` for the production server started with `npm start`. Access it from another device using the host computer's normal Wi-Fi/Ethernet IPv4 address, not `localhost` and usually not a WSL/Docker/VPN adapter address. The operating-system firewall must allow the selected TCP port.

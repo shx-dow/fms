@@ -1,16 +1,19 @@
 import { z } from 'zod';
 
+const blankAsZero = (schema: z.ZodNumber) => z.preprocess((value) => value === '' || value === null || value === undefined ? 0 : value, schema);
+const blankAsNull = (schema: z.ZodNumber) => z.preprocess((value) => value === '' || value === undefined ? null : value, schema.nullable());
+
 export const teachingRecordSchema = z.object({
   courseCode: z.string().min(1, 'Course code is required'),
   courseName: z.string().min(1, 'Course name is required'),
   programLevel: z.string().optional().default(''),
   classType: z.string().optional().default('Lecture'),
-  scheduled: z.number().min(0).optional().default(0),
-  conducted: z.number().min(0).optional().default(0),
-  missed: z.number().min(0).optional().default(0),
+  scheduled: blankAsZero(z.number().min(0)),
+  conducted: blankAsZero(z.number().min(0)),
+  missed: blankAsZero(z.number().min(0)),
   missedAction: z.string().optional().nullable().default(null),
-  syllabusCompletion: z.number().min(0).max(100).optional().nullable().default(null),
-  syllabusLecture: z.number().int().min(0).optional().nullable().default(null),
+  syllabusCompletion: blankAsNull(z.number().min(0).max(100)),
+  syllabusLecture: blankAsNull(z.number().int().min(0)),
 });
 
 export const reportSaveSchema = z.object({
