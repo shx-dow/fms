@@ -43,12 +43,12 @@ export function seedDatabase(sqlite: Database.Database) {
     .run();
   sqlite
     .prepare(
-      "INSERT OR IGNORE INTO teaching_records VALUES ('demo-tr-1', 'demo-report-submitted', 'CSE-401', 'Advanced Databases', 'B.Tech · IV Year', 'Lecture', 4, 3, 1, 'Makeup scheduled for Friday', 75), ('demo-tr-2', 'demo-report-submitted', 'CSE-401', 'Advanced Databases Lab', 'B.Tech · IV Year', 'Lab', 2, 2, 0, '', 80)",
+      "INSERT OR IGNORE INTO teaching_records VALUES ('demo-tr-1', 'demo-report-submitted', 'CSE-401', 'Advanced Databases', 'B.Tech · IV Year', 'Lecture', 4, 3, 1, 'Makeup scheduled for Friday', 75, 18), ('demo-tr-2', 'demo-report-submitted', 'CSE-401', 'Advanced Databases Lab', 'B.Tech · IV Year', 'Lab', 2, 2, 0, '', 80, 12)",
     )
     .run();
   sqlite
     .prepare(
-      "INSERT OR IGNORE INTO teaching_records VALUES ('demo-tr-3', 'demo-report-approved', 'CSE-301', 'Software Engineering', 'B.Tech · III Year', 'Lecture', 5, 5, 0, '', 90), ('demo-tr-4', 'demo-report-approved', 'CSE-302', 'Software Engineering Lab', 'B.Tech · III Year', 'Lab', 2, 2, 0, '', 100)",
+      "INSERT OR IGNORE INTO teaching_records VALUES ('demo-tr-3', 'demo-report-approved', 'CSE-301', 'Software Engineering', 'B.Tech · III Year', 'Lecture', 5, 5, 0, '', 90, 20), ('demo-tr-4', 'demo-report-approved', 'CSE-302', 'Software Engineering Lab', 'B.Tech · III Year', 'Lab', 2, 2, 0, '', 100, 16)",
     )
     .run();
   sqlite

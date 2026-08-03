@@ -82,7 +82,7 @@
       <header class="dash-header">
         <div>
           <h1>Administration</h1>
-          <span class="dash-period">{missingPeriod || new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+          <span class="dash-period">{missingPeriod || 'Current reporting period'}</span>
         </div>
         <div class="dash-actions">
           <NotificationBell />
@@ -221,7 +221,7 @@
       <header class="dash-header">
         <div>
           <h1>Department overview</h1>
-          <span class="dash-period">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+          <span class="dash-period">Current reporting period</span>
         </div>
         <div class="dash-actions">
           <NotificationBell />

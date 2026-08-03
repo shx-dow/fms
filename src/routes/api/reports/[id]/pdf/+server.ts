@@ -68,7 +68,7 @@ export const GET: RequestHandler = ({ locals, params }) => {
       doc.text('No teaching records entered.');
       return;
     }
-    const headers = ['Course', 'Program', 'Type', 'Sched.', 'Taken', 'Missed', 'Syllabus'];
+    const headers = ['Course', 'Program', 'Type', 'Sched.', 'Taken', 'Missed', 'Lecture up to'];
     const widths = [90, 70, 50, 40, 40, 40, 50];
     const startX = 50;
     let y = doc.y;
@@ -80,7 +80,7 @@ export const GET: RequestHandler = ({ locals, params }) => {
       String(t.scheduled ?? 0),
       String(t.conducted ?? 0),
       String(t.missed ?? 0),
-      `${t.syllabus_completion ?? 0}%`,
+      String(t.syllabus_lecture ?? '—'),
     ]));
   };
 

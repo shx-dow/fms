@@ -17,11 +17,19 @@ import { onDestroy, onMount } from 'svelte';
   import PanelLeftOpen from '@lucide/svelte/icons/panel-left-open';
   import LogOut from '@lucide/svelte/icons/log-out';
   import KeyRound from '@lucide/svelte/icons/key-round';
+  import Repeat2 from '@lucide/svelte/icons/repeat-2';
   import { setNotificationUser } from '$lib/stores/notifications.svelte';
   let { data, children } = $props();
   let sidebarCollapsed = $state(browser ? localStorage.getItem('sidebarCollapsed') === 'true' : false);
   let showProfileMenu = $state(false);
   let showPasswordModal = $state(false);
+  let showProfileModal = $state(false);
+  let profileSaving = $state(false);
+  let profileError = $state('');
+  let profileSubjects = $state<any[]>([]);
+  let profileResearch = $state<any[]>([]);
+  let profileDuties = $state<any[]>([]);
+  let profileOutreach = $state<any[]>([]);
   let pwCurrent = $state('');
   let pwNext = $state('');
   let pwConfirm = $state('');
@@ -58,6 +66,44 @@ import { onDestroy, onMount } from 'svelte';
     pwConfirm = '';
     pwError = '';
     showPasswordModal = true;
+  }
+  async function openProfileModal() {
+    showProfileMenu = false;
+    profileError = '';
+    try {
+      const res = await fetch('/api/me/profile');
+      const d = await res.json();
+      profileSubjects = d.profile?.subjects ?? [];
+      profileResearch = d.profile?.research ?? [];
+      profileDuties = d.profile?.duties ?? [];
+      profileOutreach = d.profile?.outreach ?? [];
+      showProfileModal = true;
+    } catch { show('Could not load your recurring profile.', 'err'); }
+  }
+  async function saveProfile() {
+    profileSaving = true; profileError = '';
+    try {
+      const res = await fetch('/api/me/profile', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ subjects: profileSubjects, research: profileResearch, duties: profileDuties, outreach: profileOutreach }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { profileError = d.error ?? 'Could not save profile.'; return; }
+      showProfileModal = false;
+      show('Recurring profile saved.');
+    } catch { profileError = 'Could not save profile.'; }
+    finally { profileSaving = false; }
+  }
+  function addProfileRow(kind: 'subjects' | 'research' | 'duties' | 'outreach') {
+    const rows: Record<string, any[]> = { subjects: profileSubjects, research: profileResearch, duties: profileDuties, outreach: profileOutreach };
+    const defaults: Record<string, any> = {
+      subjects: { courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0 },
+      research: { category: 'Journal Paper', title: '', venueOrAgency: '', role: '' },
+      duties: { name: '', role: '', activity: '' },
+      outreach: { activity: '', audience: '' },
+    };
+    rows[kind] = [...rows[kind], defaults[kind]];
+    if (kind === 'subjects') profileSubjects = rows[kind];
+    if (kind === 'research') profileResearch = rows[kind];
+    if (kind === 'duties') profileDuties = rows[kind];
+    if (kind === 'outreach') profileOutreach = rows[kind];
   }
   async function changePassword() {
     if (!pwCurrent || !pwNext || !pwConfirm) { pwError = 'Fill in all three fields.'; return; }
@@ -154,6 +200,9 @@ import { onDestroy, onMount } from 'svelte';
           {#if showProfileMenu}
             <div class="profile-popover" role="menu">
               <div class="profile-email">{user?.email}</div>
+              {#if user?.role === 'FACULTY'}
+                <button class="profile-item" onclick={openProfileModal} role="menuitem"><Repeat2 size={15} /><span>Recurring report template</span></button>
+              {/if}
               <button class="profile-item" onclick={openPasswordModal} role="menuitem">
                 <KeyRound size={15} /><span>Change password</span>
               </button>
@@ -180,6 +229,36 @@ import { onDestroy, onMount } from 'svelte';
           <button class="pw-cancel" onclick={() => (showPasswordModal = false)}>Cancel</button>
           <button class="pw-submit" disabled={pwSaving} onclick={changePassword}>{pwSaving ? 'Saving…' : 'Update password'}</button>
         </div>
+      </div>
+    </div>
+  {/if}
+  {#if showProfileModal}
+    <div class="pw-overlay" role="presentation" onclick={() => (showProfileModal = false)} onkeydown={(e) => { if (e.key === 'Escape') showProfileModal = false; }}>
+      <div class="profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-title" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+        <div class="profile-heading"><div><h3 id="profile-title">Recurring report template</h3><p class="pw-sub">Save the details that repeat each week. They will be pre-filled when you start a new report.</p></div></div>
+        <div class="profile-tip"><span>Only add information that stays the same. You can edit the weekly details in each report.</span></div>
+        <div class="profile-section"><div class="profile-section-title"><div><strong>Teaching subjects</strong><small>Courses and classes you regularly teach</small></div></div>
+          {#if profileSubjects.length}<div class="profile-labels subject-labels"><span>Code</span><span>Course name</span><span>Program / year</span><span>Class type</span><span>Classes / week</span><span></span></div>{/if}
+          {#each profileSubjects as item, i}<div class="profile-row subject-row"><input aria-label="Course code" placeholder="e.g. CS101" bind:value={item.courseCode} /><input aria-label="Course name" placeholder="Course name" bind:value={item.courseName} /><input aria-label="Program" placeholder="e.g. BCA 2" bind:value={item.programLevel} /><select aria-label="Class type" bind:value={item.classType}><option>Lecture</option><option>Lab</option><option>Tutorial</option><option>Seminar</option></select><input aria-label="Scheduled classes" type="number" min="0" placeholder="0" bind:value={item.scheduled} /><button class="row-remove" aria-label="Remove subject" title="Remove subject" onclick={() => (profileSubjects = profileSubjects.filter((_, n) => n !== i))}>Remove</button></div>{/each}
+          <button class="profile-add" onclick={() => addProfileRow('subjects')}>Add subject</button>
+        </div>
+        <div class="profile-section"><div class="profile-section-title"><div><strong>Research and publications</strong><small>Ongoing work, papers, or research activities</small></div></div>
+          {#if profileResearch.length}<div class="profile-labels two-labels"><span>Title or topic</span><span>Venue / agency</span><span></span></div>{/if}
+          {#each profileResearch as item, i}<div class="profile-row two-row"><input aria-label="Research title" placeholder="Title or topic" bind:value={item.title} /><input aria-label="Venue" placeholder="Venue or agency" bind:value={item.venueOrAgency} /><button class="row-remove" aria-label="Remove research item" title="Remove research item" onclick={() => (profileResearch = profileResearch.filter((_, n) => n !== i))}>Remove</button></div>{/each}
+          <button class="profile-add" onclick={() => addProfileRow('research')}>Add research item</button>
+        </div>
+        <div class="profile-section"><div class="profile-section-title"><div><strong>Institutional duties</strong><small>Committees, coordination, and recurring responsibilities</small></div></div>
+          {#if profileDuties.length}<div class="profile-labels two-labels"><span>Duty or committee</span><span>Your role</span><span></span></div>{/if}
+          {#each profileDuties as item, i}<div class="profile-row two-row"><input aria-label="Duty" placeholder="Duty or committee" bind:value={item.name} /><input aria-label="Duty role" placeholder="Your role" bind:value={item.role} /><button class="row-remove" aria-label="Remove duty" title="Remove duty" onclick={() => (profileDuties = profileDuties.filter((_, n) => n !== i))}>Remove</button></div>{/each}
+          <button class="profile-add" onclick={() => addProfileRow('duties')}>Add duty</button>
+        </div>
+        <div class="profile-section"><div class="profile-section-title"><div><strong>Community outreach</strong><small>Regular events and activities outside the classroom</small></div></div>
+          {#if profileOutreach.length}<div class="profile-labels two-labels"><span>Activity</span><span>Audience</span><span></span></div>{/if}
+          {#each profileOutreach as item, i}<div class="profile-row two-row"><input aria-label="Outreach activity" placeholder="Activity" bind:value={item.activity} /><input aria-label="Outreach audience" placeholder="Audience" bind:value={item.audience} /><button class="row-remove" aria-label="Remove outreach activity" title="Remove activity" onclick={() => (profileOutreach = profileOutreach.filter((_, n) => n !== i))}>Remove</button></div>{/each}
+          <button class="profile-add" onclick={() => addProfileRow('outreach')}>Add outreach activity</button>
+        </div>
+        {#if profileError}<p class="pw-error" role="alert">{profileError}</p>{/if}
+        <div class="pw-actions"><button class="pw-cancel" onclick={() => (showProfileModal = false)}>Cancel</button><button class="pw-submit" disabled={profileSaving} onclick={saveProfile}>{profileSaving ? 'Saving…' : 'Save profile'}</button></div>
       </div>
     </div>
   {/if}
@@ -308,4 +387,25 @@ import { onDestroy, onMount } from 'svelte';
   }
   .pw-submit:hover { background: var(--blue-hover); }
   .pw-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .profile-dialog { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 26px 30px 22px; max-width: 820px; width: 92%; max-height: 88vh; overflow-y: auto; box-shadow: 0 18px 50px rgba(0,0,0,0.16); }
+  .profile-heading { padding-bottom: 17px; border-bottom: 1px solid var(--line); }
+  .profile-dialog h3 { margin: 0 0 4px; font-size: 1.08rem; color: var(--ink-2); }
+  .profile-tip { margin: 15px 0 0; padding: 11px 0 14px; border-bottom: 1px solid var(--line-2); color: var(--muted); font-size: 0.72rem; }
+  .profile-section { border-bottom: 1px solid var(--line-2); padding: 19px 0 20px; margin-top: 0; }
+  .profile-section-title { margin-bottom: 11px; }
+  .profile-section-title strong { display: block; color: var(--ink-2); font-size: 0.78rem; margin-bottom: 2px; }
+  .profile-section-title small { display: block; color: var(--muted-3); font-size: 0.68rem; }
+  .profile-labels { display: grid; gap: 7px; color: var(--muted-3); font-size: 0.62rem; font-weight: 700; margin: 0 0 5px; }
+  .subject-labels { grid-template-columns: 0.8fr 1.4fr 1fr 0.8fr 0.75fr 58px; }
+  .two-labels { grid-template-columns: 1fr 1fr 58px; }
+  .profile-row { display: grid; grid-template-columns: 1fr 1.5fr 1fr auto; gap: 7px; margin-bottom: 7px; }
+  .profile-row.subject-row { grid-template-columns: 0.8fr 1.4fr 1fr 0.8fr 0.75fr auto; }
+  .profile-row.two-row { grid-template-columns: 1fr 1fr 58px; }
+  .profile-row input, .profile-row select { min-width: 0; padding: 8px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg-input); color: var(--ink-2); font: inherit; font-size: 0.76rem; }
+  .profile-row input:focus, .profile-row select:focus { outline: 2px solid color-mix(in srgb, var(--blue) 18%, transparent); border-color: var(--blue); }
+  .row-remove { border: 0; background: transparent; color: var(--muted-2); cursor: pointer; padding: 5px 2px; font: inherit; font-size: 0.66rem; font-weight: 700; }
+  .row-remove:hover { color: var(--red); }
+  .profile-add { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: var(--blue); font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; padding: 5px 0; }
+  @media (max-width: 720px) { .profile-dialog { padding: 21px 18px 18px; } .profile-labels { display: none; } .profile-row, .profile-row.subject-row, .profile-row.two-row { grid-template-columns: 1fr 1fr 58px; } .profile-row.subject-row input:first-child, .profile-row.subject-row input:nth-child(2) { grid-column: span 1; } }
+  @media (max-width: 520px) { .profile-row.subject-row, .profile-row.two-row { grid-template-columns: 1fr 1fr 52px; } .profile-row.subject-row input:first-child { grid-column: span 2; } }
 </style>

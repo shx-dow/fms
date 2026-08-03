@@ -20,7 +20,7 @@ export const GET: RequestHandler = ({ locals }) => {
       'Scheduled',
       'Conducted',
       'Missed',
-      'Syllabus completion',
+      'Syllabus covered up to lecture no.',
     ],
     ...rows.map((row) => Object.values(row)),
   ]

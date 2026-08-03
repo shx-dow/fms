@@ -1,6 +1,6 @@
 export type Role = 'FACULTY' | 'HOD' | 'ADMIN';
 export type ReportStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'CHANGES_REQUIRED';
-export type PeriodKind = 'WEEKLY' | 'MONTHLY';
+export type PeriodKind = 'WEEKLY';
 
 export interface User {
   id: string;
@@ -43,6 +43,7 @@ export interface TeachingRecord {
   missed: number;
   missedAction?: string;
   syllabusCompletion?: number;
+  syllabusLecture?: number;
 }
 
 export interface ResearchRecord {

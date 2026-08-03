@@ -15,11 +15,12 @@
   let periodLabel = $state('');
   let reportId = $state('');
   let reportStatus = $state('DRAFT');
-  let teaching: TeachingRecord[] = $state([{ courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0 }]);
+  let teaching: TeachingRecord[] = $state([{ courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }]);
   let weeklySummary = $state('');
   let saving = $state(false);
   let confirmSubmit = $state(false);
   let confirmCopy = $state(false);
+  let confirmTemplate = $state(false);
   let history: any[] = $state([]);
   let reviews: { decision: string; remarks: string; created_at: string; reviewer_name: string }[] = $state([]);
   let attachments: { id: string; filename: string; mime_type: string; size: number; created_at: string }[] = $state([]);
@@ -35,13 +36,18 @@
   let scheduled = $derived(teaching.reduce((s, i) => s + Number(i.scheduled || 0), 0));
   let conducted = $derived(teaching.reduce((s, i) => s + Number(i.conducted || 0), 0));
   let deliveryRate = $derived(scheduled ? Math.round((conducted / scheduled) * 100) : 0);
+  let syllabusLecture = $derived(Math.max(0, ...teaching.map((t) => Number(t.syllabusLecture || 0))));
   let hasValidTeaching = $derived(teaching.some(i => i.courseCode?.trim() && i.courseName?.trim()));
   let teachingValid = $derived(teaching.every(i => {
     if (!i.courseCode?.trim() && !i.courseName?.trim()) return true;
     return Number(i.conducted ?? 0) <= Number(i.scheduled ?? 0);
   }));
-  let researchActive = $derived(researchRecords.filter(r => r.title?.trim()).length);
-  let dutiesCount = $derived(dutiesRecords.filter(d => d.name?.trim()).length);
+  let researchNA = $derived(researchRecords.some(r => r.title === 'N/A'));
+  let dutiesNA = $derived(dutiesRecords.some(d => d.name === 'N/A'));
+  let outreachNA = $derived(outreachRecords.some(r => r.activity === 'N/A'));
+  let researchActive = $derived(researchRecords.filter(r => r.title?.trim() && r.title !== 'N/A').length);
+  let dutiesCount = $derived(dutiesRecords.filter(d => d.name?.trim() && d.name !== 'N/A').length);
+  let outreachCount = $derived(outreachRecords.filter(r => r.activity?.trim() && r.activity !== 'N/A').length);
   let hasResearch = $derived(researchActive > 0);
   let hasDuties = $derived(dutiesCount > 0);
   let deliveryOk = $derived(deliveryRate >= 90);
@@ -71,16 +77,23 @@
   onMount(async () => {
     const res = await fetch('/api/reports');
     const d = await res.json();
+    let recurringProfile: any = null;
+    try { recurringProfile = (await (await fetch('/api/me/profile')).json()).profile; } catch {}
     reportId = d.report.id;
     reportStatus = d.report.status;
     history = d.reports ?? [];
     periodLabel = d.report?.period_label ?? d.policy?.period?.label ?? periodLabel;
     if (d.teaching?.length)
-      teaching = d.teaching.map((t: any) => ({ courseCode: t.course_code, courseName: t.course_name, programLevel: t.program_level, classType: t.class_type, scheduled: t.scheduled, conducted: t.conducted, missed: t.missed, missedAction: t.missed_action ?? '', syllabusCompletion: t.syllabus_completion ?? 0 }));
+      teaching = d.teaching.map((t: any) => ({ courseCode: t.course_code, courseName: t.course_name, programLevel: t.program_level, classType: t.class_type, scheduled: t.scheduled, conducted: t.conducted, missed: t.missed, missedAction: t.missed_action ?? '', syllabusCompletion: t.syllabus_completion ?? 0, syllabusLecture: t.syllabus_lecture ?? 0 }));
+    else if (recurringProfile?.subjects?.length)
+      teaching = recurringProfile.subjects.map((t: any) => ({ courseCode: t.courseCode ?? '', courseName: t.courseName ?? '', programLevel: t.programLevel ?? '', classType: t.classType ?? 'Lecture', scheduled: Number(t.scheduled ?? 0), conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }));
     weeklySummary = d.report.summary ?? '';
     researchRecords = (d.research ?? []).map((r: any) => ({ category: r.category, title: r.title, venueOrAgency: r.venue_or_agency ?? '', indexingOrQuality: r.indexing_or_quality ?? '', role: r.role ?? '', status: r.status ?? '' }));
+    if (!researchRecords.length && recurringProfile?.research?.length) researchRecords = recurringProfile.research.map((r: any) => ({ category: r.category ?? 'Journal Paper', title: r.title ?? '', venueOrAgency: r.venueOrAgency ?? '', indexingOrQuality: '', role: r.role ?? '', status: '' }));
     dutiesRecords = (d.duties ?? []).map((r: any) => ({ name: r.name, role: r.role, activity: r.activity ?? '', reach: r.reach ?? '', outcome: r.outcome ?? '' }));
+    if (!dutiesRecords.length && recurringProfile?.duties?.length) dutiesRecords = recurringProfile.duties.map((r: any) => ({ name: r.name ?? '', role: r.role ?? '', activity: r.activity ?? '', reach: '', outcome: '' }));
     outreachRecords = (d.outreach ?? []).map((r: any) => ({ activity: r.activity, audience: r.audience ?? '', outcome: r.outcome ?? '', date: r.date ?? '' }));
+    if (!outreachRecords.length && recurringProfile?.outreach?.length) outreachRecords = recurringProfile.outreach.map((r: any) => ({ activity: r.activity ?? '', audience: r.audience ?? '', outcome: '', date: '' }));
     canEdit = d.policy?.canEdit ?? true;
     deadlineDate = d.policy?.deadline ?? '';
     if (reportId) {
@@ -131,7 +144,13 @@
     await fetch(`/api/${kind}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportId, records: kind === 'research' ? researchRecords : kind === 'duties' ? dutiesRecords : outreachRecords }) });
     additionalSaving = false; flashSaved();
   }
-  function addTeaching() { teaching = [...teaching, { courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0 }]; scheduleTeachingSave(); }
+  function setNotApplicable(kind: 'research' | 'duties' | 'outreach') {
+    if (kind === 'research') researchRecords = researchNA ? [] : [{ category: 'Journal Paper', title: 'N/A', venueOrAgency: '', indexingOrQuality: '', role: '', status: '' }];
+    if (kind === 'duties') dutiesRecords = dutiesNA ? [] : [{ name: 'N/A', role: '', activity: '', reach: '', outcome: '' }];
+    if (kind === 'outreach') outreachRecords = outreachNA ? [] : [{ activity: 'N/A', audience: '', outcome: '', date: '' }];
+    saveActivity(kind);
+  }
+  function addTeaching() { teaching = [...teaching, { courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }]; scheduleTeachingSave(); }
   const UNDO_MS = 8000;
   let removalTimers: Record<string, ReturnType<typeof setTimeout>> = {};
   function removeRow(kind: 'teaching' | 'research' | 'duties' | 'outreach', i: number) {
@@ -168,17 +187,35 @@
       const res = await fetch(`/api/reports/${prevReport.id}`);
       const d = await res.json();
       if (!res.ok) { show(d.error ?? 'Could not load last week\u2019s report.', 'err'); return; }
-      teaching = (d.teaching ?? []).map((t: any) => ({ courseCode: t.course_code, courseName: t.course_name, programLevel: t.program_level, classType: t.class_type, scheduled: t.scheduled, conducted: t.conducted, missed: t.missed, missedAction: t.missed_action ?? '', syllabusCompletion: t.syllabus_completion ?? 0 }));
+      teaching = (d.teaching ?? []).map((t: any) => ({ courseCode: t.course_code, courseName: t.course_name, programLevel: t.program_level, classType: t.class_type, scheduled: t.scheduled, conducted: t.conducted, missed: t.missed, missedAction: t.missed_action ?? '', syllabusCompletion: t.syllabus_completion ?? 0, syllabusLecture: t.syllabus_lecture ?? 0 }));
       researchRecords = (d.research ?? []).map((r: any) => ({ category: r.category, title: r.title, venueOrAgency: r.venue_or_agency ?? '', indexingOrQuality: r.indexing_or_quality ?? '', role: r.role ?? '', status: r.status ?? '' }));
       dutiesRecords = (d.duties ?? []).map((r: any) => ({ name: r.name, role: r.role, activity: r.activity ?? '', reach: r.reach ?? '', outcome: r.outcome ?? '' }));
       outreachRecords = (d.outreach ?? []).map((r: any) => ({ activity: r.activity, audience: r.audience ?? '', outcome: r.outcome ?? '', date: r.date ?? '' }));
-      if (!teaching.length) teaching = [{ courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0 }];
+      if (!teaching.length) teaching = [{ courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }];
       await saveDraft();
       await saveActivity('research');
       await saveActivity('duties');
       await saveActivity('outreach');
       show(`Copied from ${prevReportLabel}. Update the numbers for this week.`);
     } catch { show('Could not load last week\u2019s report.', 'err'); }
+  }
+  async function loadRecurringTemplate() {
+    confirmTemplate = false;
+    try {
+      const res = await fetch('/api/me/profile');
+      const d = await res.json();
+      const profile = d.profile ?? {};
+      teaching = (profile.subjects ?? []).map((t: any) => ({ courseCode: t.courseCode ?? '', courseName: t.courseName ?? '', programLevel: t.programLevel ?? '', classType: t.classType ?? 'Lecture', scheduled: Number(t.scheduled ?? 0), conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }));
+      researchRecords = (profile.research ?? []).map((r: any) => ({ category: r.category ?? 'Journal Paper', title: r.title ?? '', venueOrAgency: r.venueOrAgency ?? '', indexingOrQuality: '', role: r.role ?? '', status: '' }));
+      dutiesRecords = (profile.duties ?? []).map((r: any) => ({ name: r.name ?? '', role: r.role ?? '', activity: r.activity ?? '', reach: '', outcome: '' }));
+      outreachRecords = (profile.outreach ?? []).map((r: any) => ({ activity: r.activity ?? '', audience: r.audience ?? '', outcome: '', date: '' }));
+      if (!teaching.length) teaching = [{ courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }];
+      await saveDraft();
+      await saveActivity('research');
+      await saveActivity('duties');
+      await saveActivity('outreach');
+      show('Recurring template loaded.');
+    } catch { show('Could not load the recurring template.', 'err'); }
   }
   function handleKeydown(e: KeyboardEvent) { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveDraft(); } }
   onMount(() => {
@@ -220,6 +257,9 @@
       {#if !isReadonly && prevReport}
         <button class="act-link" onclick={() => (confirmCopy = true)} title={`Fill this report from ${prevReportLabel}`}>Copy from last week</button>
       {/if}
+      {#if !isReadonly}
+        <button class="act-link" onclick={() => (confirmTemplate = true)} title="Replace this report with your recurring template">Load recurring template</button>
+      {/if}
       <a class="act-link" href="/api/reports/{reportId}/pdf" target="_blank">PDF</a>
       <a class="act-link" href="/api/reports/current/export">CSV</a>
       {#if !isReadonly}
@@ -256,6 +296,19 @@
     </div>
   {/if}
 
+  {#if confirmTemplate}
+    <div class="overlay" role="presentation" onclick={() => (confirmTemplate = false)} onkeydown={(e) => { if (e.key === 'Escape') confirmTemplate = false; }}>
+      <div class="confirm-dialog" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+        <h3>Load recurring template?</h3>
+        <p>This will replace all currently filled report data across Teaching, Research, Duties, and Outreach. Any weekly changes you have entered will be removed.</p>
+        <div class="confirm-actions">
+          <button class="act-link" onclick={() => (confirmTemplate = false)}>Cancel</button>
+          <button class="act-submit" onclick={loadRecurringTemplate}>Replace with template</button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   {#if reviews.length > 0}
     <details class="review-box">
       <summary>Review history ({reviews.length})</summary>
@@ -283,11 +336,11 @@
       <button class:active={activeSection === 'duties'} onclick={() => (activeSection = 'duties')}>
         <span class="sn-num">03</span> Institutional duties <span class="sn-count">{dutiesRecords.length}</span>
       </button>
-      <button class:active={activeSection === 'summary'} onclick={() => (activeSection = 'summary')}>
-        <span class="sn-num">04</span> Weekly summary <span class="sn-count">{weeklySummary ? '1' : '0'}</span>
-      </button>
       <button class:active={activeSection === 'additional'} onclick={() => (activeSection = 'additional')}>
-        <span class="sn-num">05</span> Evidence & records <span class="sn-count">{attachments.length}</span>
+        <span class="sn-num">04</span> Evidence & records <span class="sn-count">{attachments.length}</span>
+      </button>
+      <button class:active={activeSection === 'summary'} onclick={() => (activeSection = 'summary')}>
+        <span class="sn-num">05</span> Weekly summary <span class="sn-count">{weeklySummary ? '1' : '0'}</span>
       </button>
     </nav>
 
@@ -300,7 +353,7 @@
             <div class="preview-row">
               <strong>{item.courseCode || 'Untitled'}</strong>
               <span>{item.courseName || 'Course name pending'}</span>
-              <span class="preview-stat">{item.conducted} / {item.scheduled} classes · {item.syllabusCompletion}% syllabus</span>
+              <span class="preview-stat">{item.conducted} / {item.scheduled} classes · up to lecture {item.syllabusLecture || '—'}</span>
             </div>
           {:else}
             <p class="empty">No teaching records.</p>
@@ -350,7 +403,7 @@
             <div class="preview-row">
               <strong>{item.courseCode || 'Untitled'}</strong>
               <span>{item.courseName || 'Course name pending'}</span>
-              <span class="preview-stat">{item.conducted} / {item.scheduled} classes · {item.syllabusCompletion}% syllabus</span>
+              <span class="preview-stat">{item.conducted} / {item.scheduled} classes · up to lecture {item.syllabusLecture || '—'}</span>
             </div>
           {/each}
           <h2>Research & publications</h2>
@@ -391,6 +444,7 @@
           <h2>Teaching & academic delivery</h2>
           <span class="metric-badge">{deliveryRate}% delivery</span>
         </div>
+        <p class="section-hint">Course details and scheduled classes come from your recurring profile. Update the weekly delivery values below.</p>
         <div class="course-list">
           {#each teaching as item, i}
             <div class="course-card">
@@ -408,18 +462,19 @@
               </div>
               <div class="number-grid">
                 <label>Scheduled<input type="number" min="0" bind:value={item.scheduled} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
-                <label>Conducted<input type="number" min="0" bind:value={item.conducted} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
-                <label>Missed<input type="number" min="0" bind:value={item.missed} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
-                <label>Syllabus %<input type="number" min="0" max="100" bind:value={item.syllabusCompletion} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
+                <label>Conducted this week<input type="number" min="0" bind:value={item.conducted} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
+                <label>Missed this week<input type="number" min="0" bind:value={item.missed} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
+                <label>Syllabus covered up to lecture no.<input type="number" min="0" bind:value={item.syllabusLecture} oninput={() => scheduleTeachingSave()} placeholder="e.g. 18" /></label>
               </div>
-              <label class="missed-label">Action taken for missed classes<input bind:value={item.missedAction} oninput={() => scheduleTeachingSave()} placeholder="e.g. Makeup class scheduled" /></label>
+              <label class="missed-label">Weekly action for missed classes<input bind:value={item.missedAction} oninput={() => scheduleTeachingSave()} placeholder="e.g. Makeup class scheduled" /></label>
             </div>
           {/each}
           <button class="act-add" onclick={addTeaching}>+ Add course</button>
         </div>
       {:else if activeSection === 'research'}
-        <div class="section-top"><h2>Research & publications</h2></div>
-        {#each researchRecords as item, i}
+        <div class="section-top"><h2>Research & publications</h2><button class="na-toggle" class:active={researchNA} onclick={() => setNotApplicable('research')}>{researchNA ? 'Undo N/A' : 'Mark N/A this week'}</button></div>
+        {#if researchNA}<p class="na-note">No research activity this week.</p>{/if}
+        {#each researchRecords.filter(r => r.title !== 'N/A') as item, i}
           <div class="record-card">
             <div class="course-head">
               <strong>Record {i + 1}</strong>
@@ -440,11 +495,13 @@
           <p class="empty-hint">No research records yet. Add papers, patents, grants, or conferences you worked on this week.</p>
         {/each}
         <div class="record-acts">
-          <button class="act-add" onclick={() => (researchRecords = [...researchRecords, { category: 'Journal Paper', title: '', venueOrAgency: '', indexingOrQuality: '', role: '', status: '' }])}>+ Add record</button>
+          {#if !researchNA}<button class="act-add" onclick={() => (researchRecords = [...researchRecords, { category: 'Journal Paper', title: '', venueOrAgency: '', indexingOrQuality: '', role: '', status: '' }])}>+ Add record</button>{/if}
           <button class="act-link" onclick={() => saveActivity('research')}>{additionalSaving ? 'Saving…' : 'Save research'}</button>
         </div>
       {:else if activeSection === 'duties'}
-        {#each dutiesRecords as item, i}
+        <div class="section-top"><h2>Institutional duties</h2><button class="na-toggle" class:active={dutiesNA} onclick={() => setNotApplicable('duties')}>{dutiesNA ? 'Undo N/A' : 'Mark N/A this week'}</button></div>
+        {#if dutiesNA}<p class="na-note">No institutional duties this week.</p>{/if}
+        {#each dutiesRecords.filter(d => d.name !== 'N/A') as item, i}
           <div class="record-card">
             <div class="course-head">
               <strong>Duty {i + 1}</strong>
@@ -464,7 +521,7 @@
           <p class="empty-hint">No institutional duties yet. Add committees, events, or responsibilities you took on this week.</p>
         {/each}
         <div class="record-acts">
-          <button class="act-add" onclick={() => (dutiesRecords = [...dutiesRecords, { name: '', role: '', activity: '', reach: '', outcome: '' }])}>+ Add duty</button>
+          {#if !dutiesNA}<button class="act-add" onclick={() => (dutiesRecords = [...dutiesRecords, { name: '', role: '', activity: '', reach: '', outcome: '' }])}>+ Add duty</button>{/if}
           <button class="act-link" onclick={() => saveActivity('duties')}>{additionalSaving ? 'Saving…' : 'Save duties'}</button>
         </div>
       {:else if activeSection === 'summary'}
@@ -472,43 +529,12 @@
           <h2>Weekly Executive Summary & Dashboard</h2>
         </div>
         <div class="auto-summary">{autoSummary}</div>
-        <div class="dash-summary">
-          <table class="summary-table">
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Monthly Target</th>
-                <th>Actual Achieved</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Total Classes Scheduled vs. Taken</td>
-                <td>{scheduled}</td>
-                <td>{conducted} / {scheduled}</td>
-                <td class="status-cell">{deliveryRate >= 90 ? '✓' : deliveryRate >= 70 ? '△' : '⚠'}</td>
-              </tr>
-              <tr>
-                <td>Lecture Delivery Rate (%)</td>
-                <td>100%</td>
-                <td>{deliveryRate}%</td>
-                <td class="status-cell">{deliveryRate >= 90 ? '✓' : deliveryRate >= 70 ? '△' : '⚠'}</td>
-              </tr>
-              <tr>
-                <td>Research Papers / Patents Active</td>
-                <td>—</td>
-                <td>{researchActive}</td>
-                <td class="status-cell">{researchActive > 0 ? '✓' : '—'}</td>
-              </tr>
-              <tr>
-                <td>Club & Institutional Events Led</td>
-                <td>—</td>
-                <td>{dutiesCount}</td>
-                <td class="status-cell">{dutiesCount > 0 ? '✓' : '—'}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="summary-grid">
+          <div class="summary-metric primary"><span>Teaching delivery</span><strong>{conducted}<small> / {scheduled} classes</small></strong><em>{deliveryRate}% delivery</em></div>
+          <div class="summary-metric"><span>Research</span><strong>{researchNA ? 'N/A' : researchActive}</strong><em>{researchNA ? 'no activity recorded' : researchActive === 1 ? 'item this week' : 'items this week'}</em></div>
+          <div class="summary-metric"><span>Institutional duties</span><strong>{dutiesNA ? 'N/A' : dutiesCount}</strong><em>{dutiesNA ? 'no activity recorded' : dutiesCount === 1 ? 'item this week' : 'items this week'}</em></div>
+          <div class="summary-metric"><span>Outreach</span><strong>{outreachNA ? 'N/A' : outreachCount}</strong><em>{outreachNA ? 'no activity recorded' : outreachCount === 1 ? 'item this week' : 'items this week'}</em></div>
+          <div class="summary-metric"><span>Supporting files</span><strong>{attachments.length}</strong><em>{attachments.length === 1 ? 'file attached' : 'files attached'}</em></div>
         </div>
       {:else if activeSection === 'additional'}
         <div class="sub-tabs">
@@ -537,8 +563,9 @@
             <label class="upload-btn">+ Upload file<input disabled={!canEdit} type="file" accept="application/pdf,image/png,image/jpeg" onchange={uploadEvidence} /></label>
           {/if}
         {:else if activeExtraSection === 'outreach'}
-          <div class="section-top"><h2>Outreach & admissions</h2></div>
-          {#each outreachRecords as item, i}
+          <div class="section-top"><h2>Outreach activity</h2><button class="na-toggle" class:active={outreachNA} onclick={() => setNotApplicable('outreach')}>{outreachNA ? 'Undo N/A' : 'Mark N/A this week'}</button></div>
+          {#if outreachNA}<p class="na-note">No outreach activity this week.</p>{/if}
+          {#each outreachRecords.filter(r => r.activity !== 'N/A') as item, i}
             <div class="record-card">
               <div class="course-head">
                 <strong>Outreach {i + 1}</strong>
@@ -557,7 +584,7 @@
             <p class="empty-hint">No outreach activity yet. Add visits, drives, or events you were part of this week.</p>
           {/each}
           <div class="record-acts">
-            <button class="act-add" onclick={() => (outreachRecords = [...outreachRecords, { activity: '', audience: '', outcome: '', date: '' }])}>+ Add outreach</button>
+            {#if !outreachNA}<button class="act-add" onclick={() => (outreachRecords = [...outreachRecords, { activity: '', audience: '', outcome: '', date: '' }])}>+ Add outreach</button>{/if}
             <button class="act-link" onclick={() => saveActivity('outreach')}>{additionalSaving ? 'Saving…' : 'Save outreach'}</button>
           </div>
         {/if}
@@ -621,6 +648,7 @@
   .form-area { min-height: 300px; }
   .section-top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
   .section-top h2 { font-size: 1.1rem; margin: 0; letter-spacing: -0.02em; }
+  .section-hint { margin: -10px 0 18px; color: var(--muted-2); font-size: 0.78rem; line-height: 1.45; }
   .metric-badge { font-size: 0.68rem; font-weight: 800; padding: 4px 8px; border-radius: 4px; background: var(--green-soft); color: var(--green); }
   .course-list { display: grid; gap: 14px; }
   .course-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
@@ -670,6 +698,19 @@
   .summary-table td:nth-child(2),
   .summary-table td:nth-child(3) { font-variant-numeric: tabular-nums; text-align: center; }
   .status-cell { text-align: center; font-size: 1.1rem; font-weight: 800; color: var(--muted); }
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .summary-metric { min-height: 112px; display: flex; flex-direction: column; justify-content: space-between; padding: 16px 17px; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; }
+  .summary-metric.primary { background: var(--navy); border-color: var(--navy); color: var(--paper); }
+  .summary-metric span { color: var(--muted); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+  .summary-metric.primary span { color: var(--blue-soft); }
+  .summary-metric strong { color: var(--ink-2); font-size: 1.45rem; letter-spacing: -0.04em; }
+  .summary-metric.primary strong { color: var(--paper); }
+  .summary-metric strong small { font-size: 0.78rem; font-weight: 700; letter-spacing: 0; }
+  .summary-metric em { color: var(--muted-2); font-size: 0.7rem; font-style: normal; }
+  .summary-metric.primary em { color: var(--blue-soft); }
+  .na-toggle { margin-left: auto; border: 1px solid var(--line); border-radius: 5px; padding: 7px 10px; background: var(--panel); color: var(--muted); font: inherit; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
+  .na-toggle:hover, .na-toggle.active { border-color: var(--blue-border); background: var(--bg-hover); color: var(--blue); }
+  .na-note { margin: -8px 0 16px; padding: 13px 15px; border: 1px dashed var(--line); border-radius: 7px; background: var(--paper); color: var(--muted); font-size: 0.78rem; }
   @media (max-width: 900px) {
     .editor-layout { grid-template-columns: 1fr; }
     .section-nav { position: static; display: flex; gap: 4px; }
@@ -681,9 +722,11 @@
     .editor-actions { flex-wrap: wrap; }
     .field-grid { grid-template-columns: 1fr; }
     .number-grid { grid-template-columns: repeat(2, 1fr); }
+    .summary-grid { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 500px) {
     .number-grid { grid-template-columns: 1fr; }
     .preview-row { display: block; padding: 8px 0; }
+    .summary-grid { grid-template-columns: 1fr; }
   }
 </style>

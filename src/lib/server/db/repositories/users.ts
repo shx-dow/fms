@@ -78,6 +78,14 @@ export function getPasswordHash(userId: string, db: Db = defaultDb) {
     | undefined;
 }
 
+export function getUserProfile(userId: string, db: Db = defaultDb) {
+  return db.get(sql`SELECT profile_json FROM users WHERE id = ${userId}`) as { profile_json: string | null } | undefined;
+}
+
+export function updateUserProfile(userId: string, profileJson: string, db: Db = defaultDb) {
+  db.run(sql`UPDATE users SET profile_json = ${profileJson} WHERE id = ${userId}`);
+}
+
 export function defaultDepartmentId(db: Db = defaultDb): string | null {
   const row = db.get(sql`SELECT id FROM departments ORDER BY name LIMIT 1`) as { id: string } | undefined;
   return row?.id ?? null;

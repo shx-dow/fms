@@ -34,14 +34,14 @@
         <thead
           ><tr
             ><th>Course</th><th>Program</th><th>Type</th><th>Scheduled</th><th>Taken</th><th>Missed</th><th>Action</th
-            ><th>Syllabus</th></tr
+            ><th>Lecture covered up to</th></tr
           ></thead
         ><tbody
           >{#each data.teaching as item}<tr
               ><td>{item.course_code} · {item.course_name}</td><td>{item.program_level}</td><td>{item.class_type}</td
               ><td>{item.scheduled}</td><td>{item.conducted}</td><td>{item.missed}</td><td
                 >{item.missed_action || '—'}</td
-              ><td>{item.syllabus_completion ?? 0}%</td></tr
+              ><td>{item.syllabus_lecture ?? '—'}</td></tr
             >{/each}</tbody
         >
       </table>{:else}<p>No teaching records entered.</p>{/if}

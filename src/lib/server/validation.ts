@@ -10,6 +10,7 @@ export const teachingRecordSchema = z.object({
   missed: z.number().min(0).optional().default(0),
   missedAction: z.string().optional().nullable().default(null),
   syllabusCompletion: z.number().min(0).max(100).optional().nullable().default(null),
+  syllabusLecture: z.number().int().min(0).optional().nullable().default(null),
 });
 
 export const reportSaveSchema = z.object({

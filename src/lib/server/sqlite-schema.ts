@@ -8,6 +8,7 @@ export const users = sqliteTable('users', {
   personalEmail: text('personal_email'),
   mobile: text('mobile'),
   specialization: text('specialization'),
+  profileJson: text('profile_json'),
   role: text('role').notNull(),
   departmentId: text('department_id'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
@@ -89,6 +90,7 @@ export const teaching = sqliteTable('teaching_records', {
   missed: integer('missed').notNull().default(0),
   missedAction: text('missed_action'),
   syllabusCompletion: real('syllabus_completion'),
+  syllabusLecture: integer('syllabus_lecture'),
 });
 export const research = sqliteTable('research_records', {
   id: text('id').primaryKey(),

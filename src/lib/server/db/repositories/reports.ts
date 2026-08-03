@@ -14,6 +14,7 @@ export interface TeachingRow {
   missed: number;
   missedAction: string | null;
   syllabusCompletion: number | null;
+  syllabusLecture: number | null;
 }
 
 export interface SaveReportInput {
@@ -126,7 +127,7 @@ export function getLatestReportWithFaculty(facultyId: string, db: Db = defaultDb
 export function getTeachingStats(reportId: string, db: Db = defaultDb) {
   return db.get(sql`
     SELECT COALESCE(SUM(scheduled),0) AS scheduled, COALESCE(SUM(conducted),0) AS conducted,
-           COALESCE(ROUND(AVG(syllabus_completion)),0) AS syllabus
+           COALESCE(ROUND(AVG(syllabus_lecture)),0) AS syllabus_lecture
     FROM teaching_records WHERE report_id = ${reportId}
   `) as Record<string, unknown>;
 }
@@ -144,10 +145,10 @@ export function saveReport(input: SaveReportInput, db: Db = defaultDb) {
     for (const row of input.teaching) {
       tx.run(sql`
         INSERT INTO teaching_records (id, report_id, course_code, course_name, program_level, class_type,
-          scheduled, conducted, missed, missed_action, syllabus_completion)
+          scheduled, conducted, missed, missed_action, syllabus_completion, syllabus_lecture)
         VALUES (${randomUUID()}, ${input.reportId}, ${row.courseCode}, ${row.courseName}, ${row.programLevel},
           ${row.classType}, ${Number(row.scheduled ?? 0)}, ${Number(row.conducted ?? 0)}, ${Number(row.missed ?? 0)},
-          ${row.missedAction}, ${row.syllabusCompletion})
+          ${row.missedAction}, ${row.syllabusCompletion}, ${row.syllabusLecture})
       `);
     }
     if (input.status === 'SUBMITTED') {
@@ -247,7 +248,7 @@ export function getCurrentExportReport(facultyId: string, db: Db = defaultDb) {
 
 export function listExportTeaching(reportId: string, db: Db = defaultDb): Record<string, unknown>[] {
   return db.all(sql`
-    SELECT course_code, course_name, program_level, class_type, scheduled, conducted, missed, syllabus_completion
+    SELECT course_code, course_name, program_level, class_type, scheduled, conducted, missed, syllabus_lecture
     FROM teaching_records WHERE report_id = ${reportId}
   `) as Record<string, unknown>[];
 }
