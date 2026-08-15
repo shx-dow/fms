@@ -1,4 +1,4 @@
-import { integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -27,30 +27,38 @@ export const periods = sqliteTable('reporting_periods', {
   dueOn: text('due_on').notNull(),
   isOpen: integer('is_open', { mode: 'boolean' }).notNull().default(true),
 });
-export const reports = sqliteTable('reports', {
-  id: text('id').primaryKey(),
-  facultyId: text('faculty_id').notNull(),
-  periodId: text('period_id').notNull(),
-  status: text('status').notNull().default('DRAFT'),
-  summary: text('summary'),
-  challenges: text('challenges'),
-  nextGoals: text('next_goals'),
-  completion: integer('completion').notNull().default(0),
-  createdAt: text('created_at').notNull(),
-  updatedAt: text('updated_at').notNull(),
-  submittedAt: text('submitted_at'),
-  reopenedUntil: text('reopened_until'),
-  reopenReason: text('reopen_reason'),
-});
+export const reports = sqliteTable(
+  'reports',
+  {
+    id: text('id').primaryKey(),
+    facultyId: text('faculty_id').notNull(),
+    periodId: text('period_id').notNull(),
+    status: text('status').notNull().default('DRAFT'),
+    summary: text('summary'),
+    challenges: text('challenges'),
+    nextGoals: text('next_goals'),
+    completion: integer('completion').notNull().default(0),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+    submittedAt: text('submitted_at'),
+    reopenedUntil: text('reopened_until'),
+    reopenReason: text('reopen_reason'),
+  },
+  (t) => [index('reports_faculty_id_idx').on(t.facultyId), index('reports_period_id_idx').on(t.periodId)],
+);
 export const credentials = sqliteTable('credentials', {
   userId: text('user_id').primaryKey(),
   passwordHash: text('password_hash').notNull(),
 });
-export const sessions = sqliteTable('sessions', {
-  id: text('id').primaryKey(),
-  userId: text('user_id').notNull(),
-  expiresAt: text('expires_at').notNull(),
-});
+export const sessions = sqliteTable(
+  'sessions',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull(),
+    expiresAt: text('expires_at').notNull(),
+  },
+  (t) => [index('sessions_expires_at_idx').on(t.expiresAt)],
+);
 export const notificationReads = sqliteTable(
   'notification_reads',
   {
@@ -68,70 +76,98 @@ export const reportExceptions = sqliteTable('report_exceptions', {
   allowedUntil: text('allowed_until').notNull(),
   createdAt: text('created_at').notNull(),
 });
-export const attachments = sqliteTable('attachments', {
-  id: text('id').primaryKey(),
-  reportId: text('report_id').notNull(),
-  ownerId: text('owner_id').notNull(),
-  filename: text('filename').notNull(),
-  mimeType: text('mime_type').notNull(),
-  size: integer('size').notNull(),
-  storageName: text('storage_name').notNull(),
-  createdAt: text('created_at').notNull(),
-});
-export const teaching = sqliteTable('teaching_records', {
-  id: text('id').primaryKey(),
-  reportId: text('report_id').notNull(),
-  courseCode: text('course_code').notNull(),
-  courseName: text('course_name').notNull(),
-  programLevel: text('program_level').notNull(),
-  classType: text('class_type').notNull(),
-  scheduled: integer('scheduled').notNull().default(0),
-  conducted: integer('conducted').notNull().default(0),
-  missed: integer('missed').notNull().default(0),
-  missedAction: text('missed_action'),
-  syllabusCompletion: real('syllabus_completion'),
-  syllabusLecture: integer('syllabus_lecture'),
-});
-export const research = sqliteTable('research_records', {
-  id: text('id').primaryKey(),
-  reportId: text('report_id').notNull(),
-  category: text('category').notNull(),
-  title: text('title').notNull(),
-  venueOrAgency: text('venue_or_agency'),
-  indexingOrQuality: text('indexing_or_quality'),
-  role: text('role'),
-  status: text('status'),
-});
-export const duties = sqliteTable('institutional_duties', {
-  id: text('id').primaryKey(),
-  reportId: text('report_id').notNull(),
-  name: text('name').notNull(),
-  role: text('role').notNull(),
-  activity: text('activity'),
-  reach: text('reach'),
-  outcome: text('outcome'),
-});
-export const outreach = sqliteTable('outreach_records', {
-  id: text('id').primaryKey(),
-  reportId: text('report_id').notNull(),
-  activity: text('activity').notNull(),
-  audience: text('audience'),
-  outcome: text('outcome'),
-  date: text('date'),
-});
-export const reviews = sqliteTable('reviews', {
-  id: text('id').primaryKey(),
-  reportId: text('report_id').notNull(),
-  reviewerId: text('reviewer_id').notNull(),
-  decision: text('decision').notNull(),
-  remarks: text('remarks'),
-  createdAt: text('created_at').notNull(),
-});
-export const auditEvents = sqliteTable('audit_events', {
-  id: text('id').primaryKey(),
-  actorId: text('actor_id').notNull(),
-  action: text('action').notNull(),
-  entityType: text('entity_type').notNull(),
-  entityId: text('entity_id').notNull(),
-  createdAt: text('created_at').notNull(),
-});
+export const attachments = sqliteTable(
+  'attachments',
+  {
+    id: text('id').primaryKey(),
+    reportId: text('report_id').notNull(),
+    ownerId: text('owner_id').notNull(),
+    filename: text('filename').notNull(),
+    mimeType: text('mime_type').notNull(),
+    size: integer('size').notNull(),
+    storageName: text('storage_name').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [index('attachments_report_id_idx').on(t.reportId)],
+);
+export const teaching = sqliteTable(
+  'teaching_records',
+  {
+    id: text('id').primaryKey(),
+    reportId: text('report_id').notNull(),
+    courseCode: text('course_code').notNull(),
+    courseName: text('course_name').notNull(),
+    programLevel: text('program_level').notNull(),
+    classType: text('class_type').notNull(),
+    scheduled: integer('scheduled').notNull().default(0),
+    conducted: integer('conducted').notNull().default(0),
+    missed: integer('missed').notNull().default(0),
+    missedAction: text('missed_action'),
+    syllabusCompletion: real('syllabus_completion'),
+    syllabusLecture: integer('syllabus_lecture'),
+  },
+  (t) => [index('teaching_records_report_id_idx').on(t.reportId)],
+);
+export const research = sqliteTable(
+  'research_records',
+  {
+    id: text('id').primaryKey(),
+    reportId: text('report_id').notNull(),
+    category: text('category').notNull(),
+    title: text('title').notNull(),
+    venueOrAgency: text('venue_or_agency'),
+    indexingOrQuality: text('indexing_or_quality'),
+    role: text('role'),
+    status: text('status'),
+  },
+  (t) => [index('research_records_report_id_idx').on(t.reportId)],
+);
+export const duties = sqliteTable(
+  'institutional_duties',
+  {
+    id: text('id').primaryKey(),
+    reportId: text('report_id').notNull(),
+    name: text('name').notNull(),
+    role: text('role').notNull(),
+    activity: text('activity'),
+    reach: text('reach'),
+    outcome: text('outcome'),
+  },
+  (t) => [index('institutional_duties_report_id_idx').on(t.reportId)],
+);
+export const outreach = sqliteTable(
+  'outreach_records',
+  {
+    id: text('id').primaryKey(),
+    reportId: text('report_id').notNull(),
+    activity: text('activity').notNull(),
+    audience: text('audience'),
+    outcome: text('outcome'),
+    date: text('date'),
+  },
+  (t) => [index('outreach_records_report_id_idx').on(t.reportId)],
+);
+export const reviews = sqliteTable(
+  'reviews',
+  {
+    id: text('id').primaryKey(),
+    reportId: text('report_id').notNull(),
+    reviewerId: text('reviewer_id').notNull(),
+    decision: text('decision').notNull(),
+    remarks: text('remarks'),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [index('reviews_report_id_idx').on(t.reportId)],
+);
+export const auditEvents = sqliteTable(
+  'audit_events',
+  {
+    id: text('id').primaryKey(),
+    actorId: text('actor_id').notNull(),
+    action: text('action').notNull(),
+    entityType: text('entity_type').notNull(),
+    entityId: text('entity_id').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [index('audit_events_created_at_idx').on(t.createdAt)],
+);

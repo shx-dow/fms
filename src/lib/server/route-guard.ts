@@ -5,7 +5,11 @@ export interface GuardUser {
 export function computeRouteRedirect(path: string, user: GuardUser | null): string | null {
   if (!user) {
     const isPublic =
-      path === '/login' || path.startsWith('/api/auth') || path === '/logout' || path.startsWith('/_app');
+      path === '/login' ||
+      path.startsWith('/api/auth') ||
+      path === '/api/health' ||
+      path === '/logout' ||
+      path.startsWith('/_app');
     if (!isPublic) return `/login?next=${encodeURIComponent(path)}`;
     return null;
   }

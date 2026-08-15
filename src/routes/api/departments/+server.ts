@@ -14,7 +14,7 @@ export const GET: RequestHandler = ({ locals }) => {
 export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user || locals.user.role !== 'ADMIN')
     return json({ ok: false, error: 'Only Admin may manage departments.' }, { status: 403 });
-  const parsed = departmentSchema.safeParse(await request.json());
+  const parsed = departmentSchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success)
     return json({ ok: false, error: parsed.error.issues.map(i => i.message).join('; ') }, { status: 400 });
   const { id, code, name } = parsed.data;

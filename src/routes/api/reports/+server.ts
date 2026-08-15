@@ -48,7 +48,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   const period = currentPeriod();
   if (!period) return json({ ok: false, error: 'No open reporting period.' }, { status: 409 });
 
-  const parsed = reportSaveSchema.safeParse(await request.json());
+  const parsed = reportSaveSchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) {
     return json({ ok: false, error: parsed.error.issues.map(i => i.message).join('; ') }, { status: 400 });
   }

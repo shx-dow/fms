@@ -24,7 +24,9 @@ export const GET: RequestHandler = ({ locals }) => {
 export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user || locals.user.role !== 'ADMIN')
     return json({ ok: false, error: 'Only Admin may manage users.' }, { status: 403 });
-  const body = await request.json();
+  const body = await request.json().catch(() => ({}));
+  if (!body || typeof body !== 'object')
+    return json({ ok: false, error: 'Invalid JSON body.' }, { status: 400 });
 
   if ('isActive' in body && body.userId) {
     if (typeof body.isActive !== 'boolean' || typeof body.userId !== 'string')

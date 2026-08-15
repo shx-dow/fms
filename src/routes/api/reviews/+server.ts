@@ -45,7 +45,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user || !['HOD', 'ADMIN'].includes(locals.user.role))
     return json({ ok: false, error: 'Only HOD or Admin may review reports.' }, { status: 403 });
 
-  const parsed = reviewSchema.safeParse(await request.json());
+  const parsed = reviewSchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) {
     return json({ ok: false, error: parsed.error.issues.map(i => i.message).join('; ') }, { status: 400 });
   }

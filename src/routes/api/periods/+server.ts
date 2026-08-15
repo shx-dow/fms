@@ -18,7 +18,12 @@ export const DELETE: RequestHandler = async ({ url, locals }) => {
     return json({ ok: false, error: 'Only Admin may delete reporting periods.' }, { status: 403 });
   const id = url.searchParams.get('id');
   if (!id) return json({ ok: false, error: 'Missing period id.' }, { status: 400 });
-  deletePeriod(id);
+  try {
+    deletePeriod(id);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to delete period.';
+    return json({ ok: false, error: message }, { status: 409 });
+  }
   insertAuditEvent({
     id: randomUUID(),
     actorId: locals.user.id,
@@ -33,7 +38,7 @@ export const DELETE: RequestHandler = async ({ url, locals }) => {
 export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user || locals.user.role !== 'ADMIN')
     return json({ ok: false, error: 'Only Admin may update reporting periods.' }, { status: 403 });
-  const parsed = periodSchema.safeParse(await request.json());
+  const parsed = periodSchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success)
     return json({ ok: false, error: parsed.error.issues.map(i => i.message).join('; ') }, { status: 400 });
   const { id, startsOn, endsOn, dueOn, isOpen } = parsed.data;

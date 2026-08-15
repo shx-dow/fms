@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { createDatabase } from '../../local-db';
 import type { Db } from '../client';
-import { listPeriods, ensureCurrentPeriod, upsertPeriod, closeOtherOpenPeriods } from './periods';
+import { listPeriods, ensureCurrentPeriod, upsertPeriod, closeOtherOpenPeriods, deletePeriod } from './periods';
 import { listDepartments, upsertDepartment } from './departments';
 import { insertAttachment, listAttachments, getAttachmentById, deleteAttachment } from './attachments';
 import { insertReview, listReviewsForReport } from './reviews';
@@ -29,6 +29,17 @@ describe('periods', () => {
     closeOtherOpenPeriods('week-2026-08-10', db);
     const open = db.all(sql`SELECT id FROM reporting_periods WHERE is_open = 1`) as { id: string }[];
     expect(open).toEqual([{ id: 'week-2026-08-10' }]);
+  });
+
+  it('blocks deleting a period that has reports', () => {
+    const db = makeDb();
+    expect(() => deletePeriod('week-2026-07-20', db)).toThrow(/reports/);
+  });
+
+  it('deletes a period with no reports', () => {
+    const db = makeDb();
+    deletePeriod('week-2026-08-03', db);
+    expect(listPeriods(db).map((p) => p.id)).not.toContain('week-2026-08-03');
   });
 });
 

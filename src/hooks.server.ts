@@ -1,4 +1,4 @@
-import type { Handle } from '@sveltejs/kit';
+import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { getUserFromSession } from '$lib/server/auth';
 import { computeRouteRedirect } from '$lib/server/route-guard';
 
@@ -11,4 +11,13 @@ export const handle: Handle = async ({ event, resolve }) => {
       headers: { location: redirectTo },
     });
   return resolve(event);
+};
+
+export const handleError: HandleServerError = ({ error, event, status, message }) => {
+  console.error(
+    `[error] ${status} ${event.request.method} ${event.url.pathname}`,
+    message,
+    error instanceof Error ? error.stack ?? error.message : error,
+  );
+  return { message: 'An unexpected error occurred. Please try again later.' };
 };

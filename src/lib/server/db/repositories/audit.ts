@@ -66,11 +66,9 @@ export function markNotificationUnread(userId: string, eventId: string, db: Db =
 }
 
 export function markAllNotificationsRead(userId: string, db: Db = defaultDb) {
-  const events = db.all(sql`SELECT id FROM audit_events`) as { id: string }[];
   const now = new Date().toISOString();
-  db.transaction((tx) => {
-    for (const event of events) {
-      tx.run(sql`INSERT OR REPLACE INTO notification_reads (user_id, event_id, read_at) VALUES (${userId}, ${event.id}, ${now})`);
-    }
-  });
+  db.run(sql`
+    INSERT OR REPLACE INTO notification_reads (user_id, event_id, read_at)
+    SELECT ${userId}, id, ${now} FROM audit_events
+  `);
 }

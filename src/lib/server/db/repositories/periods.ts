@@ -81,5 +81,7 @@ export function closeOtherOpenPeriods(exceptId: string, db: Db = defaultDb) {
 }
 
 export function deletePeriod(id: string, db: Db = defaultDb) {
+  const hasReports = db.get(sql`SELECT 1 AS x FROM reports WHERE period_id = ${id} LIMIT 1`);
+  if (hasReports) throw new Error('Cannot delete a period that already has reports.');
   db.run(sql`DELETE FROM reporting_periods WHERE id = ${id}`);
 }

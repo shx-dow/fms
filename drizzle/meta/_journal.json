@@ -1,20 +1,27 @@
 {
-  "version": "7",
   "dialect": "sqlite",
   "entries": [
     {
+      "breakpoints": true,
       "idx": 0,
-      "version": "6",
-      "when": 1785562439394,
       "tag": "0000_daffy_senator_kelly",
-      "breakpoints": true
+      "version": "6",
+      "when": 1785562439394
     },
     {
+      "breakpoints": true,
       "idx": 1,
-      "version": "7",
-      "when": 1785570000000,
       "tag": "0001_tech_faculty_fields",
+      "version": "7",
+      "when": 1785570000000
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786789388989,
+      "tag": "0002_common_spectrum",
       "breakpoints": true
     }
-  ]
+  ],
+  "version": "7"
 }
