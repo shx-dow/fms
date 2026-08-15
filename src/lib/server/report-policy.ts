@@ -1,6 +1,6 @@
 import type { Db } from './db/client';
 import { db as defaultDb } from './db/client';
-import { getOwnerContext } from './db/repositories/reports';
+import { getOwnerContext, getReportForUser } from './db/repositories/reports';
 import { ensureCurrentPeriod } from './db/repositories/periods';
 
 export function canAccessReport(
@@ -13,6 +13,18 @@ export function canAccessReport(
   if (user.role === 'FACULTY') return row.faculty_id === user.id;
   if (user.role === 'HOD') return row.faculty_dept === (user.departmentId ?? '');
   return true;
+}
+
+export function canWriteReport(
+  user: { id: string; role: string; departmentId?: string },
+  reportId: string,
+  db: Db = defaultDb,
+  now = new Date(),
+): boolean {
+  if (user.role !== 'FACULTY') return false;
+  const owned = getReportForUser(reportId, user.id, db);
+  if (!owned) return false;
+  return policyFor(owned, now, db).canEdit;
 }
 
 export function currentPeriod(db: Db = defaultDb) {

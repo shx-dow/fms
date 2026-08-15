@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
+import { canWriteReport } from '$lib/server/report-policy';
 import { getAttachmentById, deleteAttachment } from '$lib/server/db/repositories/attachments';
 
 const uploadDir = env.UPLOAD_DIR || 'data/uploads';
@@ -30,8 +31,12 @@ export const DELETE: RequestHandler = ({ locals, params }) => {
   if (!locals.user) return json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   const row = getAttachmentById(params.id);
   if (!row) return json({ ok: false, error: 'Not found' }, { status: 404 });
-  if (locals.user.role !== 'ADMIN' && row.owner_id !== locals.user.id)
-    return json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  if (locals.user.role !== 'ADMIN') {
+    if (row.owner_id !== locals.user.id)
+      return json({ ok: false, error: 'Forbidden' }, { status: 403 });
+    if (!canWriteReport(locals.user, row.report_id))
+      return json({ ok: false, error: 'You can only edit your own report while it is open.' }, { status: 403 });
+  }
   const filePath = path.join(uploadDir, row.storage_name);
   try {
     fs.unlinkSync(filePath);

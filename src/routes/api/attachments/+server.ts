@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
-import { canAccessReport } from '$lib/server/report-policy';
+import { canWriteReport } from '$lib/server/report-policy';
 import { insertAttachment, listAttachments } from '$lib/server/db/repositories/attachments';
 
 const uploadDir = env.UPLOAD_DIR || 'data/uploads';
@@ -17,8 +17,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   const file = data.get('file');
   if (!reportId || !(file instanceof File))
     return json({ ok: false, error: 'Report and file are required.' }, { status: 400 });
-  if (!canAccessReport(locals.user, reportId))
-    return json({ ok: false, error: 'Report is outside your scope.' }, { status: 403 });
+  if (!canWriteReport(locals.user, reportId))
+    return json({ ok: false, error: 'You can only edit your own report while it is open.' }, { status: 403 });
   if (file.size > 10 * 1024 * 1024)
     return json({ ok: false, error: 'Files must be 10 MB or smaller.' }, { status: 400 });
   const allowed = ['application/pdf', 'image/png', 'image/jpeg'];

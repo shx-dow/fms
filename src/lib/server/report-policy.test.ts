@@ -3,7 +3,7 @@ import type Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { createDatabase } from './local-db';
-import { canAccessReport, currentPeriod, policyFor } from './report-policy';
+import { canAccessReport, canWriteReport, currentPeriod, policyFor } from './report-policy';
 
 function makeDb(): BetterSQLite3Database {
   return drizzle(createDatabase({ filename: ':memory:', seed: true }));
@@ -113,5 +113,51 @@ describe('canAccessReport', () => {
 
   it('returns false for an unknown report', () => {
     expect(canAccessReport({ id: 'dev-admin-1', role: 'ADMIN' }, 'does-not-exist', dbWithReport())).toBe(false);
+  });
+});
+
+describe('canWriteReport', () => {
+  const reportId = 'r-write';
+
+  function dbWithReport(status = 'DRAFT', reopenedUntil: string | null = null): BetterSQLite3Database {
+    const raw = createDatabase({ filename: ':memory:', seed: true });
+    raw
+      .prepare(
+        `INSERT INTO reports (id, faculty_id, period_id, status, created_at, updated_at, reopened_until)
+         VALUES (?, 'dev-faculty-1', 'week-2026-07-27', ?, '2026-07-28T00:00:00Z', '2026-07-28T00:00:00Z', ?)`,
+      )
+      .run(reportId, status, reopenedUntil);
+    return drizzle(raw);
+  }
+
+  const faculty = { id: 'dev-faculty-1', role: 'FACULTY' as const, departmentId: 'cse' };
+
+  it('allows the owning faculty to edit an open DRAFT', () => {
+    expect(canWriteReport(faculty, reportId, dbWithReport('DRAFT'), withinDeadline)).toBe(true);
+  });
+
+  it('blocks editing once the deadline has passed', () => {
+    expect(canWriteReport(faculty, reportId, dbWithReport('DRAFT'), afterDeadline)).toBe(false);
+  });
+
+  it('blocks a non-owner faculty member', () => {
+    expect(canWriteReport({ ...faculty, id: 'dev-faculty-2' }, reportId, dbWithReport('DRAFT'), withinDeadline)).toBe(false);
+  });
+
+  it('blocks a SUBMITTED report even while the period is open', () => {
+    expect(canWriteReport(faculty, reportId, dbWithReport('SUBMITTED'), withinDeadline)).toBe(false);
+  });
+
+  it('allows editing a SUBMITTED report with an active reopen', () => {
+    expect(canWriteReport(faculty, reportId, dbWithReport('SUBMITTED', '2026-08-02T00:00:00Z'), afterDeadline)).toBe(true);
+  });
+
+  it('denies HOD and Admin write access', () => {
+    expect(canWriteReport({ id: 'dev-hod-1', role: 'HOD', departmentId: 'cse' }, reportId, dbWithReport('DRAFT'), withinDeadline)).toBe(false);
+    expect(canWriteReport({ id: 'dev-admin-1', role: 'ADMIN' }, reportId, dbWithReport('DRAFT'), withinDeadline)).toBe(false);
+  });
+
+  it('returns false for an unknown report', () => {
+    expect(canWriteReport(faculty, 'does-not-exist', dbWithReport('DRAFT'), withinDeadline)).toBe(false);
   });
 });

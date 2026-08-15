@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
 import type { RequestHandler } from './$types';
 import { reopenSchema } from '$lib/server/validation';
+import { getReviewScope } from '$lib/server/db/repositories/reports';
 import { reopenReport, insertException } from '$lib/server/db/repositories/exceptions';
 import { insertAuditEvent } from '$lib/server/db/repositories/audit';
 
@@ -12,6 +13,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   if (!parsed.success)
     return json({ ok: false, error: parsed.error.issues.map(i => i.message).join('; ') }, { status: 400 });
   const { reportId, reason, allowedUntil } = parsed.data;
+  const allowed = getReviewScope(reportId, {
+    ...(locals.user.role === 'HOD' ? { departmentId: locals.user.departmentId ?? '' } : {}),
+  });
+  if (!allowed) return json({ ok: false, error: 'Report is outside your review scope.' }, { status: 403 });
   const now = new Date().toISOString();
   reopenReport({ reportId, allowedUntil, reason, updatedAt: now });
   insertException({ id: randomUUID(), reportId, actorId: locals.user.id, reason, allowedUntil, createdAt: now });
