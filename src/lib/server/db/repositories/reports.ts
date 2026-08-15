@@ -14,7 +14,7 @@ export interface TeachingRow {
   missed: number;
   missedAction: string | null;
   syllabusCompletion: number | null;
-  syllabusLecture: number | null;
+  syllabusLecture?: number | null;
 }
 
 export interface SaveReportInput {
@@ -136,7 +136,7 @@ export function saveReport(input: SaveReportInput, db: Db = defaultDb) {
   db.transaction((tx) => {
     tx.run(sql`
       UPDATE reports
-      SET summary = ${input.summary}, challenges = ${input.challenges}, next_goals = ${input.nextGoals},
+      SET summary = ${input.summary ?? null}, challenges = ${input.challenges ?? null}, next_goals = ${input.nextGoals ?? null},
           completion = ${input.completion}, updated_at = ${input.now}, status = ${input.status},
           submitted_at = CASE WHEN ${input.status} = 'SUBMITTED' THEN ${input.now} ELSE submitted_at END
       WHERE id = ${input.reportId} AND faculty_id = ${input.userId}
@@ -148,7 +148,7 @@ export function saveReport(input: SaveReportInput, db: Db = defaultDb) {
           scheduled, conducted, missed, missed_action, syllabus_completion, syllabus_lecture)
         VALUES (${randomUUID()}, ${input.reportId}, ${row.courseCode}, ${row.courseName}, ${row.programLevel},
           ${row.classType}, ${Number(row.scheduled ?? 0)}, ${Number(row.conducted ?? 0)}, ${Number(row.missed ?? 0)},
-          ${row.missedAction}, ${row.syllabusCompletion}, ${row.syllabusLecture})
+          ${row.missedAction ?? null}, ${row.syllabusCompletion ?? null}, ${row.syllabusLecture ?? null})
       `);
     }
     if (input.status === 'SUBMITTED') {
