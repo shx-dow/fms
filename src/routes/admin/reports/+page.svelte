@@ -15,6 +15,10 @@
   let reportContent: { teaching: TeachingRow[]; summary: string; reviews: ReviewHistoryRow[] } | null = $state(null);
   let contentLoading = $state(false);
   let showReport = $state(false);
+  let search = $state('');
+  const visibleReports = $derived(
+    search.trim() ? reports.filter((r) => (r.faculty_name + ' ' + r.period_label).toLowerCase().includes(search.trim().toLowerCase())) : reports,
+  );
   onMount(async () => {
     try {
       const res = await fetch('/api/reviews');
@@ -27,7 +31,8 @@
   });
   async function loadContent(reportId: string) {
     contentLoading = true; reportContent = null;
-    try { const res = await fetch(`/api/reports/${reportId}`); const d = await res.json(); reportContent = { teaching: d.teaching ?? [], summary: d.report?.summary ?? '', reviews: d.reviews ?? [] }; } catch {}
+    try { const res = await fetch(`/api/reports/${reportId}`); const d = await res.json(); reportContent = { teaching: d.teaching ?? [], summary: d.report?.summary ?? '', reviews: d.reviews ?? [] }; }
+    catch { reportContent = null; error = 'Could not load report content.'; }
     finally { contentLoading = false; }
   }
   async function review(next: 'APPROVED' | 'CHANGES_REQUIRED') {
@@ -72,10 +77,13 @@
     <div class="review-layout">
       <section class="queue-panel">
         <div class="queue-head">Reports requiring attention</div>
-        {#if !reports.length}
-          <div class="q-empty">No submitted reports available yet.</div>
+        {#if reports.length}
+          <input class="q-search" type="search" placeholder="Search faculty or period…" aria-label="Filter reports by faculty or period" bind:value={search} />
+        {/if}
+        {#if !visibleReports.length}
+          <div class="q-empty">{reports.length ? 'No reports match your search.' : 'No submitted reports available yet.'}</div>
         {:else}
-          {#each reports as r}
+          {#each visibleReports as r}
             <button class="q-row" class:chosen={selected?.id === r.id} onclick={() => selectReport(r)}>
               <div class="q-info">
                 <strong>{r.faculty_name}</strong>
@@ -189,6 +197,9 @@
   .q-info strong, .q-info small { display: block; }
   .q-info small { color: var(--muted-2); margin-top: 3px; font-size: 0.7rem; }
   .q-empty { padding: 24px 16px; color: var(--muted-2); font-size: 0.8rem; }
+  .q-search { width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid var(--line); padding: 11px 16px; font: inherit; font-size: 0.78rem; background: var(--bg-input); color: var(--ink-2); outline: none; }
+  .q-search:focus { box-shadow: inset 0 -2px 0 var(--blue); }
+  .q-search::placeholder { color: var(--muted-3); }
   .review-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   .rp-head { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
   .rp-head-info h2 { font-size: 1.1rem; letter-spacing: -0.02em; margin: 0; }

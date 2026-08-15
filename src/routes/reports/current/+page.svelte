@@ -97,7 +97,8 @@
     canEdit = d.policy?.canEdit ?? true;
     deadlineDate = d.policy?.deadline ?? '';
     if (reportId) {
-      try { const r = await fetch(`/api/reports/${reportId}`); const rd = await r.json(); reviews = rd.reviews ?? []; } catch {}
+      try { const r = await fetch(`/api/reports/${reportId}`); const rd = await r.json(); reviews = rd.reviews ?? []; }
+      catch { show('Could not load review history.', 'err'); }
       loadAttachments();
     }
     savedAt = '';
@@ -109,7 +110,8 @@
     saveTimer = setTimeout(() => { savedAt = ''; }, 3000);
   }
   async function loadAttachments() {
-    try { const r = await fetch(`/api/attachments?reportId=${reportId}`); const d = await r.json(); attachments = d.attachments ?? []; } catch {}
+    try { const r = await fetch(`/api/attachments?reportId=${reportId}`); const d = await r.json(); attachments = d.attachments ?? []; }
+    catch { show('Could not load attachments.', 'err'); }
   }
   async function uploadEvidence(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
@@ -689,15 +691,6 @@
   .preview-bar { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: var(--bg-hover); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 16px; }
   .preview-bar strong { font-size: 0.8rem; color: var(--muted); }
   .auto-summary { background: var(--bg-hover); border: 1px solid var(--blue-border); border-radius: 6px; padding: 14px 18px; font-size: 0.82rem; line-height: 1.5; color: var(--ink-2); margin-bottom: 16px; }
-  .dash-summary { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-  .summary-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-  .summary-table th { text-align: left; padding: 12px 16px; background: var(--bg-hover); color: var(--muted); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--line); }
-  .summary-table td { padding: 14px 16px; border-bottom: 1px solid var(--line-2); color: var(--ink-2); }
-  .summary-table tr:last-child td { border-bottom: 0; }
-  .summary-table td:first-child { font-weight: 700; color: var(--blue); }
-  .summary-table td:nth-child(2),
-  .summary-table td:nth-child(3) { font-variant-numeric: tabular-nums; text-align: center; }
-  .status-cell { text-align: center; font-size: 1.1rem; font-weight: 800; color: var(--muted); }
   .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .summary-metric { min-height: 112px; display: flex; flex-direction: column; justify-content: space-between; padding: 16px 17px; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; }
   .summary-metric.primary { background: var(--navy); border-color: var(--navy); color: var(--paper); }

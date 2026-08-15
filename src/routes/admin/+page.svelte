@@ -68,6 +68,9 @@
   function fmtAudit(iso: string) {
     return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   }
+  const rateDelta = $derived(
+    trends.length >= 2 ? Number(trends[0].submission_rate ?? 0) - Number(trends[1].submission_rate ?? 0) : null,
+  );
 </script>
 
 <svelte:head><title>{isAdmin ? 'Administration' : 'Department overview'} · Faculty Reporting System</title></svelte:head>
@@ -91,7 +94,7 @@
       </header>
       <div class="dash-metrics wide">
         <div><span>Faculty</span><strong>{facultyCount}</strong><small>in the department</small></div>
-        <div><span>Submitted</span><strong>{submittedCount}</strong><small>for the open period</small></div>
+        <div><span>Submitted</span><strong>{submittedCount}</strong><small>for the open period</small>{#if rateDelta !== null}<em class="metric-delta" class:up={rateDelta >= 0} class:down={rateDelta < 0}>{rateDelta >= 0 ? '↑' : '↓'} {Math.abs(rateDelta)}% vs last period</em>{/if}</div>
         <div><span>Review needed</span><strong>{reviewNeeded}</strong><small>awaiting attention</small></div>
         <div><span>Missing</span><strong>{missingReports.length}</strong><small>not yet submitted</small></div>
       </div>
@@ -229,7 +232,7 @@
       </header>
       <div class="dash-metrics">
         <div><span>Faculty</span><strong>{facultyCount}</strong><small>in department</small></div>
-        <div><span>Submitted</span><strong>{submittedCount}</strong><small>{facultyCount ? Math.round((submittedCount / facultyCount) * 100) : 0}% rate</small></div>
+        <div><span>Submitted</span><strong>{submittedCount}</strong><small>{facultyCount ? Math.round((submittedCount / facultyCount) * 100) : 0}% rate</small>{#if rateDelta !== null}<em class="metric-delta" class:up={rateDelta >= 0} class:down={rateDelta < 0}>{rateDelta >= 0 ? '↑' : '↓'} {Math.abs(rateDelta)}% vs last period</em>{/if}</div>
         <div><span>Review needed</span><strong>{reviewNeeded}</strong><small>awaiting attention</small></div>
       </div>
       <div class="admin-grid">
@@ -315,6 +318,9 @@
   .dash-metrics span:first-child { display: block; color: var(--muted-3); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; margin-bottom: 8px; }
   .dash-metrics strong { display: block; font-size: 1.7rem; letter-spacing: -0.04em; line-height: 1.1; color: var(--ink-2); }
   .dash-metrics small { display: block; color: var(--muted-3); font-size: 0.7rem; margin-top: 5px; }
+  .metric-delta { display: block; font-style: normal; font-size: 0.7rem; font-weight: 700; margin-top: 5px; }
+  .metric-delta.up { color: var(--green); }
+  .metric-delta.down { color: var(--red); }
   .quick-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
   .quick-actions a { flex: none; text-decoration: none; font-size: 0.75rem; font-weight: 800; color: var(--blue); background: var(--bg-hover); border: 1px solid var(--line); padding: 8px 14px; border-radius: 6px; transition: background 0.14s ease, border-color 0.14s ease; }
   .quick-actions a:hover { background: var(--bg-hover); border-color: var(--blue-border); }
@@ -340,9 +346,9 @@
   .r-drf { background: var(--line-light); color: var(--gray); }
   .empty-state { padding: 24px 20px; color: var(--muted-2); font-size: 0.8rem; }
   .missing-note { padding: 12px 20px; margin: 0; color: var(--muted-2); font-size: 0.74rem; }
-  .trends-section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-top: 24px; }
+  .trends-section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin-top: 24px; }
   .trends-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-  .trends-table th { text-align: left; padding: 12px 20px; background: var(--bg-hover); color: var(--muted); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--line); }
+  .trends-table th { position: sticky; top: 0; z-index: 1; text-align: left; padding: 12px 20px; background: var(--bg-hover); color: var(--muted); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--line); }
   .trends-table td { padding: 14px 20px; border-bottom: 1px solid var(--line-2); color: var(--ink-2); }
   .trends-table tr:last-child td { border-bottom: 0; }
   .trend-pill { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 800; }
