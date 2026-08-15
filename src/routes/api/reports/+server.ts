@@ -59,7 +59,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   insertReportOrIgnore({ id: reportId, facultyId: userId, periodId: period.id, createdAt: now, updatedAt: now });
   const existing = getReportForUser(reportId, userId);
   if (!existing) return json({ ok: false, error: 'Report not found' }, { status: 404 });
-  const policy = policyFor(existing, new Date(now));
+  const policy = policyFor(existing, new Date(now), undefined, existing);
   if (!policy.canEdit)
     return json(
       { ok: false, error: 'This report is closed or locked. Request an authorized reopening.' },

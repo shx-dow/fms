@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
 import type { RequestHandler } from './$types';
 import { reviewSchema } from '$lib/server/validation';
+import { csvCell } from '$lib/server/csv';
 import { computeWeekLabel } from '$lib/week-label';
 import { listReviewQueue, getReviewScope, setReportStatus } from '$lib/server/db/repositories/reports';
 import { insertReview } from '$lib/server/db/repositories/reviews';
@@ -16,9 +17,18 @@ export const GET: RequestHandler = ({ locals, url }) => {
   if (fmt === 'csv') {
     const header = 'Faculty,Email,Period,Status,Completion,Submitted At,Last Updated\n';
     const body = (rows as any[])
-      .map(
-        (r: any) =>
-          `"${r.faculty_name}","${r.faculty_email}","${r.period_label}","${r.status}",${r.completion},${r.submitted_at ? new Date(r.submitted_at).toISOString() : ''},${new Date(r.updated_at).toISOString()}`,
+      .map((r: any) =>
+        [
+          r.faculty_name,
+          r.faculty_email,
+          r.period_label,
+          r.status,
+          r.completion,
+          r.submitted_at ? new Date(r.submitted_at).toISOString() : '',
+          new Date(r.updated_at).toISOString(),
+        ]
+          .map(csvCell)
+          .join(','),
       )
       .join('\n');
     return new Response(header + body, {

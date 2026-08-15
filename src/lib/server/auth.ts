@@ -13,6 +13,7 @@ export function hashPassword(password: string) {
 export function verifyPassword(password: string, stored: string) {
   const [salt, key] = stored.split(':');
   if (!salt || !key) return false;
+  if (!/^[0-9a-fA-F]{128}$/.test(key)) return false;
   const actual = scryptSync(password, salt, 64);
   return timingSafeEqual(actual, Buffer.from(key, 'hex'));
 }

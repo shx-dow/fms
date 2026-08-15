@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { csvCell } from '$lib/server/csv';
 import { getCurrentExportReport, listExportTeaching } from '$lib/server/db/repositories/reports';
 
 export const GET: RequestHandler = ({ locals }) => {
@@ -7,7 +8,6 @@ export const GET: RequestHandler = ({ locals }) => {
   const report = getCurrentExportReport(locals.user.id);
   if (!report) throw error(404, 'Report not found');
   const rows = listExportTeaching(report.id) as Record<string, unknown>[];
-  const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
   const csv = [
     ['Report status', report.status],
     ['Summary', report.summary ?? ''],
@@ -24,7 +24,7 @@ export const GET: RequestHandler = ({ locals }) => {
     ],
     ...rows.map((row) => Object.values(row)),
   ]
-    .map((row) => row.map(escape).join(','))
+    .map((row) => row.map(csvCell).join(','))
     .join('\n');
   return new Response(csv, {
     headers: {

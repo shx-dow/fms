@@ -67,8 +67,12 @@ export function getReportByIdForPdf(id: string, db: Db = defaultDb) {
 
 export function getReportForUser(reportId: string, userId: string, db: Db = defaultDb) {
   return db.get(sql`
-    SELECT status, reopened_until FROM reports WHERE id = ${reportId} AND faculty_id = ${userId}
-  `) as { status: string; reopened_until?: string | null } | undefined;
+    SELECT r.status, r.reopened_until, p.due_on, p.is_open
+    FROM reports r JOIN reporting_periods p ON p.id = r.period_id
+    WHERE r.id = ${reportId} AND r.faculty_id = ${userId}
+  `) as
+    | { status: string; reopened_until?: string | null; due_on: string; is_open: number }
+    | undefined;
 }
 
 export function getOwnerContext(reportId: string, db: Db = defaultDb) {

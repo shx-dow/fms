@@ -75,6 +75,29 @@ describe('policyFor', () => {
     expect(p.locked).toBe(true);
     expect(p.canEdit).toBe(false);
   });
+
+  it('locks a DRAFT whose own period has closed even while the current period is open', () => {
+    const ownClosedPeriod = { due_on: '2026-07-24T18:00:00+05:30', is_open: 0 };
+    const p = policyFor({ status: 'DRAFT' }, withinDeadline, makeDb(), ownClosedPeriod);
+    expect(p.open).toBe(false);
+    expect(p.canEdit).toBe(false);
+    expect(p.deadline.toISOString()).toBe(new Date('2026-07-24T18:00:00+05:30').toISOString());
+  });
+
+  it('edits a DRAFT whose own period is open and reports its own deadline', () => {
+    const ownOpenPeriod = { due_on: '2026-07-31T18:00:00+05:30', is_open: 1 };
+    const p = policyFor({ status: 'DRAFT' }, withinDeadline, makeDb(), ownOpenPeriod);
+    expect(p.open).toBe(true);
+    expect(p.canEdit).toBe(true);
+    expect(p.deadline.toISOString()).toBe(new Date('2026-07-31T18:00:00+05:30').toISOString());
+  });
+
+  it('still falls back to the current period when no report period is supplied', () => {
+    const p = policyFor({ status: 'DRAFT' }, withinDeadline, makeDb());
+    expect(p.open).toBe(true);
+    expect(p.canEdit).toBe(true);
+    expect(p.deadline.toISOString()).toBe(new Date('2026-07-31T18:00:00+05:30').toISOString());
+  });
 });
 
 describe('canAccessReport', () => {

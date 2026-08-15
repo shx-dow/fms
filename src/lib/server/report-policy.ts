@@ -24,7 +24,7 @@ export function canWriteReport(
   if (user.role !== 'FACULTY') return false;
   const owned = getReportForUser(reportId, user.id, db);
   if (!owned) return false;
-  return policyFor(owned, now, db).canEdit;
+  return policyFor(owned, now, db, owned).canEdit;
 }
 
 export function currentPeriod(db: Db = defaultDb) {
@@ -35,14 +35,15 @@ export function policyFor(
   report: { status: string; reopened_until?: string | null },
   now = new Date(),
   db: Db = defaultDb,
+  period?: { due_on: string; is_open: number } | null,
 ) {
-  const period = currentPeriod(db);
-  const deadline = period ? new Date(period.due_on) : now;
+  const own = period ?? currentPeriod(db);
+  const deadline = own ? new Date(own.due_on) : now;
   const reopened = report.reopened_until ? new Date(report.reopened_until) > now : false;
-  const open = Boolean(period?.is_open) && now <= deadline;
+  const open = Boolean(own?.is_open) && now <= deadline;
   const locked = !['DRAFT', 'CHANGES_REQUIRED'].includes(report.status) && !reopened;
   return {
-    period,
+    period: own,
     open,
     locked,
     canEdit: (open && !locked) || reopened,
