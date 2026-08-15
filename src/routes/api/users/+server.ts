@@ -13,6 +13,7 @@ import {
 } from '$lib/server/db/repositories/users';
 import { insertAuditEvent } from '$lib/server/db/repositories/audit';
 import { deleteSessionsForUser } from '$lib/server/db/repositories/sessions';
+import { PASSWORD_MIN_LENGTH, passwordTooShortMessage } from '$lib/server/validation';
 
 export const GET: RequestHandler = ({ locals }) => {
   if (!locals.user || locals.user.role !== 'ADMIN')
@@ -42,8 +43,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   }
 
   if (body.action === 'CREATE') {
-    if (!body.name || !body.email || !body.role || !body.password)
+    if (!body.name || !body.email || !body.role || typeof body.password !== 'string')
       return json({ ok: false, error: 'Name, email, role and password are required.' }, { status: 400 });
+    if (body.password.length < PASSWORD_MIN_LENGTH)
+      return json({ ok: false, error: passwordTooShortMessage }, { status: 400 });
     const id = randomUUID();
     const defaultDept = defaultDepartmentId();
     createUser({ id, name: body.name, email: body.email, employeeCode: body.employeeCode || null, personalEmail: body.personalEmail || null, mobile: body.mobile || null, specialization: body.specialization || null, role: body.role, departmentId: body.departmentId || defaultDept || null });
@@ -71,7 +74,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       ...(body.role ? { role: body.role } : {}),
       ...('departmentId' in body ? { departmentId: body.departmentId || null } : {}),
     });
-    if (body.password) {
+    if (body.password !== undefined && body.password !== null && body.password !== '') {
+      if (typeof body.password !== 'string' || body.password.length < PASSWORD_MIN_LENGTH)
+        return json({ ok: false, error: passwordTooShortMessage }, { status: 400 });
       upsertCredentials(body.userId, hashPassword(body.password));
       deleteSessionsForUser(body.userId);
     }

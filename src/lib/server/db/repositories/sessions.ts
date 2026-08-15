@@ -36,3 +36,7 @@ export function deleteExpiredSessions(db: Db = defaultDb) {
 export function deleteSessionsForUser(userId: string, db: Db = defaultDb) {
   db.run(sql`DELETE FROM sessions WHERE user_id = ${userId}`);
 }
+
+export function deleteSessionsForUserExcept(userId: string, keepSessionId: string, db: Db = defaultDb) {
+  db.run(sql`DELETE FROM sessions WHERE user_id = ${userId} AND id <> ${keepSessionId}`);
+}

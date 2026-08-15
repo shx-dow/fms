@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+export const PASSWORD_MIN_LENGTH = 8;
+export const passwordTooShortMessage = `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`;
+
 const blankAsZero = (schema: z.ZodNumber) => z.preprocess((value) => value === '' || value === null || value === undefined ? 0 : value, schema);
 const blankAsNull = (schema: z.ZodNumber) => z.preprocess((value) => value === '' || value === undefined ? null : value, schema.nullable());
 

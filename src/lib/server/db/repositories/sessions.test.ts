@@ -8,6 +8,7 @@ import {
   findUserBySession,
   deleteExpiredSessions,
   deleteSessionsForUser,
+  deleteSessionsForUserExcept,
 } from './sessions';
 
 function makeDb(): Db {
@@ -48,5 +49,14 @@ describe('sessions', () => {
     createSessionRecord('s2', 'dev-faculty-2', '2099-01-01T00:00:00Z', db);
     deleteSessionsForUser('dev-faculty-1', db);
     expect(db.all(sql`SELECT id FROM sessions`) as { id: string }[]).toEqual([{ id: 's2' }]);
+  });
+
+  it('deletes all sessions for a user except the current one', () => {
+    const db = makeDb();
+    createSessionRecord('s1', 'dev-faculty-1', '2099-01-01T00:00:00Z', db);
+    createSessionRecord('s2', 'dev-faculty-1', '2099-01-01T00:00:00Z', db);
+    createSessionRecord('s3', 'dev-faculty-2', '2099-01-01T00:00:00Z', db);
+    deleteSessionsForUserExcept('dev-faculty-1', 's2', db);
+    expect(db.all(sql`SELECT id FROM sessions ORDER BY id`) as { id: string }[]).toEqual([{ id: 's2' }, { id: 's3' }]);
   });
 });
