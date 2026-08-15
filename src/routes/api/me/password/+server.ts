@@ -1,8 +1,10 @@
 import { json } from '@sveltejs/kit';
+import { randomUUID } from 'node:crypto';
 import type { RequestHandler } from './$types';
 import { hashPassword, verifyPassword } from '$lib/server/auth';
 import { getPasswordHash, upsertCredentials } from '$lib/server/db/repositories/users';
 import { deleteSessionsForUserExcept } from '$lib/server/db/repositories/sessions';
+import { insertAuditEvent } from '$lib/server/db/repositories/audit';
 import { PASSWORD_MIN_LENGTH, passwordTooShortMessage } from '$lib/server/validation';
 
 export const POST: RequestHandler = async ({ request, locals, cookies }) => {
@@ -19,5 +21,13 @@ export const POST: RequestHandler = async ({ request, locals, cookies }) => {
     return json({ ok: false, error: 'Current password is incorrect.' }, { status: 403 });
   upsertCredentials(locals.user.id, hashPassword(next));
   deleteSessionsForUserExcept(locals.user.id, cookies.get('session') ?? '');
+  insertAuditEvent({
+    id: randomUUID(),
+    actorId: locals.user.id,
+    action: 'PASSWORD_CHANGED',
+    entityType: 'USER',
+    entityId: locals.user.id,
+    createdAt: new Date().toISOString(),
+  });
   return json({ ok: true });
 };

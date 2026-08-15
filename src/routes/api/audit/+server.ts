@@ -5,8 +5,8 @@ import { listAuditEvents } from '$lib/server/db/repositories/audit';
 const PAGE_SIZE = 50;
 
 export const GET: RequestHandler = ({ locals, url }) => {
-  if (!locals.user || !['HOD', 'ADMIN'].includes(locals.user.role))
-    return json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  if (!locals.user || locals.user.role !== 'ADMIN')
+    return json({ ok: false, error: 'Only Admin may view the audit log.' }, { status: 403 });
   const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
   const { events, total } = listAuditEvents(
     {
