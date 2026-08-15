@@ -2,12 +2,20 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '../client';
 import { db as defaultDb } from '../client';
 
-export function listDepartments(db: Db = defaultDb): Record<string, unknown>[] {
+export interface DepartmentRow {
+  id: string;
+  code: string;
+  name: string;
+  member_count: number;
+}
+
+export function listDepartments(db: Db = defaultDb): DepartmentRow[] {
+  // SAFETY: The SELECT list matches DepartmentRow (department columns plus the member count aggregate).
   return db.all(sql`
     SELECT d.*, COUNT(u.id) AS member_count
     FROM departments d LEFT JOIN users u ON u.department_id = d.id
     GROUP BY d.id ORDER BY d.name
-  `) as Record<string, unknown>[];
+  `) as DepartmentRow[];
 }
 
 export function upsertDepartment(id: string, code: string, name: string, db: Db = defaultDb) {

@@ -114,6 +114,7 @@
     catch { show('Could not load attachments.', 'err'); }
   }
   async function uploadEvidence(e: Event) {
+    // SAFETY: The change event fires on the file input element itself, so currentTarget is that input.
     const input = e.currentTarget as HTMLInputElement;
     const file = input.files?.[0];
     if (!file || !reportId) return;
@@ -126,7 +127,7 @@
   async function deleteAttachment(id: string) { await fetch(`/api/attachments/${id}`, { method: 'DELETE' }); loadAttachments(); }
   function formatSize(b: number) { if (b < 1024) return b + ' B'; if (b < 1048576) return (b / 1024).toFixed(1) + ' KB'; return (b / 1048576).toFixed(1) + ' MB'; }
   const fileName = (n: string) => (n.length > 40 ? n.slice(0, 37) + '...' : n);
-  async function saveDraft(_e?: unknown, status = 'DRAFT') {
+  async function saveDraft(status = 'DRAFT') {
     if (!canEdit || saving) return false;
     saving = true; clearTimeout(saveTimer); savedAt = 'Saving...';
     const res = await fetch('/api/reports', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportId, teaching, completion, status }) });
@@ -181,7 +182,7 @@
     clearTimeout(teachingSaveTimer);
     teachingSaveTimer = setTimeout(() => saveDraft(), 600);
   }
-  async function handleSubmit() { confirmSubmit = false; const ok = await saveDraft(undefined, 'SUBMITTED'); if (ok) { submitted = true; reportStatus = 'SUBMITTED'; canEdit = false; } }
+  async function handleSubmit() { confirmSubmit = false; const ok = await saveDraft('SUBMITTED'); if (ok) { submitted = true; reportStatus = 'SUBMITTED'; canEdit = false; } }
   async function copyFromLastWeek() {
     confirmCopy = false;
     if (!prevReport) { show('No previous report to copy from.', 'err'); return; }

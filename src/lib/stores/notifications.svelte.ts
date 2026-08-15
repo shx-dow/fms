@@ -11,8 +11,9 @@ export function setNotificationUser(id: string | null) {
 }
 
 function notifLabel(action: string) {
-  const labels: Record<string, string> = { REPORT_SUBMITTED: 'Submitted', APPROVED: 'Approved', CHANGES_REQUIRED: 'Changes', REPORT_REOPENED: 'Reopened' };
-  return labels[action] ?? action.replaceAll('_', ' ');
+  const labels = { REPORT_SUBMITTED: 'Submitted', APPROVED: 'Approved', CHANGES_REQUIRED: 'Changes', REPORT_REOPENED: 'Reopened' } satisfies Record<string, string>;
+  // SAFETY: known notification actions map to labels; unknown values fall back via ??.
+  return labels[action as keyof typeof labels] ?? action.replaceAll('_', ' ');
 }
 
 function fmtDate(iso: string) {

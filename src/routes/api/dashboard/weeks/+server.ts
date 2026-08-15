@@ -23,27 +23,39 @@ export const GET: RequestHandler = ({ locals, url }) => {
       const report = getReportForPeriod(user.id, periodId);
       return json({ period: enriched, report: report ?? null });
     }
-    const reports = listReportsForPeriod(periodId, {
-      ...(user.role === 'HOD' ? { departmentId: user.departmentId ?? '' } : {}),
-    });
+    const opts = user.role === 'HOD' ? { departmentId: user.departmentId ?? '' } : {};
+    const reports = listReportsForPeriod(periodId, opts);
     return json({ period: enriched, reports });
   }
 
-  const raw =
-    user.role === 'FACULTY'
-      ? listWeeksForFaculty(user.id)
-      : listWeeksAggregate({ ...(user.role === 'HOD' ? { departmentId: user.departmentId ?? '' } : {}) });
-
-  const weeks = raw.map((w) => {
-    const row: Record<string, unknown> = { ...w, week_label: computeWeekLabel(String(w.starts_on)) };
-    if (user.role !== 'FACULTY') {
+  let weeks;
+  if (user.role === 'FACULTY') {
+    weeks = listWeeksForFaculty(user.id).map((w) => ({
+      ...w,
+      week_label: computeWeekLabel(String(w.starts_on)),
+    }));
+  } else {
+    const opts = user.role === 'HOD' ? { departmentId: user.departmentId ?? '' } : {};
+    weeks = listWeeksAggregate(opts).map((w) => {
       const total = Number(w.total) || 1;
       const ratio = (Number(w.submitted) + Number(w.approved)) / total;
-      row.level = Number(w.approved) === Number(w.total) ? 4 : ratio >= 1 ? 3 : ratio >= 0.5 ? 2 : ratio > 0 ? 1 : 0;
-      row.late = ratio < 1 && (!Number(w.is_open) || new Date(String(w.due_on)) < now) ? 1 : 0;
-    }
-    return row;
-  });
+      return {
+        ...w,
+        week_label: computeWeekLabel(String(w.starts_on)),
+        level:
+          Number(w.approved) === Number(w.total)
+            ? 4
+            : ratio >= 1
+              ? 3
+              : ratio >= 0.5
+                ? 2
+                : ratio > 0
+                  ? 1
+                  : 0,
+        late: ratio < 1 && (!Number(w.is_open) || new Date(String(w.due_on)) < now) ? 1 : 0,
+      };
+    });
+  }
 
   return json({ weeks });
 };

@@ -68,6 +68,7 @@ describe('users', () => {
     const db = makeDb();
     createCredentials('u-nocred', 'hash-a', db);
     upsertCredentials('u-nocred', 'hash-b', db);
+    // SAFETY: The SELECT list projects exactly the password_hash column from credentials.
     const row = db.get(sql`SELECT password_hash FROM credentials WHERE user_id = 'u-nocred'`) as {
       password_hash: string;
     };

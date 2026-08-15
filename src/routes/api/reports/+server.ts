@@ -25,7 +25,9 @@ export const GET: RequestHandler = ({ locals }) => {
     const now = new Date().toISOString();
     const id = randomUUID();
     insertReport({ id, facultyId: userId, periodId: period.id, createdAt: now, updatedAt: now });
-    report = getReportById(id) as Record<string, unknown>;
+    const created = getReportById(id);
+    if (!created) throw new Error('Failed to load created report');
+    report = created;
   }
   const periodLabel = computeWeekLabel(String(report.period_starts_on));
   report.period_label = periodLabel;
@@ -34,7 +36,7 @@ export const GET: RequestHandler = ({ locals }) => {
   return json({
     report,
     reports: history,
-    policy: policyFor(report as { status: string; reopened_until?: string | null }),
+    policy: policyFor(report),
     teaching: listTeaching(String(report.id)),
     research: listResearch(String(report.id)),
     duties: listDuties(String(report.id)),

@@ -40,6 +40,7 @@ describe('sessions', () => {
     createSessionRecord('old', 'dev-faculty-1', '2000-01-01T00:00:00Z', db);
     createSessionRecord('new', 'dev-faculty-1', '2099-01-01T00:00:00Z', db);
     deleteExpiredSessions(db);
+    // SAFETY: The SELECT list projects exactly the id column from sessions.
     expect(db.all(sql`SELECT id FROM sessions ORDER BY id`) as { id: string }[]).toEqual([{ id: 'new' }]);
   });
 
@@ -48,6 +49,7 @@ describe('sessions', () => {
     createSessionRecord('s1', 'dev-faculty-1', '2099-01-01T00:00:00Z', db);
     createSessionRecord('s2', 'dev-faculty-2', '2099-01-01T00:00:00Z', db);
     deleteSessionsForUser('dev-faculty-1', db);
+    // SAFETY: The SELECT list projects exactly the id column from sessions.
     expect(db.all(sql`SELECT id FROM sessions`) as { id: string }[]).toEqual([{ id: 's2' }]);
   });
 
@@ -57,6 +59,7 @@ describe('sessions', () => {
     createSessionRecord('s2', 'dev-faculty-1', '2099-01-01T00:00:00Z', db);
     createSessionRecord('s3', 'dev-faculty-2', '2099-01-01T00:00:00Z', db);
     deleteSessionsForUserExcept('dev-faculty-1', 's2', db);
+    // SAFETY: The SELECT list projects exactly the id column from sessions.
     expect(db.all(sql`SELECT id FROM sessions ORDER BY id`) as { id: string }[]).toEqual([{ id: 's2' }, { id: 's3' }]);
   });
 });

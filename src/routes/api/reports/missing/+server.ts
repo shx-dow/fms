@@ -8,8 +8,7 @@ export const GET: RequestHandler = ({ locals }) => {
   if (!locals.user || !['HOD', 'ADMIN'].includes(locals.user.role))
     return json({ ok: false, error: 'Forbidden' }, { status: 403 });
   const period = ensureCurrentPeriod();
-  const missing = listMissing(period.id, {
-    ...(locals.user.role === 'HOD' ? { departmentId: locals.user.departmentId ?? '' } : {}),
-  });
+  const scope = locals.user.role === 'HOD' ? { departmentId: locals.user.departmentId ?? '' } : {};
+  const missing = listMissing(period.id, scope);
   return json({ missing, periodLabel: computeWeekLabel(period.starts_on) });
 };

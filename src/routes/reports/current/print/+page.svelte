@@ -1,14 +1,17 @@
 <script lang="ts">
+  import type { LatestReportWithFaculty } from '$lib/server/db/repositories/reports';
+  import type { TeachingDbRow, ResearchDbRow, DutyDbRow, OutreachDbRow } from '$lib/server/db/repositories/activity';
+  import type { ReviewRow } from '$lib/server/db/repositories/reviews';
   let {
     data,
   }: {
     data: {
-      report: Record<string, any>;
-      teaching: Record<string, any>[];
-      research: Record<string, any>[];
-      duties: Record<string, any>[];
-      outreach: Record<string, any>[];
-      reviews: Record<string, any>[];
+      report: LatestReportWithFaculty & { period_label: string };
+      teaching: TeachingDbRow[];
+      research: ResearchDbRow[];
+      duties: DutyDbRow[];
+      outreach: OutreachDbRow[];
+      reviews: ReviewRow[];
     };
   } = $props();
   const r = $derived(data.report);

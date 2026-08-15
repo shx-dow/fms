@@ -19,12 +19,12 @@ const LIGHT_BG = '#f4f8f9';
 const HEADER_BG = '#e6f0f2';
 const ALT_BG = '#f7fafb';
 
-const STATUS_COLOR: Record<string, string> = {
+const STATUS_COLOR = {
   DRAFT: '#64747a',
   SUBMITTED: '#1d6fb8',
   APPROVED: '#1f7a4d',
   CHANGES_REQUIRED: '#b0741f',
-};
+} satisfies Record<string, string>;
 
 const TEACH_WIDTHS = [130, 55, 42, 38, 38, 34, 85];
 const TEACH_HEADERS = ['Course', 'Program / level', 'Type', 'Sched.', 'Taken', 'Missed', 'Make-up action'];
@@ -52,10 +52,10 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatDate(value: unknown): string {
+function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
-  const d = new Date(String(value));
-  if (Number.isNaN(d.getTime())) return String(value);
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
@@ -147,6 +147,7 @@ export const GET: RequestHandler = ({ locals, params }) => {
     const boxH = rowH * 2;
     const items = [
       ['Faculty', facultyName],
+      // SAFETY: report.status is constrained to ReportStatus values by the write path; unknown values fall back via ??.
       ['Status', reportStatusLabel[status as keyof typeof reportStatusLabel] ?? status],
       ['Submitted', submittedLabel],
       ['Email', email],
@@ -170,7 +171,8 @@ export const GET: RequestHandler = ({ locals, params }) => {
         y + 6,
         { width: colW - 20, characterSpacing: 0.8 },
       );
-      const valueColor = label === 'Status' ? STATUS_COLOR[status] ?? INK : INK;
+      // SAFETY: report.status is constrained to ReportStatus values by the write path; unknown values fall back via ??.
+      const valueColor = label === 'Status' ? STATUS_COLOR[status as keyof typeof STATUS_COLOR] ?? INK : INK;
       doc.font('Helvetica-Bold').fontSize(9.5).fillColor(valueColor).text(value, x + 10, y + 17, { width: colW - 20 });
 
       if (col < 2) doc.moveTo(x + colW, topY).lineTo(x + colW, topY + boxH).stroke();
@@ -316,8 +318,8 @@ export const GET: RequestHandler = ({ locals, params }) => {
       String(t.missed ?? 0),
       String(t.missed_action ?? '—'),
       [
-        t.syllabus_lecture != null && t.syllabus_lecture !== '' ? `L${t.syllabus_lecture}` : '—',
-        t.syllabus_completion != null && t.syllabus_completion !== '' ? `${t.syllabus_completion}%` : '',
+        t.syllabus_lecture != null ? `L${t.syllabus_lecture}` : '—',
+        t.syllabus_completion != null ? `${t.syllabus_completion}%` : '',
       ]
         .filter(Boolean)
         .join(' · '),
@@ -445,8 +447,10 @@ export const GET: RequestHandler = ({ locals, params }) => {
     reviews.forEach((rv) => {
       doc.moveDown(0.15);
       const decision = String(rv.decision ?? '');
+      // SAFETY: review decisions are constrained to ReportStatus values by the review write path; unknown values fall back via ??.
       const label = reportStatusLabel[decision as keyof typeof reportStatusLabel] ?? decision;
-      doc.font('Helvetica-Bold').fontSize(9.5).fillColor(STATUS_COLOR[decision] ?? INK).text(
+      // SAFETY: STATUS_COLOR has the same ReportStatus keys; unknown values fall back via ??.
+      doc.font('Helvetica-Bold').fontSize(9.5).fillColor(STATUS_COLOR[decision as keyof typeof STATUS_COLOR] ?? INK).text(
         `${rv.reviewer_name ?? 'Reviewer'} — ${label}`,
       );
       doc.font('Helvetica').fontSize(8.5).fillColor(MUTED).text(`  ${formatDate(rv.created_at)}`);

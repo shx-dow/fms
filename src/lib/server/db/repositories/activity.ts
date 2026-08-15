@@ -3,20 +3,69 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '../client';
 import { db as defaultDb } from '../client';
 
-export function listTeaching(reportId: string, db: Db = defaultDb): Record<string, unknown>[] {
-  return db.all(sql`SELECT * FROM teaching_records WHERE report_id = ${reportId}`) as Record<string, unknown>[];
+export interface TeachingDbRow {
+  id: string;
+  report_id: string;
+  course_code: string;
+  course_name: string;
+  program_level: string;
+  class_type: string;
+  scheduled: number;
+  conducted: number;
+  missed: number;
+  missed_action: string | null;
+  syllabus_completion: number | null;
+  syllabus_lecture: number | null;
 }
 
-export function listResearch(reportId: string, db: Db = defaultDb): Record<string, unknown>[] {
-  return db.all(sql`SELECT * FROM research_records WHERE report_id = ${reportId} ORDER BY rowid`) as Record<string, unknown>[];
+export interface ResearchDbRow {
+  id: string;
+  report_id: string;
+  category: string;
+  title: string;
+  venue_or_agency: string | null;
+  indexing_or_quality: string | null;
+  role: string | null;
+  status: string | null;
 }
 
-export function listDuties(reportId: string, db: Db = defaultDb): Record<string, unknown>[] {
-  return db.all(sql`SELECT * FROM institutional_duties WHERE report_id = ${reportId} ORDER BY rowid`) as Record<string, unknown>[];
+export interface DutyDbRow {
+  id: string;
+  report_id: string;
+  name: string;
+  role: string;
+  activity: string | null;
+  reach: string | null;
+  outcome: string | null;
 }
 
-export function listOutreach(reportId: string, db: Db = defaultDb): Record<string, unknown>[] {
-  return db.all(sql`SELECT * FROM outreach_records WHERE report_id = ${reportId} ORDER BY rowid`) as Record<string, unknown>[];
+export interface OutreachDbRow {
+  id: string;
+  report_id: string;
+  activity: string;
+  audience: string | null;
+  outcome: string | null;
+  date: string | null;
+}
+
+export function listTeaching(reportId: string, db: Db = defaultDb): TeachingDbRow[] {
+  // SAFETY: SELECT * from teaching_records matches TeachingDbRow; columns come from sqlite-schema.ts.
+  return db.all(sql`SELECT * FROM teaching_records WHERE report_id = ${reportId}`) as TeachingDbRow[];
+}
+
+export function listResearch(reportId: string, db: Db = defaultDb): ResearchDbRow[] {
+  // SAFETY: SELECT * from research_records matches ResearchDbRow; columns come from sqlite-schema.ts.
+  return db.all(sql`SELECT * FROM research_records WHERE report_id = ${reportId} ORDER BY rowid`) as ResearchDbRow[];
+}
+
+export function listDuties(reportId: string, db: Db = defaultDb): DutyDbRow[] {
+  // SAFETY: SELECT * from institutional_duties matches DutyDbRow; columns come from sqlite-schema.ts.
+  return db.all(sql`SELECT * FROM institutional_duties WHERE report_id = ${reportId} ORDER BY rowid`) as DutyDbRow[];
+}
+
+export function listOutreach(reportId: string, db: Db = defaultDb): OutreachDbRow[] {
+  // SAFETY: SELECT * from outreach_records matches OutreachDbRow; columns come from sqlite-schema.ts.
+  return db.all(sql`SELECT * FROM outreach_records WHERE report_id = ${reportId} ORDER BY rowid`) as OutreachDbRow[];
 }
 
 export interface ResearchRow {

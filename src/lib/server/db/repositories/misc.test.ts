@@ -27,6 +27,7 @@ describe('periods', () => {
     const db = makeDb();
     upsertPeriod({ id: 'week-2026-08-10', label: 'Test week', startsOn: '2026-08-10', endsOn: '2026-08-14', dueOn: '2026-08-14T18:00:00+05:30', isOpen: true }, db);
     closeOtherOpenPeriods('week-2026-08-10', db);
+    // SAFETY: The SELECT list projects exactly the id column from reporting_periods.
     const open = db.all(sql`SELECT id FROM reporting_periods WHERE is_open = 1`) as { id: string }[];
     expect(open).toEqual([{ id: 'week-2026-08-10' }]);
   });
@@ -91,12 +92,14 @@ describe('exceptions', () => {
   it('reopens a report and records the exception', () => {
     const db = makeDb();
     reopenReport({ reportId: 'demo-report-submitted', allowedUntil: '2026-08-05T00:00:00Z', reason: 'Data error', updatedAt: now }, db);
+    // SAFETY: The SELECT list projects exactly the reopened columns from reports.
     const report = db.get(sql`SELECT reopened_until, reopen_reason FROM reports WHERE id = 'demo-report-submitted'`) as {
       reopened_until: string;
       reopen_reason: string;
     };
     expect(report).toMatchObject({ reopened_until: '2026-08-05T00:00:00Z', reopen_reason: 'Data error' });
     insertException({ id: 'exc-1', reportId: 'demo-report-submitted', actorId: 'dev-hod-1', reason: 'Data error', allowedUntil: '2026-08-05T00:00:00Z', createdAt: now }, db);
+    // SAFETY: The SELECT list projects exactly the reason column from report_exceptions.
     const exc = db.get(sql`SELECT reason FROM report_exceptions WHERE id = 'exc-1'`) as { reason: string };
     expect(exc.reason).toBe('Data error');
   });

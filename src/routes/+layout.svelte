@@ -39,6 +39,7 @@ import { onDestroy, onMount } from 'svelte';
   const roleLabel = $derived(user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'HOD' ? 'HOD' : 'Faculty');
   const avatarLetter = $derived(user?.name?.charAt(0)?.toUpperCase() ?? 'U');
   function closeMenus(e: MouseEvent) {
+    // SAFETY: The click target is always an Element when an event reaches a DOM listener.
     const target = e.target as HTMLElement;
     if (!target.closest('.profile-wrap')) showProfileMenu = false;
   }
@@ -92,8 +93,8 @@ import { onDestroy, onMount } from 'svelte';
     finally { profileSaving = false; }
   }
   function addProfileRow(kind: 'subjects' | 'research' | 'duties' | 'outreach') {
-    const rows: Record<string, any[]> = { subjects: profileSubjects, research: profileResearch, duties: profileDuties, outreach: profileOutreach };
-    const defaults: Record<string, any> = {
+    const rows = { subjects: profileSubjects, research: profileResearch, duties: profileDuties, outreach: profileOutreach };
+    const defaults = {
       subjects: { courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0 },
       research: { category: 'Journal Paper', title: '', venueOrAgency: '', role: '' },
       duties: { name: '', role: '', activity: '' },

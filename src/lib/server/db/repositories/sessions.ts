@@ -19,6 +19,7 @@ export function createSessionRecord(id: string, userId: string, expires: string,
 }
 
 export function findUserBySession(sessionId: string, db: Db = defaultDb): SessionUser | undefined {
+  // SAFETY: SELECT u.* matches SessionUser; user columns come from sqlite-schema.ts.
   return db.get(sql`
     SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id
     WHERE s.id = ${sessionId} AND s.expires_at > ${new Date().toISOString()} AND u.is_active = 1

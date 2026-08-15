@@ -31,15 +31,25 @@ export function insertAttachment(
   `);
 }
 
-export function listAttachments(reportId: string, ownerId: string, db: Db = defaultDb): Record<string, unknown>[] {
+export interface AttachmentSummaryRow {
+  id: string;
+  filename: string;
+  mime_type: string;
+  size: number;
+  created_at: string;
+}
+
+export function listAttachments(reportId: string, ownerId: string, db: Db = defaultDb): AttachmentSummaryRow[] {
+  // SAFETY: The SELECT list matches AttachmentSummaryRow (the exported attachment columns).
   return db.all(sql`
     SELECT id, filename, mime_type, size, created_at
     FROM attachments WHERE report_id = ${reportId} AND owner_id = ${ownerId}
     ORDER BY created_at DESC
-  `) as Record<string, unknown>[];
+  `) as AttachmentSummaryRow[];
 }
 
 export function getAttachmentById(id: string, db: Db = defaultDb): AttachmentRow | undefined {
+  // SAFETY: SELECT * from attachments matches AttachmentRow; columns come from sqlite-schema.ts.
   return db.get(sql`SELECT * FROM attachments WHERE id = ${id}`) as AttachmentRow | undefined;
 }
 

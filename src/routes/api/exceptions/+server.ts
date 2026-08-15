@@ -13,9 +13,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   if (!parsed.success)
     return json({ ok: false, error: parsed.error.issues.map(i => i.message).join('; ') }, { status: 400 });
   const { reportId, reason, allowedUntil } = parsed.data;
-  const allowed = getReviewScope(reportId, {
-    ...(locals.user.role === 'HOD' ? { departmentId: locals.user.departmentId ?? '' } : {}),
-  });
+  const scope = locals.user.role === 'HOD' ? { departmentId: locals.user.departmentId ?? '' } : {};
+  const allowed = getReviewScope(reportId, scope);
   if (!allowed) return json({ ok: false, error: 'Report is outside your review scope.' }, { status: 403 });
   const now = new Date().toISOString();
   reopenReport({ reportId, allowedUntil, reason, updatedAt: now });

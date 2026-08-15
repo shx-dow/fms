@@ -55,9 +55,9 @@ export interface ResearchRecord {
   status?: string;
 }
 
-export const reportStatusLabel: Record<ReportStatus, string> = {
+export const reportStatusLabel = {
   DRAFT: 'Draft',
   SUBMITTED: 'Submitted',
   APPROVED: 'Approved',
   CHANGES_REQUIRED: 'Changes required',
-};
+} satisfies Record<ReportStatus, string>;

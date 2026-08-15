@@ -16,8 +16,8 @@ export const GET: RequestHandler = ({ locals, url }) => {
   for (const r of rows) r.period_label = computeWeekLabel(String(r.period_starts_on));
   if (fmt === 'csv') {
     const header = 'Faculty,Email,Period,Status,Completion,Submitted At,Last Updated\n';
-    const body = (rows as any[])
-      .map((r: any) =>
+    const body = rows
+      .map((r) =>
         [
           r.faculty_name,
           r.faculty_email,
@@ -52,9 +52,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   const { reportId, decision, remarks } = parsed.data;
   const reviewerId = locals.user?.id ?? 'unknown';
   const now = new Date().toISOString();
-  const allowed = getReviewScope(reportId, {
-    ...(locals.user.role === 'HOD' ? { departmentId: locals.user.departmentId ?? '' } : {}),
-  });
+  const scope = locals.user.role === 'HOD' ? { departmentId: locals.user.departmentId ?? '' } : {};
+  const allowed = getReviewScope(reportId, scope);
   if (!allowed) return json({ ok: false, error: 'Report is outside your review scope.' }, { status: 403 });
   setReportStatus(reportId, decision, now);
   insertReview({ id: randomUUID().toString(), reportId, reviewerId, decision, remarks: remarks ?? null, createdAt: now });

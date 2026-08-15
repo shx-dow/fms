@@ -51,6 +51,7 @@ describe('saveReport', () => {
       },
       db,
     );
+    // SAFETY: SELECT * from reports matches the reports table; the test reads only these columns.
     const row = db.get(sql`SELECT * FROM reports WHERE id = ${reportId}`) as {
       status: string;
       summary: string;
@@ -61,12 +62,14 @@ describe('saveReport', () => {
     expect(row.summary).toBe('Good week');
     expect(row.completion).toBe(40);
     expect(row.submitted_at).toBeNull();
+    // SAFETY: SELECT * from teaching_records matches the teaching_records table; the test reads only these columns.
     const teaching = db.all(sql`SELECT * FROM teaching_records WHERE report_id = ${reportId}`) as {
       course_code: string;
       conducted: number;
     }[];
     expect(teaching).toHaveLength(1);
     expect(teaching[0]).toMatchObject({ course_code: 'CSE-301', conducted: 3 });
+    // SAFETY: SELECT * from audit_events matches the audit_events table; the test reads only the action column.
     const audits = db.all(sql`SELECT * FROM audit_events WHERE entity_id = ${reportId}`) as {
       action: string;
     }[];
@@ -80,12 +83,14 @@ describe('saveReport', () => {
       { reportId, userId: facultyId, now, summary: 'Done', challenges: null, nextGoals: null, completion: 100, status: 'SUBMITTED', teaching: [] },
       db,
     );
+    // SAFETY: SELECT * from reports matches the reports table; the test reads only these columns.
     const row = db.get(sql`SELECT * FROM reports WHERE id = ${reportId}`) as {
       status: string;
       submitted_at: string | null;
     };
     expect(row.status).toBe('SUBMITTED');
     expect(row.submitted_at).toBe(now);
+    // SAFETY: SELECT * from audit_events matches the audit_events table; the test reads only the action column.
     const audits = db.all(sql`SELECT * FROM audit_events WHERE entity_id = ${reportId}`) as {
       action: string;
     }[];
@@ -104,6 +109,7 @@ describe('saveReport', () => {
     ];
     saveReport({ reportId, userId: facultyId, now, summary: null, challenges: null, nextGoals: null, completion: 50, status: 'DRAFT', teaching: first }, db);
     saveReport({ reportId, userId: facultyId, now, summary: null, challenges: null, nextGoals: null, completion: 60, status: 'DRAFT', teaching: second }, db);
+    // SAFETY: SELECT * from teaching_records matches the teaching_records table; the test reads only these columns.
     const teaching = db.all(sql`SELECT * FROM teaching_records WHERE report_id = ${reportId}`) as {
       course_code: string;
     }[];
@@ -126,7 +132,7 @@ describe('replaceResearch', () => {
     replaceResearch(reportId, first, db);
     expect(listResearch(reportId, db)).toHaveLength(1);
     replaceResearch(reportId, second, db);
-    const rows = listResearch(reportId, db) as { title: string; role: string | null }[];
+    const rows = listResearch(reportId, db);
     expect(rows).toHaveLength(2);
     expect(rows.map((r) => r.title).sort()).toEqual(['Paper C', 'Patent B']);
   });
@@ -135,7 +141,7 @@ describe('replaceResearch', () => {
 describe('weekly grid', () => {
   it('lists every period with the faculty member own report status', () => {
     const db = makeDb();
-    const weeks = listWeeksForFaculty('dev-faculty-1', db) as { id: string; status: string | null; completion: number | null }[];
+    const weeks = listWeeksForFaculty('dev-faculty-1', db);
     expect(weeks.map((w) => w.id).sort()).toEqual(['week-2026-07-20', 'week-2026-07-27', 'week-2026-08-03']);
     const past = weeks.find((w) => w.id === 'week-2026-07-20');
     expect(past).toMatchObject({ status: 'SUBMITTED', completion: 82 });
@@ -145,21 +151,17 @@ describe('weekly grid', () => {
 
   it('aggregates submitted and approved counts per period, scoped by department', () => {
     const db = makeDb();
-    const weeks = listWeeksAggregate({}, db) as { id: string; total: number; submitted: number; approved: number }[];
+    const weeks = listWeeksAggregate({}, db);
     const week = weeks.find((w) => w.id === 'week-2026-07-20');
     expect(week).toMatchObject({ total: 3, submitted: 1, approved: 1 });
 
-    const cse = listWeeksAggregate({ departmentId: 'cse' }, db) as { id: string; total: number }[];
+    const cse = listWeeksAggregate({ departmentId: 'cse' }, db);
     expect(cse.find((w) => w.id === 'week-2026-07-20')?.total).toBe(3);
   });
 
   it('lists faculty reports for a given period with names', () => {
     const db = makeDb();
-    const rows = listReportsForPeriod('week-2026-07-20', {}, db) as {
-      faculty_name: string;
-      status: string;
-      completion: number;
-    }[];
+    const rows = listReportsForPeriod('week-2026-07-20', {}, db);
     expect(rows).toHaveLength(2);
     expect(rows.map((r) => r.faculty_name).sort()).toEqual(['Faculty User 1', 'Faculty User 2']);
   });

@@ -2,12 +2,23 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '../client';
 import { db as defaultDb } from '../client';
 
-export function listReviewsForReport(reportId: string, db: Db = defaultDb): Record<string, unknown>[] {
+export interface ReviewRow {
+  id: string;
+  report_id: string;
+  reviewer_id: string;
+  decision: string;
+  remarks: string | null;
+  created_at: string;
+  reviewer_name: string;
+}
+
+export function listReviewsForReport(reportId: string, db: Db = defaultDb): ReviewRow[] {
+  // SAFETY: The SELECT list matches ReviewRow (review columns plus the joined reviewer name).
   return db.all(sql`
     SELECT rv.*, u.name AS reviewer_name
     FROM reviews rv JOIN users u ON u.id = rv.reviewer_id
     WHERE rv.report_id = ${reportId} ORDER BY rv.created_at DESC
-  `) as Record<string, unknown>[];
+  `) as ReviewRow[];
 }
 
 export function insertReview(

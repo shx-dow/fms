@@ -7,7 +7,7 @@ export const GET: RequestHandler = ({ locals }) => {
   if (!locals.user) throw error(401, 'Sign in required');
   const report = getCurrentExportReport(locals.user.id);
   if (!report) throw error(404, 'Report not found');
-  const rows = listExportTeaching(report.id) as Record<string, unknown>[];
+  const rows = listExportTeaching(report.id);
   const csv = [
     ['Report status', report.status],
     ['Summary', report.summary ?? ''],

@@ -16,15 +16,19 @@ export const GET: RequestHandler = ({ locals, url }) => {
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
-  const body = await request.json().catch(() => ({}));
-  const reportId = typeof body.reportId === 'string' ? body.reportId : '';
-  if (!reportId || !Array.isArray(body.records))
+  const bodySchema = z.object({
+    reportId: z.string(),
+    records: z.array(z.unknown()),
+  });
+  const parsed = bodySchema.safeParse(await request.json().catch(() => ({})));
+  if (!parsed.success)
     return json({ ok: false, error: 'reportId and records array required' }, { status: 400 });
+  const reportId = parsed.data.reportId;
   if (!canWriteReport(locals.user, reportId))
     return json({ ok: false, error: 'You can only edit your own report while it is open.' }, { status: 403 });
-  const parsed = z.array(dutyRecordSchema).safeParse(body.records);
-  if (!parsed.success)
-    return json({ ok: false, error: parsed.error.issues.map(i => i.message).join('; ') }, { status: 400 });
-  replaceDuties(reportId, parsed.data);
+  const parsedRecords = z.array(dutyRecordSchema).safeParse(parsed.data.records);
+  if (!parsedRecords.success)
+    return json({ ok: false, error: parsedRecords.error.issues.map(i => i.message).join('; ') }, { status: 400 });
+  replaceDuties(reportId, parsedRecords.data);
   return json({ ok: true });
 };

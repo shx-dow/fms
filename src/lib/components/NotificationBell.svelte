@@ -22,6 +22,7 @@
   let rootEl: HTMLDivElement | undefined;
 
   function closeNotifs(e: MouseEvent) {
+    // SAFETY: The click target is always an Element when an event reaches a DOM listener.
     const target = e.target as HTMLElement;
     if (!target.closest('.notif-root')) showNotifications = false;
   }

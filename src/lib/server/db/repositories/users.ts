@@ -18,6 +18,7 @@ export interface UserWithDepartment {
 }
 
 export function listUsers(db: Db = defaultDb): UserWithDepartment[] {
+  // SAFETY: The SELECT list matches UserWithDepartment (user columns plus the left-joined department name).
   return db.all(sql`
     SELECT u.id, u.name, u.email, u.employee_code, u.personal_email, u.mobile, u.specialization, u.role, u.department_id, u.is_active, d.name AS department_name
     FROM users u LEFT JOIN departments d ON d.id = u.department_id
@@ -26,6 +27,7 @@ export function listUsers(db: Db = defaultDb): UserWithDepartment[] {
 }
 
 export function findByEmailWithCredentials(email: string, db: Db = defaultDb) {
+  // SAFETY: The SELECT list projects exactly these three columns from users and credentials.
   return db.get(sql`
     SELECT u.id, u.role, c.password_hash
     FROM users u JOIN credentials c ON c.user_id = u.id
@@ -73,12 +75,14 @@ export function upsertCredentials(userId: string, passwordHash: string, db: Db =
 }
 
 export function getPasswordHash(userId: string, db: Db = defaultDb) {
+  // SAFETY: The SELECT list projects exactly the password_hash column from credentials.
   return db.get(sql`SELECT password_hash FROM credentials WHERE user_id = ${userId}`) as
     | { password_hash: string }
     | undefined;
 }
 
 export function getUserProfile(userId: string, db: Db = defaultDb) {
+  // SAFETY: The SELECT list projects exactly the profile_json column from users.
   return db.get(sql`SELECT profile_json FROM users WHERE id = ${userId}`) as { profile_json: string | null } | undefined;
 }
 
@@ -87,6 +91,7 @@ export function updateUserProfile(userId: string, profileJson: string, db: Db = 
 }
 
 export function defaultDepartmentId(db: Db = defaultDb): string | null {
+  // SAFETY: The SELECT list projects exactly the id column from departments.
   const row = db.get(sql`SELECT id FROM departments ORDER BY name LIMIT 1`) as { id: string } | undefined;
   return row?.id ?? null;
 }
