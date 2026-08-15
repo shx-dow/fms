@@ -8,6 +8,7 @@
     "build": "vite build",
     "start": "node --env-file=.env build",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "lint": "oxlint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:reset-local": "node scripts/reset-local-db.mjs",
@@ -19,6 +20,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@oxlint/plugins": "^1.78.0",
     "@sveltejs/adapter-node": "^5.5.7",
     "@sveltejs/kit": "^2.16.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
@@ -27,6 +29,7 @@
     "@types/pdfkit": "^0.17.6",
     "dotenv": "^16.4.7",
     "drizzle-kit": "^0.30.2",
+    "oxlint": "^1.78.0",
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.0",
     "typescript": "^5.6.0",
