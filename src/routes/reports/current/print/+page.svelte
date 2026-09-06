@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type { LatestReportWithFaculty } from '$lib/server/db/repositories/reports';
+  import type { ReportForPdf } from '$lib/server/db/repositories/reports';
   import type { TeachingDbRow, ResearchDbRow, DutyDbRow, OutreachDbRow } from '$lib/server/db/repositories/activity';
   import type { ReviewRow } from '$lib/server/db/repositories/reviews';
   let {
     data,
   }: {
     data: {
-      report: LatestReportWithFaculty & { period_label: string };
+      report: ReportForPdf & { period_label: string };
       teaching: TeachingDbRow[];
       research: ResearchDbRow[];
       duties: DutyDbRow[];
@@ -25,7 +25,7 @@
     <p>Reporting period: {r.period_label}</p>
     <div class="person">
       <span><b>Faculty</b> {r.faculty_name ?? 'Faculty member'}</span><span
-        ><b>Department</b> Computer Science and Engineering</span
+        ><b>Department</b> {r.department_name ?? '—'}</span
       ><span><b>Status</b> {r.status}</span><span
         ><b>Submitted</b> {r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : 'Not submitted'}</span
       ><span><b>Completion</b> {r.completion ?? 0}%</span>
