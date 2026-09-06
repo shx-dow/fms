@@ -13,7 +13,7 @@ import {
   listReportHistory,
   saveReport,
 } from '$lib/server/db/repositories/reports';
-import { listTeaching, listResearch, listDuties, listOutreach } from '$lib/server/db/repositories/activity';
+import { listTeaching, listResearch, listDuties, listOutreach, cloneTeachingIntoReport } from '$lib/server/db/repositories/activity';
 
 export const GET: RequestHandler = ({ locals }) => {
   if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
@@ -33,11 +33,22 @@ export const GET: RequestHandler = ({ locals }) => {
   report.period_label = periodLabel;
   const history = listReportHistory(userId);
   for (const h of history) h.period_label = computeWeekLabel(String(h.starts_on));
+  let teaching = listTeaching(String(report.id));
+  if (!teaching.length) {
+    const prev = history.find((h) => h.id !== String(report.id));
+    if (prev) {
+      const prevTeaching = listTeaching(String(prev.id));
+      if (prevTeaching.length) {
+        cloneTeachingIntoReport(String(report.id), prevTeaching);
+        teaching = listTeaching(String(report.id));
+      }
+    }
+  }
   return json({
     report,
     reports: history,
     policy: policyFor(report),
-    teaching: listTeaching(String(report.id)),
+    teaching,
     research: listResearch(String(report.id)),
     duties: listDuties(String(report.id)),
     outreach: listOutreach(String(report.id)),

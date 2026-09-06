@@ -50,7 +50,22 @@ export interface OutreachDbRow {
 
 export function listTeaching(reportId: string, db: Db = defaultDb): TeachingDbRow[] {
   // SAFETY: SELECT * from teaching_records matches TeachingDbRow; columns come from sqlite-schema.ts.
-  return db.all(sql`SELECT * FROM teaching_records WHERE report_id = ${reportId}`) as TeachingDbRow[];
+  return db.all(sql`SELECT * FROM teaching_records WHERE report_id = ${reportId} ORDER BY rowid`) as TeachingDbRow[];
+}
+
+export function cloneTeachingIntoReport(newReportId: string, source: TeachingDbRow[], db: Db = defaultDb) {
+  if (!source.length) return;
+  db.transaction((tx) => {
+    for (const t of source) {
+      tx.run(sql`
+        INSERT INTO teaching_records (id, report_id, course_code, course_name, program_level, class_type,
+          scheduled, conducted, missed, missed_action, syllabus_completion, syllabus_lecture)
+        VALUES (${randomUUID()}, ${newReportId}, ${t.course_code}, ${t.course_name}, ${t.program_level},
+          ${t.class_type}, ${Number(t.scheduled ?? 0)}, 0, 0,
+          null, ${t.syllabus_completion ?? null}, ${t.syllabus_lecture ?? null})
+      `);
+    }
+  });
 }
 
 export function listResearch(reportId: string, db: Db = defaultDb): ResearchDbRow[] {
