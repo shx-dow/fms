@@ -373,7 +373,7 @@
       </div>
       {#if history.length}
         {#each history as r}
-          <a class="hist-row" href="/reports/current">
+          <a class="hist-row" href="/reports/{r.id}">
             <strong>{r.period_label}</strong>
             <span class="hist-pill" class:hist-draft={r.status === 'DRAFT'} class:hist-sub={r.status === 'SUBMITTED'} class:hist-ok={r.status === 'APPROVED'} class:hist-chg={r.status === 'CHANGES_REQUIRED'}>{r.status === 'DRAFT' ? 'Draft' : r.status === 'SUBMITTED' ? 'Submitted' : r.status === 'APPROVED' ? 'Approved' : 'Changes'}</span>
           </a>

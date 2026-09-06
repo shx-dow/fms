@@ -90,7 +90,7 @@
       </div>
       {#if history.length}
         {#each history as item}
-          <a class="report-row-link" href="/reports/current">
+          <a class="report-row-link" href="/reports/{item.id}">
             <div class="report-meta">
               <strong class="report-period">{item.period_label}</strong>
               <span class="report-date">Updated {new Date(item.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
