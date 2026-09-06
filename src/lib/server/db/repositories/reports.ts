@@ -67,10 +67,20 @@ export interface ReportHistoryRow {
   completion: number;
   updated_at: string;
   submitted_at: string | null;
+  period_id: string;
   starts_on: string;
   ends_on: string;
   due_on: string;
   period_label?: string;
+}
+
+export const MAX_EXPORT_TEACHING_ROWS = 10;
+
+export interface ExportReportFilter {
+  reportId?: string;
+  periodId?: string;
+  status?: string;
+  submitted?: boolean;
 }
 
 export interface LatestReportRow extends ReportRow {
@@ -266,10 +276,43 @@ export function insertReportOrIgnore(
 export function listReportHistory(facultyId: string, db: Db = defaultDb): ReportHistoryRow[] {
   // SAFETY: The SELECT list matches ReportHistoryRow (report columns plus the joined period columns).
   return db.all(sql`
-    SELECT r.id, r.status, r.completion, r.updated_at, r.submitted_at, p.starts_on, p.ends_on, p.due_on
+    SELECT r.id, r.status, r.completion, r.updated_at, r.submitted_at, r.period_id, p.starts_on, p.ends_on, p.due_on
     FROM reports r JOIN reporting_periods p ON p.id = r.period_id
     WHERE r.faculty_id = ${facultyId} ORDER BY p.starts_on DESC
   `) as ReportHistoryRow[];
+}
+
+function exportStatusMatches(status: string, filter: ExportReportFilter): boolean {
+  if (filter.status && status !== filter.status) return false;
+  if (filter.submitted === true && status !== 'SUBMITTED' && status !== 'APPROVED') return false;
+  if (filter.submitted === false && (status === 'SUBMITTED' || status === 'APPROVED')) return false;
+  return true;
+}
+
+export function getReportForExport(facultyId: string, filter: ExportReportFilter, db: Db = defaultDb) {
+  if (filter.reportId) {
+    // SAFETY: The SELECT list projects the export header columns plus period start for labeling.
+    const row = db.get(sql`
+      SELECT r.*, p.starts_on AS period_starts_on
+      FROM reports r JOIN reporting_periods p ON p.id = r.period_id
+      WHERE r.id = ${filter.reportId} AND r.faculty_id = ${facultyId} LIMIT 1
+    `) as (ReportWithPeriod & { submitted_at: string | null }) | undefined;
+    if (!row || !exportStatusMatches(String(row.status), filter)) return undefined;
+    return row;
+  }
+  if (filter.periodId) {
+    const row = getReportForPeriod(facultyId, filter.periodId, db);
+    if (!row || !exportStatusMatches(String(row.status), filter)) return undefined;
+    // SAFETY: getReportForPeriod returns ReportWithPeriod which already carries the joined period columns.
+    return row as ReportWithPeriod & { submitted_at: string | null };
+  }
+  // SAFETY: The SELECT list projects the export header columns plus period start for labeling.
+  const rows = db.all(sql`
+    SELECT r.*, p.starts_on AS period_starts_on
+    FROM reports r JOIN reporting_periods p ON p.id = r.period_id
+    WHERE r.faculty_id = ${facultyId} ORDER BY r.updated_at DESC
+  `) as (ReportWithPeriod & { submitted_at: string | null })[];
+  return rows.find((r) => exportStatusMatches(String(r.status), filter));
 }
 
 export function getLatestReportForUser(facultyId: string, db: Db = defaultDb) {
@@ -425,8 +468,16 @@ export function listExportTeaching(reportId: string, db: Db = defaultDb): Export
   // SAFETY: The SELECT list matches ExportTeachingRow (the exported teaching columns).
   return db.all(sql`
     SELECT course_code, course_name, program_level, class_type, scheduled, conducted, missed, syllabus_lecture
-    FROM teaching_records WHERE report_id = ${reportId}
+    FROM teaching_records WHERE report_id = ${reportId} ORDER BY rowid LIMIT ${MAX_EXPORT_TEACHING_ROWS}
   `) as ExportTeachingRow[];
+}
+
+export function countExportTeaching(reportId: string, db: Db = defaultDb): { total: number; scheduled: number; conducted: number } {
+  // SAFETY: The COUNT/SUM expressions return numeric totals for the export footer.
+  return db.get(sql`
+    SELECT COUNT(*) AS total, COALESCE(SUM(scheduled),0) AS scheduled, COALESCE(SUM(conducted),0) AS conducted
+    FROM teaching_records WHERE report_id = ${reportId}
+  `) as { total: number; scheduled: number; conducted: number };
 }
 
 export function listDashboardFaculty(periodId: string | null, db: Db = defaultDb): DashboardFacultyRow[] {

@@ -8,12 +8,22 @@
   let loadError = $state('');
   let history: {
     id: string;
+    period_id: string;
     period_label: string;
     status: string;
     completion: number;
     updated_at: string;
     submitted_at?: string;
   }[] = $state([]);
+  let periodFilter = $state('');
+  let statusFilter = $state('');
+  const downloadHref = $derived(() => {
+    const q = new URLSearchParams();
+    if (periodFilter) q.set('period', periodFilter);
+    if (statusFilter) q.set('status', statusFilter);
+    const s = q.toString();
+    return `/api/reports/current/export${s ? `?${s}` : ''}`;
+  });
   onMount(async () => {
     try {
       const res = await fetch('/api/reports');
@@ -87,6 +97,22 @@
     <section class="reports-panel">
       <div class="panel-head">
         <h2>Report history</h2>
+        <div class="download-filters">
+          <select bind:value={periodFilter} aria-label="Filter download by period">
+            <option value="">All periods</option>
+            {#each history as h}
+              <option value={h.period_id}>{h.period_label}</option>
+            {/each}
+          </select>
+          <select bind:value={statusFilter} aria-label="Filter download by status">
+            <option value="">Submitted or not: all</option>
+            <option value="DRAFT">Drafts only</option>
+            <option value="SUBMITTED">Submitted only</option>
+            <option value="APPROVED">Approved only</option>
+            <option value="CHANGES_REQUIRED">Changes required</option>
+          </select>
+          <a class="dl-link" href={downloadHref()}>Download CSV</a>
+        </div>
       </div>
       {#if history.length}
         {#each history as item}
@@ -129,6 +155,9 @@
   .reports-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); }
   .panel-head h2 { font-size: 0.9rem; margin: 0; letter-spacing: -0.01em; }
+  .download-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .download-filters select { font: inherit; font-size: 0.73rem; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink-2); }
+  .dl-link { font-size: 0.73rem; font-weight: 700; color: var(--blue); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; background: var(--paper); }
   .report-row-link { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--line-2); text-decoration: none; transition: background 0.1s ease; }
   .report-row-link:last-child { border-bottom: 0; }
   .report-row-link:hover { background: var(--paper); }
