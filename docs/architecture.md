@@ -15,11 +15,11 @@ SvelteKit
 
 ```text
 Browser form
-  → SvelteKit form action
+  → SvelteKit form action / JSON API
   → Zod/domain validation
   → permission check
   → service function
-  → SQLite locally / PostgreSQL in production
+  → SQLite (better-sqlite3, WAL) via Drizzle migrations
   → audit event
 ```
 
@@ -37,7 +37,7 @@ The browser never decides whether a user may read or change a report. Server-sid
 
 ## Local-first persistence
 
-Development uses SQLite at `data/faculty-reporting.db`. The schema is deliberately relational and maps cleanly to PostgreSQL. Production can switch through a repository adapter without changing page components.
+Development and production both run SQLite at `SQLITE_PATH` (default `data/faculty-reporting.db`). The schema is relational; a PostgreSQL move would require a new adapter and is not currently implemented.
 
 ## Reporting rules
 

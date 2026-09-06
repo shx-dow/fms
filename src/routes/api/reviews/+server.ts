@@ -50,13 +50,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     return json({ ok: false, error: parsed.error.issues.map(i => i.message).join('; ') }, { status: 400 });
   }
   const { reportId, decision, remarks } = parsed.data;
-  const reviewerId = locals.user?.id ?? 'unknown';
+  const reviewerId = locals.user.id;
   const now = new Date().toISOString();
   const scope = locals.user.role === 'HOD' ? { departmentId: locals.user.departmentId ?? '' } : {};
   const allowed = getReviewScope(reportId, scope);
   if (!allowed) return json({ ok: false, error: 'Report is outside your review scope.' }, { status: 403 });
   setReportStatus(reportId, decision, now);
-  insertReview({ id: randomUUID().toString(), reportId, reviewerId, decision, remarks: remarks ?? null, createdAt: now });
-  insertAuditEvent({ id: randomUUID().toString(), actorId: reviewerId, action: decision, entityType: 'REPORT', entityId: reportId, createdAt: now });
+  insertReview({ id: randomUUID(), reportId, reviewerId, decision, remarks: remarks ?? null, createdAt: now });
+  insertAuditEvent({ id: randomUUID(), actorId: reviewerId, action: decision, entityType: 'REPORT', entityId: reportId, createdAt: now });
   return json({ ok: true });
 };

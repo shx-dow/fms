@@ -4,6 +4,7 @@
   import { browser } from '$app/environment';
   import {
     fetchNotifications,
+    fmtDate,
     getNotifications,
     getNotifCount,
     markAllRead,
@@ -11,6 +12,7 @@
     notifPill,
     toggleRead,
   } from '$lib/stores/notifications.svelte';
+import { NOTIFICATION_POLL_MS } from '$lib/constants';
 
   let showNotifications = $state(false);
   let showCount = $state(6);
@@ -19,12 +21,10 @@
   const visible = $derived(notifications.slice(0, showCount));
   const hasMore = $derived(showCount < notifications.length);
   let pollTimer: ReturnType<typeof setInterval> | undefined;
-  let rootEl: HTMLDivElement | undefined;
 
   function closeNotifs(e: MouseEvent) {
-    // SAFETY: The click target is always an Element when an event reaches a DOM listener.
-    const target = e.target as HTMLElement;
-    if (!target.closest('.notif-root')) showNotifications = false;
+    const target = e.target;
+    if (target instanceof HTMLElement && !target.closest('.notif-root')) showNotifications = false;
   }
 
   function handleVisibility() {
@@ -33,7 +33,9 @@
 
   onMount(async () => {
     await fetchNotifications();
-    pollTimer = setInterval(fetchNotifications, 5000);
+    pollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchNotifications();
+    }, NOTIFICATION_POLL_MS);
     if (browser) {
       document.addEventListener('click', closeNotifs);
       document.addEventListener('visibilitychange', handleVisibility);
@@ -48,12 +50,9 @@
     }
   });
 
-  function fmtDate(iso: string) {
-    return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  }
 </script>
 
-<div class="notif-root" bind:this={rootEl}>
+<div class="notif-root">
   <button class="notif-btn" onclick={() => (showNotifications = !showNotifications)} aria-label="Notifications" aria-expanded={showNotifications}>
     <Bell size={19} />
     {#if notifCount > 0}<span class="notif-badge">{notifCount}</span>{/if}
@@ -75,7 +74,7 @@
                   <span class="notif-time">{fmtDate(n.created_at)}</span>
                 </div>
               </div>
-              <button class="notif-hover-act" class:show={!n.is_read} onclick={() => toggleRead(n)}>
+              <button class="notif-hover-act" onclick={() => toggleRead(n)}>
                 {n.is_read ? 'Mark unread' : 'Mark read'}
               </button>
             </div>
@@ -215,7 +214,6 @@
     opacity: 0;
     transition: opacity 0.1s, background 0.1s;
   }
-  .notif-hover-act.show { opacity: 0; }
   .notif-row:hover .notif-hover-act { opacity: 1; }
   .notif-hover-act:hover { background: var(--bg-hover); }
   .notif-more {

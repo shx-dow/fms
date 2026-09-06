@@ -17,6 +17,6 @@ export function insertException(
   db: Db = defaultDb,
 ) {
   db.run(sql`
-    INSERT INTO report_exceptions VALUES (${fields.id}, ${fields.reportId}, ${fields.actorId}, ${fields.reason}, ${fields.allowedUntil}, ${fields.createdAt})
+    INSERT INTO report_exceptions (id, report_id, actor_id, reason, allowed_until, created_at) VALUES (${fields.id}, ${fields.reportId}, ${fields.actorId}, ${fields.reason}, ${fields.allowedUntil}, ${fields.createdAt})
   `);
 }

@@ -26,6 +26,6 @@ export function insertReview(
   db: Db = defaultDb,
 ) {
   db.run(sql`
-    INSERT INTO reviews VALUES (${fields.id}, ${fields.reportId}, ${fields.reviewerId}, ${fields.decision}, ${fields.remarks}, ${fields.createdAt})
+    INSERT INTO reviews (id, report_id, reviewer_id, decision, remarks, created_at) VALUES (${fields.id}, ${fields.reportId}, ${fields.reviewerId}, ${fields.decision}, ${fields.remarks}, ${fields.createdAt})
   `);
 }

@@ -15,7 +15,7 @@ export interface SessionUser {
 }
 
 export function createSessionRecord(id: string, userId: string, expires: string, db: Db = defaultDb) {
-  db.run(sql`INSERT INTO sessions VALUES (${id}, ${userId}, ${expires})`);
+  db.run(sql`INSERT INTO sessions (id, user_id, expires_at) VALUES (${id}, ${userId}, ${expires})`);
 }
 
 export function findUserBySession(sessionId: string, db: Db = defaultDb): SessionUser | undefined {

@@ -363,7 +363,7 @@ export function saveReport(input: SaveReportInput, db: Db = defaultDb) {
       `);
     }
     if (input.status === 'SUBMITTED') {
-      tx.run(sql`INSERT INTO audit_events VALUES (${randomUUID()}, ${input.userId}, 'REPORT_SUBMITTED', 'REPORT', ${input.reportId}, ${input.now})`);
+      tx.run(sql`INSERT INTO audit_events (id, actor_id, action, entity_type, entity_id, created_at) VALUES (${randomUUID()}, ${input.userId}, 'REPORT_SUBMITTED', 'REPORT', ${input.reportId}, ${input.now})`);
     }
   });
 }
@@ -455,13 +455,6 @@ export function listReportsForPeriod(
     WHERE r.period_id = ${periodId} ${dept}
     ORDER BY u.name
   `) as PeriodReportRow[];
-}
-
-export function getCurrentExportReport(facultyId: string, db: Db = defaultDb) {
-  // SAFETY: The SELECT list projects exactly these three report columns.
-  return db.get(sql`SELECT * FROM reports WHERE faculty_id = ${facultyId} ORDER BY updated_at DESC LIMIT 1`) as
-    | { id: string; status: string; summary?: string }
-    | undefined;
 }
 
 export function listExportTeaching(reportId: string, db: Db = defaultDb): ExportTeachingRow[] {

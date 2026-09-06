@@ -1,7 +1,7 @@
 """Import the IcfaiTech faculty workbook into the local SQLite database.
 
 Run from the repository root after stopping the dev server:
-  python scripts/import-faculty.py "C:/Users/pc/Downloads/IcfaiTech Staff Details (1).xlsx"
+  python scripts/import-faculty.py "<workbook.xlsx>"
 
 The generated credentials file is intentionally written under data/ (gitignored).
 """

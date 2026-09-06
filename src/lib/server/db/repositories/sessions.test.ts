@@ -5,6 +5,7 @@ import { createDatabase } from '../../local-db';
 import type { Db } from '../client';
 import {
   createSessionRecord,
+  deleteSessionRecord,
   findUserBySession,
   deleteExpiredSessions,
   deleteSessionsForUser,
@@ -51,6 +52,13 @@ describe('sessions', () => {
     deleteSessionsForUser('dev-faculty-1', db);
     // SAFETY: The SELECT list projects exactly the id column from sessions.
     expect(db.all(sql`SELECT id FROM sessions`) as { id: string }[]).toEqual([{ id: 's2' }]);
+  });
+
+  it('deletes a single session', () => {
+    const db = makeDb();
+    createSessionRecord('sess-del', 'dev-faculty-1', '2099-01-01T00:00:00Z', db);
+    deleteSessionRecord('sess-del', db);
+    expect(findUserBySession('sess-del', db)).toBeUndefined();
   });
 
   it('deletes all sessions for a user except the current one', () => {

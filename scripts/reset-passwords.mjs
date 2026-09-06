@@ -2,7 +2,15 @@ import Database from 'better-sqlite3';
 import { randomBytes, scryptSync } from 'node:crypto';
 
 const SQLITE_PATH = process.env.SQLITE_PATH || 'data/faculty-reporting.db';
-const PASSWORD = process.env.NEW_PASSWORD || 'password';
+const PASSWORD = process.env.NEW_PASSWORD;
+if (!PASSWORD) {
+  console.error('Refusing to reset passwords: set NEW_PASSWORD env var. Usage: NEW_PASSWORD=... node scripts/reset-passwords.mjs --yes');
+  process.exit(1);
+}
+if (!process.argv.includes('--yes')) {
+  console.error('Refusing to reset passwords without --yes confirmation flag.');
+  process.exit(1);
+}
 
 function hashPassword(password) {
   const salt = randomBytes(16).toString('hex');
@@ -17,4 +25,4 @@ const tx = db.transaction((rows) => {
 });
 tx(users);
 db.close();
-console.log(`Reset password for ${users.length} user(s) to "${PASSWORD}".`);
+console.log(`Reset password for ${users.length} user(s).`);

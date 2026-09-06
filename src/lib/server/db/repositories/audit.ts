@@ -24,7 +24,8 @@ export function insertAuditEvent(
   db: Db = defaultDb,
 ) {
   db.run(sql`
-    INSERT INTO audit_events VALUES (${fields.id}, ${fields.actorId}, ${fields.action}, ${fields.entityType}, ${fields.entityId}, ${fields.createdAt})
+    INSERT INTO audit_events (id, actor_id, action, entity_type, entity_id, created_at)
+    VALUES (${fields.id}, ${fields.actorId}, ${fields.action}, ${fields.entityType}, ${fields.entityId}, ${fields.createdAt})
   `);
 }
 
@@ -47,7 +48,7 @@ export function listAuditEvents(
     LIMIT ${opts.limit} OFFSET ${opts.offset}
   `) as AuditEventRow[];
   const total = rows.length ? Number(rows[0]._total) : 0;
-  const events = rows.map(({ _total: _t, ...e }) => e);
+  const events = rows.map(({ _total: _ignored, ...e }) => e);
   return { events, total };
 }
 

@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
+import { SESSION_TTL_MS } from '$lib/constants';
 import {
   createSessionRecord,
   deleteSessionRecord,
@@ -19,7 +20,7 @@ export function verifyPassword(password: string, stored: string) {
 }
 export function createSession(userId: string) {
   const id = randomUUID();
-  const expires = new Date(Date.now() + 1000 * 60 * 60 * 8).toISOString();
+  const expires = new Date(Date.now() + SESSION_TTL_MS).toISOString();
   deleteExpiredSessions();
   createSessionRecord(id, userId, expires);
   return { id, expires };

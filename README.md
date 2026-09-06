@@ -85,6 +85,7 @@ After seeding, immediately change the demo passwords or remove the demo users th
 | `BACKUP_DIR`      | `backups`                | Backup output folder.                                              |
 | `BACKUP_RETENTION`| `14`                     | Number of backups to keep.                                         |
 | `NODE_ENV`        | *(dev/production)*       | Set to `production` when deploying.                                |
+| `CSRF_CHECK_ORIGIN` | `true`                 | Set `false` only on trusted intranet/WSL hosts where origin checks break. |
 
 ### Intranet / plain HTTP note
 
@@ -142,11 +143,14 @@ src/
     db/repositories/            # typed SQL queries behind function APIs
   routes/
     dashboard/                  # weekly grid + summary
-    reports/, reports/current/  # history + guided editor
-    calendar/                   # submission calendar
+    reports/, reports/current/  # history + guided editor + print view
+    logout/                     # session destroy
+    login/                      # login form + rate-limited action
     admin/                      # HOD/Admin dashboard, review queue, faculty, audit, settings
-    api/                        # JSON API endpoints (all role-checked server-side)
-docs/                           # architecture & production notes (gitignored)
+    api/                        # JSON API: reports, research, duties, outreach, reviews, exceptions,
+                                # attachments, periods, departments, users, dashboard/*, audit,
+                                # notifications, health, me/profile, me/password
+docs/                           # architecture & status notes (tracked)
 ```
 
 ## Deployment checklist (intranet)

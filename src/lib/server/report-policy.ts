@@ -27,17 +27,13 @@ export function canWriteReport(
   return policyFor(owned, now, db, owned).canEdit;
 }
 
-export function currentPeriod(db: Db = defaultDb) {
-  return ensureCurrentPeriod(db);
-}
-
 export function policyFor(
   report: { status: string; reopened_until?: string | null },
   now = new Date(),
   db: Db = defaultDb,
   period?: { due_on: string; is_open: number } | null,
 ) {
-  const own = period ?? currentPeriod(db);
+  const own = period ?? ensureCurrentPeriod(db);
   const deadline = own ? new Date(own.due_on) : now;
   const reopened = report.reopened_until ? new Date(report.reopened_until) > now : false;
   const open = Boolean(own?.is_open) && now <= deadline;

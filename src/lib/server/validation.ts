@@ -79,3 +79,52 @@ export const outreachRecordSchema = z.object({
   outcome: z.string().optional().nullable().default(null),
   date: z.string().optional().nullable().default(null),
 });
+
+export const reportRecordsSchema = z.object({
+  reportId: z.string().min(1, 'Report ID is required'),
+  records: z.array(z.unknown()).default([]),
+});
+
+export const notificationUpdateSchema = z.object({
+  eventId: z.string().optional(),
+  unread: z.coerce.boolean().optional(),
+});
+
+export const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(PASSWORD_MIN_LENGTH, passwordTooShortMessage),
+});
+
+const roleSchema = z.enum(['FACULTY', 'HOD', 'ADMIN']);
+
+export const setActiveSchema = z.object({
+  userId: z.string().min(1),
+  isActive: z.boolean(),
+});
+
+export const createUserSchema = z.object({
+  action: z.literal('CREATE'),
+  name: z.string().min(1),
+  email: z.string().min(1),
+  role: roleSchema,
+  password: z.string().min(1),
+  employeeCode: z.string().optional(),
+  personalEmail: z.string().optional(),
+  mobile: z.string().optional(),
+  specialization: z.string().optional(),
+  departmentId: z.string().optional(),
+});
+
+export const updateUserSchema = z.object({
+  action: z.literal('UPDATE'),
+  userId: z.string().min(1),
+  name: z.string().optional(),
+  email: z.string().optional(),
+  employeeCode: z.string().nullable().optional(),
+  personalEmail: z.string().nullable().optional(),
+  mobile: z.string().nullable().optional(),
+  specialization: z.string().nullable().optional(),
+  role: roleSchema.optional(),
+  departmentId: z.string().nullable().optional(),
+  password: z.string().optional(),
+});

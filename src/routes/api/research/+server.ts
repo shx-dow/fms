@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { z } from 'zod';
 import { canAccessReport, canWriteReport } from '$lib/server/report-policy';
 import { listResearch, replaceResearch } from '$lib/server/db/repositories/activity';
-import { researchRecordSchema } from '$lib/server/validation';
+import { reportRecordsSchema, researchRecordSchema } from '$lib/server/validation';
 
 export const GET: RequestHandler = ({ locals, url }) => {
   if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
@@ -16,11 +16,13 @@ export const GET: RequestHandler = ({ locals, url }) => {
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
-  const bodySchema = z.object({
-    reportId: z.string(),
-    records: z.array(z.unknown()),
-  });
-  const parsed = bodySchema.safeParse(await request.json().catch(() => ({})));
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, error: 'Invalid JSON.' }, { status: 400 });
+  }
+  const parsed = reportRecordsSchema.safeParse(body);
   if (!parsed.success)
     return json({ ok: false, error: 'reportId and records array required' }, { status: 400 });
   const reportId = parsed.data.reportId;

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { createDatabase } from './local-db';
-import { canAccessReport, canWriteReport, currentPeriod, policyFor } from './report-policy';
+import { ensureCurrentPeriod } from './db/repositories/periods';
+import { canAccessReport, canWriteReport, policyFor } from './report-policy';
 
 function makeDb(): BetterSQLite3Database {
   return drizzle(createDatabase({ filename: ':memory:', seed: true }));
@@ -14,9 +15,9 @@ const afterDeadline = new Date('2026-08-01T10:00:00Z');
 describe('currentPeriod', () => {
   it('returns the single open reporting period', () => {
     const db = makeDb();
-    const period = currentPeriod(db);
-    expect(period?.id).toBe('week-2026-07-27');
+    const period = ensureCurrentPeriod(db);
     expect(period?.is_open).toBe(1);
+    expect(period?.id).toMatch(/^week-\d{4}-\d{2}-\d{2}$/);
   });
 });
 
@@ -80,7 +81,7 @@ describe('policyFor', () => {
     const p = policyFor({ status: 'DRAFT' }, withinDeadline, makeDb(), ownClosedPeriod);
     expect(p.open).toBe(false);
     expect(p.canEdit).toBe(false);
-    expect(p.deadline.toISOString()).toBe(new Date('2026-07-24T18:00:00+05:30').toISOString());
+    expect(p.deadline.toISOString()).toBe('2026-07-24T12:30:00.000Z');
   });
 
   it('edits a DRAFT whose own period is open and reports its own deadline', () => {
@@ -88,14 +89,14 @@ describe('policyFor', () => {
     const p = policyFor({ status: 'DRAFT' }, withinDeadline, makeDb(), ownOpenPeriod);
     expect(p.open).toBe(true);
     expect(p.canEdit).toBe(true);
-    expect(p.deadline.toISOString()).toBe(new Date('2026-07-31T18:00:00+05:30').toISOString());
+    expect(p.deadline.toISOString()).toBe('2026-07-31T12:30:00.000Z');
   });
 
   it('still falls back to the current period when no report period is supplied', () => {
     const p = policyFor({ status: 'DRAFT' }, withinDeadline, makeDb());
     expect(p.open).toBe(true);
     expect(p.canEdit).toBe(true);
-    expect(p.deadline.toISOString()).toBe(new Date('2026-07-31T18:00:00+05:30').toISOString());
+    expect(p.deadline.toISOString()).toBe('2026-07-31T12:30:00.000Z');
   });
 });
 

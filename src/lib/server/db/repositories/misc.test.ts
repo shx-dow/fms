@@ -8,7 +8,6 @@ import { listDepartments, upsertDepartment } from './departments';
 import { insertAttachment, listAttachments, getAttachmentById, deleteAttachment } from './attachments';
 import { insertReview, listReviewsForReport } from './reviews';
 import { reopenReport, insertException } from './exceptions';
-import { createSessionRecord, findUserBySession, deleteSessionRecord } from './sessions';
 
 function makeDb(): Db {
   return drizzle(createDatabase({ filename: ':memory:', seed: true }));
@@ -105,12 +104,3 @@ describe('exceptions', () => {
   });
 });
 
-describe('sessions', () => {
-  it('creates a session, resolves the user, and deletes it', () => {
-    const db = makeDb();
-    createSessionRecord('sess-1', 'dev-faculty-1', '2099-01-01T00:00:00Z', db);
-    expect(findUserBySession('sess-1', db)?.id).toBe('dev-faculty-1');
-    deleteSessionRecord('sess-1', db);
-    expect(findUserBySession('sess-1', db)).toBeUndefined();
-  });
-});

@@ -1,6 +1,5 @@
 export type Role = 'FACULTY' | 'HOD' | 'ADMIN';
 export type ReportStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'CHANGES_REQUIRED';
-export type PeriodKind = 'WEEKLY';
 
 export interface User {
   id: string;
@@ -14,25 +13,6 @@ export interface User {
   departmentId?: string;
 }
 
-export interface ReportingPeriod {
-  id: string;
-  label: string;
-  kind: PeriodKind;
-  startsOn: string;
-  endsOn: string;
-  dueOn: string;
-  isOpen: boolean;
-}
-
-export interface Report {
-  id: string;
-  facultyId: string;
-  periodId: string;
-  status: ReportStatus;
-  completion: number;
-  updatedAt: string;
-}
-
 export interface TeachingRecord {
   courseCode: string;
   courseName: string;
@@ -44,15 +24,6 @@ export interface TeachingRecord {
   missedAction?: string;
   syllabusCompletion?: number;
   syllabusLecture?: number;
-}
-
-export interface ResearchRecord {
-  category: 'Journal Paper' | 'Patent' | 'Research Grant' | 'Conference / FDP';
-  title: string;
-  venueOrAgency?: string;
-  indexingOrQuality?: string;
-  role?: string;
-  status?: string;
 }
 
 export const reportStatusLabel = {

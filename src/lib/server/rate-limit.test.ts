@@ -2,13 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { createRateLimiter } from './rate-limit';
 
 describe('rate limiter', () => {
-  it('allows requests under the limit', () => {
-    const limiter = createRateLimiter({ windowMs: 60_000, max: 3 });
-    expect(limiter.consume('ip-1')).toBe(true);
-    expect(limiter.consume('ip-1')).toBe(true);
-    expect(limiter.consume('ip-1')).toBe(true);
-  });
-
   it('rejects once the limit is exceeded and tracks IPs separately', () => {
     const limiter = createRateLimiter({ windowMs: 60_000, max: 2 });
     expect(limiter.consume('ip-1')).toBe(true);

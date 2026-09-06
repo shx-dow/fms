@@ -1,7 +1,8 @@
 import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
 import type { RequestHandler } from './$types';
-import { currentPeriod, policyFor } from '$lib/server/report-policy';
+import { policyFor } from '$lib/server/report-policy';
+import { ensureCurrentPeriod } from '$lib/server/db/repositories/periods';
 import { reportSaveSchema } from '$lib/server/validation';
 import { computeWeekLabel } from '$lib/week-label';
 import {
@@ -18,7 +19,7 @@ import { listTeaching, listResearch, listDuties, listOutreach, cloneTeachingInto
 export const GET: RequestHandler = ({ locals }) => {
   if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
   const userId = locals.user.id;
-  const period = currentPeriod();
+  const period = ensureCurrentPeriod();
   if (!period) return json({ error: 'No open reporting period.' }, { status: 409 });
   let report = getReportForPeriod(userId, period.id);
   if (!report) {
@@ -58,7 +59,7 @@ export const GET: RequestHandler = ({ locals }) => {
 export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
   const userId = locals.user.id;
-  const period = currentPeriod();
+  const period = ensureCurrentPeriod();
   if (!period) return json({ ok: false, error: 'No open reporting period.' }, { status: 409 });
 
   const parsed = reportSaveSchema.safeParse(await request.json().catch(() => ({})));
@@ -75,8 +76,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   const policy = policyFor(existing, new Date(now), undefined, existing);
   if (!policy.canEdit)
     return json(
-      { ok: false, error: 'This report is closed or locked. Request an authorized reopening.' },
-      { status: 423 },
+      { ok: false, error: 'This report is closed or locked. Request an authorized reopening.', code: 'REPORT_LOCKED' },
+      { status: 403 },
     );
 
   saveReport({
@@ -86,7 +87,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     summary: payload.summary ?? null,
     challenges: payload.challenges ?? null,
     nextGoals: payload.nextGoals ?? null,
-    completion: Number(payload.completion ?? 0),
+    completion: payload.completion,
     status: payload.status === 'SUBMITTED' ? 'SUBMITTED' : 'DRAFT',
     teaching: payload.teaching ?? [],
   });

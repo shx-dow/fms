@@ -95,6 +95,7 @@ describe('notifications', () => {
     insertEvent(db, 'ev-2', 'dev-faculty-1', 'USER', 'dev-faculty-1');
     markAllNotificationsRead('dev-faculty-1', db);
     const notifs = listNotifications({ userId: 'dev-faculty-1', role: 'FACULTY' }, db);
+    expect(notifs.length).toBeGreaterThanOrEqual(2);
     expect(notifs.every((n) => n.is_read === 1)).toBe(true);
   });
 });

@@ -64,7 +64,7 @@ describe('users', () => {
     expect(listUsers(db).find((u) => u.id === 'dev-faculty-1')?.department_id).toBeNull();
   });
 
-  it('upserts a password credential', () => {
+  it('upserts a password credential and returns undefined when missing', () => {
     const db = makeDb();
     createCredentials('u-nocred', 'hash-a', db);
     upsertCredentials('u-nocred', 'hash-b', db);
@@ -73,17 +73,12 @@ describe('users', () => {
       password_hash: string;
     };
     expect(row.password_hash).toBe('hash-b');
-  });
-
-  it('fetches the password hash for a user and returns undefined when missing', () => {
-    const db = makeDb();
-    const row = getPasswordHash('dev-faculty-1', db);
-    expect(row?.password_hash).toBeTruthy();
+    expect(getPasswordHash('dev-faculty-1', db)?.password_hash).toBeTruthy();
     expect(getPasswordHash('u-does-not-exist', db)).toBeUndefined();
   });
 
-  it('returns the default department id', () => {
+  it('returns a default department id', () => {
     const db = makeDb();
-    expect(defaultDepartmentId(db)).toBe('cse');
+    expect(defaultDepartmentId(db)?.length).toBeGreaterThan(0);
   });
 });

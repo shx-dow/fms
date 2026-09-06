@@ -1,3 +1,4 @@
+// Codegen-only: consumed by drizzle-kit (drizzle.config.ts). Runtime queries use raw sql`` in repositories.
 import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {

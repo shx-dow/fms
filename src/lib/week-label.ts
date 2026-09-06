@@ -1,7 +1,7 @@
 const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 const fmtMonth = (d: Date) => d.toLocaleDateString('en-US', { month: 'short' });
 
-function getMonday(d: Date): Date {
+export function getMonday(d: Date): Date {
   const date = new Date(d);
   const day = date.getDay();
   const diff = date.getDate() - day + (day === 0 ? -6 : 1);

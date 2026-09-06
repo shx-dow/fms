@@ -8,13 +8,13 @@ import { seedDatabase } from './db/seed';
 
 const migrationsFolder = process.env.MIGRATIONS_DIR || path.resolve('drizzle');
 
-export function createDatabase(opts: { filename?: string; seed?: boolean; migrationsFolder?: string } = {}) {
+export function createDatabase(opts: { filename?: string; seed?: boolean } = {}) {
   const { seed = false } = opts;
   const filename = opts.filename || env.SQLITE_PATH || 'data/faculty-reporting.db';
   fs.mkdirSync(path.dirname(filename), { recursive: true });
   const sqlite = new Database(filename);
   sqlite.pragma('journal_mode = WAL');
-  migrate(drizzle(sqlite), { migrationsFolder: opts.migrationsFolder || migrationsFolder });
+  migrate(drizzle(sqlite), { migrationsFolder });
   if (seed) seedDatabase(sqlite);
   return sqlite;
 }

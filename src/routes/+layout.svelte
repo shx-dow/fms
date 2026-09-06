@@ -303,7 +303,6 @@ import { onDestroy, onMount } from 'svelte';
     font-size: 0.7rem;
     color: var(--blue-soft);
     padding: 8px 10px 6px;
-    /*border-bottom: 1px solid var(--navy-3);*/
     margin-bottom: 4px;
     word-break: break-all;
   }

@@ -16,8 +16,7 @@
     "backup": "node scripts/backup.mjs",
     "restore": "node scripts/restore.mjs",
     "test": "npm run lint && npm run check && npm run test:unit",
-    "test:unit": "vitest run",
-    "preview": "vite preview"
+    "test:unit": "vitest run"
   },
   "devDependencies": {
     "@oxlint/plugins": "^1.78.0",

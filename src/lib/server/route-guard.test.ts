@@ -21,9 +21,14 @@ describe('computeRouteRedirect', () => {
   it('lets HOD reach admin overview and review queue but blocks admin-only pages', () => {
     expect(computeRouteRedirect('/admin', { role: 'HOD' })).toBeNull();
     expect(computeRouteRedirect('/admin/reports', { role: 'HOD' })).toBeNull();
+    expect(computeRouteRedirect('/admin/faculty/123', { role: 'HOD' })).toBe('/admin');
+    expect(computeRouteRedirect('/admin/settings/x', { role: 'HOD' })).toBe('/admin');
     expect(computeRouteRedirect('/admin/settings', { role: 'HOD' })).toBe('/admin');
     expect(computeRouteRedirect('/admin/audit', { role: 'HOD' })).toBe('/admin');
     expect(computeRouteRedirect('/admin/faculty', { role: 'HOD' })).toBe('/admin');
+  });
+
+  it('lets ADMIN reach admin-only pages', () => {
     expect(computeRouteRedirect('/admin', { role: 'ADMIN' })).toBeNull();
     expect(computeRouteRedirect('/admin/settings', { role: 'ADMIN' })).toBeNull();
   });

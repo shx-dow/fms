@@ -6,7 +6,6 @@ export function computeRouteRedirect(path: string, user: GuardUser | null): stri
   if (!user) {
     const isPublic =
       path === '/login' ||
-      path.startsWith('/api/auth') ||
       path === '/api/health' ||
       path === '/logout' ||
       path.startsWith('/_app');
@@ -19,13 +18,8 @@ export function computeRouteRedirect(path: string, user: GuardUser | null): stri
   return null;
 }
 
-export function isAdminOnlyPath(path: string): boolean {
-  return (
-    path === '/admin/faculty' ||
-    path.startsWith('/admin/faculty') ||
-    path === '/admin/settings' ||
-    path.startsWith('/admin/settings') ||
-    path === '/admin/audit' ||
-    path.startsWith('/admin/audit')
-  );
+const ADMIN_ONLY_PREFIXES = ['/admin/faculty', '/admin/settings', '/admin/audit'];
+
+function isAdminOnlyPath(path: string): boolean {
+  return ADMIN_ONLY_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
 }

@@ -27,7 +27,7 @@ export function insertAttachment(
   db: Db = defaultDb,
 ) {
   db.run(sql`
-    INSERT INTO attachments VALUES (${fields.id}, ${fields.reportId}, ${fields.ownerId}, ${fields.filename}, ${fields.mimeType}, ${fields.size}, ${fields.storageName}, ${fields.createdAt})
+    INSERT INTO attachments (id, report_id, owner_id, filename, mime_type, size, storage_name, created_at) VALUES (${fields.id}, ${fields.reportId}, ${fields.ownerId}, ${fields.filename}, ${fields.mimeType}, ${fields.size}, ${fields.storageName}, ${fields.createdAt})
   `);
 }
 

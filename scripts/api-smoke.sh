@@ -2,12 +2,16 @@
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://127.0.0.1:5173}"
+FACULTY_EMAIL="${FACULTY_EMAIL:-faculty1@example.edu}"
+FACULTY_PASSWORD="${FACULTY_PASSWORD:?set FACULTY_PASSWORD to a seeded dev password}"
+HOD_EMAIL="${HOD_EMAIL:-hod.cse@example.edu}"
+HOD_PASSWORD="${HOD_PASSWORD:?set HOD_PASSWORD to a seeded dev password}"
 FACULTY_COOKIE="${TMPDIR:-/tmp}/fms-faculty.cookies"
 HOD_COOKIE="${TMPDIR:-/tmp}/fms-hod.cookies"
 rm -f "$FACULTY_COOKIE" "$HOD_COOKIE"
 
 curl -fsS -c "$FACULTY_COOKIE" -b "$FACULTY_COOKIE" -X POST \
-  -d 'email=ananya.rao@example.edu&password=faculty123' "$BASE_URL/login" >/dev/null
+  -d "email=$FACULTY_EMAIL&password=$FACULTY_PASSWORD" "$BASE_URL/login" >/dev/null
 
 REPORT_JSON=$(curl -fsS -b "$FACULTY_COOKIE" "$BASE_URL/api/reports")
 REPORT_ID=$(printf '%s' "$REPORT_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["report"]["id"])')
@@ -21,7 +25,7 @@ curl -fsS -b "$FACULTY_COOKIE" -H 'content-type: application/json' \
   "$BASE_URL/api/reports" >/dev/null
 
 curl -fsS -c "$HOD_COOKIE" -b "$HOD_COOKIE" -X POST \
-  -d 'email=hod.cse@example.edu&password=hod123' "$BASE_URL/login" >/dev/null
+  -d "email=$HOD_EMAIL&password=$HOD_PASSWORD" "$BASE_URL/login" >/dev/null
 
 QUEUE=$(curl -fsS -b "$HOD_COOKIE" "$BASE_URL/api/reviews")
 printf '%s' "$QUEUE" | python3 -c 'import json,sys; assert json.load(sys.stdin)["reports"]; print("review queue: ok")'

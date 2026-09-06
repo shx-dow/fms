@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import { getMonday } from '$lib/week-label';
 import type { Db } from '../client';
 import { db as defaultDb } from '../client';
 
@@ -22,20 +23,11 @@ export function getPeriod(id: string, db: Db = defaultDb): ReportingPeriod | und
   return db.get(sql`SELECT * FROM reporting_periods WHERE id = ${id}`) as ReportingPeriod | undefined;
 }
 
-export function currentOpenPeriod(db: Db = defaultDb): ReportingPeriod | undefined {
+function currentOpenPeriod(db: Db = defaultDb): ReportingPeriod | undefined {
   // SAFETY: SELECT * from reporting_periods matches ReportingPeriod; columns come from sqlite-schema.ts.
   return db.get(sql`
     SELECT * FROM reporting_periods WHERE is_open = 1 ORDER BY starts_on DESC LIMIT 1
   `) as ReportingPeriod | undefined;
-}
-
-function getMonday(d: Date): Date {
-  const date = new Date(d);
-  const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-  date.setDate(diff);
-  date.setHours(0, 0, 0, 0);
-  return date;
 }
 
 export function ensureCurrentPeriod(db: Db = defaultDb): ReportingPeriod {

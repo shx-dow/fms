@@ -1,4 +1,5 @@
 import { show } from './toast.svelte';
+import { formatDateTime } from '$lib/format';
 
 type Notification = { id: string; actor_id: string; action: string; actor_name: string; created_at: string; is_read: number };
 
@@ -16,13 +17,14 @@ function notifLabel(action: string) {
   return labels[action as keyof typeof labels] ?? action.replaceAll('_', ' ');
 }
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+export function fmtDate(iso: string) {
+  return formatDateTime(iso);
 }
 
 export async function fetchNotifications() {
   try {
     const res = await fetch('/api/notifications');
+    if (!res.ok) return;
     const d = await res.json();
     const list: Notification[] = d.notifications ?? [];
     if (knownIds.size > 0) {
@@ -34,13 +36,21 @@ export async function fetchNotifications() {
     }
     notifications = list;
     knownIds = new Set(list.map((n) => n.id));
-  } catch {}
+  } catch (err) {
+    console.error('Failed to fetch notifications', err);
+  }
 }
 
 export async function toggleRead(n: Notification) {
   const wasRead = n.is_read;
   n.is_read = wasRead ? 0 : 1;
-  await fetch('/api/notifications', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ eventId: n.id, unread: wasRead ? 1 : 0 }) });
+  try {
+    const res = await fetch('/api/notifications', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ eventId: n.id, unread: wasRead ? 1 : 0 }) });
+    if (!res.ok) n.is_read = wasRead;
+  } catch (err) {
+    n.is_read = wasRead;
+    console.error('Failed to toggle notification', err);
+  }
 }
 
 export async function markAllRead() {
@@ -56,4 +66,4 @@ export function notifPill(action: string) {
 
 export function getNotifications() { return notifications; }
 export function getNotifCount() { return notifications.filter((n) => !n.is_read).length; }
-export { notifLabel, fmtDate };
+export { notifLabel };

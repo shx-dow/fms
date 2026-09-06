@@ -1,6 +1,5 @@
 import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
-import { z } from 'zod';
 import { hashPassword } from '$lib/server/auth';
 import type { RequestHandler } from './$types';
 import {
@@ -14,45 +13,13 @@ import {
 } from '$lib/server/db/repositories/users';
 import { insertAuditEvent } from '$lib/server/db/repositories/audit';
 import { deleteSessionsForUser } from '$lib/server/db/repositories/sessions';
-import { PASSWORD_MIN_LENGTH, passwordTooShortMessage } from '$lib/server/validation';
+import { PASSWORD_MIN_LENGTH, passwordTooShortMessage, setActiveSchema, createUserSchema, updateUserSchema } from '$lib/server/validation';
 
 export const GET: RequestHandler = ({ locals }) => {
   if (!locals.user || locals.user.role !== 'ADMIN')
     return json({ ok: false, error: 'Only Admin may manage users.' }, { status: 403 });
   return json({ users: listUsers() });
 };
-
-const setActiveSchema = z.object({
-  userId: z.string().min(1),
-  isActive: z.boolean(),
-});
-
-const createUserSchema = z.object({
-  action: z.literal('CREATE'),
-  name: z.string().min(1),
-  email: z.string().min(1),
-  role: z.string().min(1),
-  password: z.string().min(1),
-  employeeCode: z.string().optional(),
-  personalEmail: z.string().optional(),
-  mobile: z.string().optional(),
-  specialization: z.string().optional(),
-  departmentId: z.string().optional(),
-});
-
-const updateUserSchema = z.object({
-  action: z.literal('UPDATE'),
-  userId: z.string().min(1),
-  name: z.string().optional(),
-  email: z.string().optional(),
-  employeeCode: z.string().nullable().optional(),
-  personalEmail: z.string().nullable().optional(),
-  mobile: z.string().nullable().optional(),
-  specialization: z.string().nullable().optional(),
-  role: z.string().optional(),
-  departmentId: z.string().nullable().optional(),
-  password: z.string().optional(),
-});
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user || locals.user.role !== 'ADMIN')
@@ -113,14 +80,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       return json({ ok: false, error: 'User ID required.' }, { status: 400 });
     const { userId, password, ...fields } = updated.data;
     const updates: Parameters<typeof updateUser>[1] = {};
-    if (fields.name) updates.name = fields.name;
-    if (fields.email) updates.email = fields.email;
-    if ('employeeCode' in fields) updates.employeeCode = fields.employeeCode ?? null;
-    if ('personalEmail' in fields) updates.personalEmail = fields.personalEmail ?? null;
-    if ('mobile' in fields) updates.mobile = fields.mobile ?? null;
-    if ('specialization' in fields) updates.specialization = fields.specialization ?? null;
-    if (fields.role) updates.role = fields.role;
-    if ('departmentId' in fields) updates.departmentId = fields.departmentId ?? null;
+    if (fields.name !== undefined) updates.name = fields.name;
+    if (fields.email !== undefined) updates.email = fields.email;
+    if (fields.employeeCode !== undefined) updates.employeeCode = fields.employeeCode ?? null;
+    if (fields.personalEmail !== undefined) updates.personalEmail = fields.personalEmail ?? null;
+    if (fields.mobile !== undefined) updates.mobile = fields.mobile ?? null;
+    if (fields.specialization !== undefined) updates.specialization = fields.specialization ?? null;
+    if (fields.role !== undefined) updates.role = fields.role;
+    if (fields.departmentId !== undefined) updates.departmentId = fields.departmentId ?? null;
     updateUser(userId, updates);
     if (password) {
       if (password.length < PASSWORD_MIN_LENGTH)
