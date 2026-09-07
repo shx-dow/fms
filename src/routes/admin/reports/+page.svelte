@@ -2,8 +2,13 @@
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import ReportPreview from '$lib/components/ReportPreview.svelte';
   type ReviewRow = { id: string; status: string; updated_at: string; completion: number; faculty_name: string; period_label: string };
   type TeachingRow = { course_code: string; course_name: string; program_level: string; class_type: string; scheduled: number; conducted: number; missed: number; missed_action: string; syllabus_completion: number };
+  type ResearchRow = { category: string; title: string; venue_or_agency: string; status: string };
+  type DutyRow = { name: string; role: string; activity: string };
+  type OutreachRow = { activity: string; audience: string; date: string };
+  type AttachRow = { id: string; filename: string; size: number };
   type ReviewHistoryRow = { decision: string; remarks: string; created_at: string; reviewer_name: string };
   let reports: ReviewRow[] = $state([]);
   let selected: ReviewRow | null = $state(null);
@@ -12,7 +17,15 @@
   let reason = $state('');
   let allowedUntil = $state('');
   let loading = $state(true);
-  let reportContent: { teaching: TeachingRow[]; summary: string; reviews: ReviewHistoryRow[] } | null = $state(null);
+  let reportContent: {
+    teaching: TeachingRow[];
+    research: ResearchRow[];
+    duties: DutyRow[];
+    outreach: OutreachRow[];
+    attachments: AttachRow[];
+    summary: string;
+    reviews: ReviewHistoryRow[];
+  } | null = $state(null);
   let contentLoading = $state(false);
   let showReport = $state(false);
   let search = $state('');
@@ -31,7 +44,23 @@
   });
   async function loadContent(reportId: string) {
     contentLoading = true; reportContent = null;
-    try { const res = await fetch(`/api/reports/${reportId}`); const d = await res.json(); reportContent = { teaching: d.teaching ?? [], summary: d.report?.summary ?? '', reviews: d.reviews ?? [] }; }
+    try {
+      const [repRes, attRes] = await Promise.all([
+        fetch(`/api/reports/${reportId}`),
+        fetch(`/api/attachments?reportId=${reportId}`),
+      ]);
+      const d = await repRes.json();
+      const ad = await attRes.json().catch(() => ({}));
+      reportContent = {
+        teaching: d.teaching ?? [],
+        research: d.research ?? [],
+        duties: d.duties ?? [],
+        outreach: d.outreach ?? [],
+        attachments: ad.attachments ?? [],
+        summary: d.report?.summary ?? '',
+        reviews: d.reviews ?? [],
+      };
+    }
     catch { reportContent = null; error = 'Could not load report content.'; }
     finally { contentLoading = false; }
   }
@@ -142,26 +171,32 @@
               {:else if !reportContent}
                 <div class="empty-state">Could not load report content.</div>
               {:else}
-                <h3>Teaching & academic delivery</h3>
-                {#if !reportContent.teaching.length}
-                  <p class="empty-state">No teaching records found.</p>
-                {:else}
-                  <div class="content-table-wrap">
-                    <table>
-                      <thead><tr><th>Course</th><th>Name</th><th>Program</th><th>Type</th><th>Sched.</th><th>Cond.</th><th>Missed</th><th>Syllabus</th></tr></thead>
-                      <tbody>
-                        {#each reportContent.teaching as t}
-                          <tr><td>{t.course_code}</td><td>{t.course_name}</td><td>{t.program_level}</td><td>{t.class_type}</td><td>{t.scheduled}</td><td>{t.conducted}</td><td>{t.missed}{t.missed_action ? ` (${t.missed_action})` : ''}</td><td>{t.syllabus_completion ?? '-'}%</td></tr>
-                        {/each}
-                      </tbody>
-                    </table>
+                <ReportPreview
+                  kicker="Faculty weekly report · {selected.period_label}"
+                  teaching={reportContent.teaching.map((t) => ({
+                    title: t.course_code || 'Untitled',
+                    sub: t.course_name || 'Course name pending',
+                    meta: `${t.conducted} / ${t.scheduled} classes`,
+                  }))}
+                  research={reportContent.research.map((r) => ({
+                    title: r.title || 'Untitled',
+                    sub: r.category,
+                    meta: `${r.status || '—'}${r.venue_or_agency ? ` · ${r.venue_or_agency}` : ''}`,
+                  }))}
+                  duties={reportContent.duties.map((d) => ({ title: d.name || 'Untitled', sub: d.role, meta: d.activity }))}
+                  outreach={reportContent.outreach.map((o) => ({ title: o.activity || 'Untitled', sub: o.audience, meta: o.date }))}
+                  summary={reportContent.summary}
+                />
+                {#if reportContent.attachments.length}
+                  <h3>Supporting files ({reportContent.attachments.length})</h3>
+                  <div class="attach-list">
+                    {#each reportContent.attachments as a}
+                      <div class="attach-row">
+                        <span class="attach-name">{a.filename}</span>
+                        <a class="act-link" href="/api/attachments/{a.id}" download>Download</a>
+                      </div>
+                    {/each}
                   </div>
-                {/if}
-                <h3>Weekly summary</h3>
-                {#if reportContent.summary}
-                  <div class="summary-block">{reportContent.summary}</div>
-                {:else}
-                  <p class="empty-state">No summary entered.</p>
                 {/if}
               {/if}
             </div>
@@ -230,12 +265,10 @@
   .rp-reopen-body label { font-size: 0.72rem; font-weight: 700; color: var(--muted); }
   .rp-reopen-body input { border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; font: inherit; background: var(--bg-input); width: 100%; box-sizing: border-box; margin-top: 4px; }
   .rp-reopen-body .act-link { align-self: start; }
-  .content-table-wrap { overflow-x: auto; margin-bottom: 18px; }
-  .content-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
-  .content-table-wrap th { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); color: var(--muted); font-weight: 700; white-space: nowrap; }
-  .content-table-wrap td { padding: 8px; border-bottom: 1px solid var(--line-2); color: var(--ink-2); }
-  .content-table-wrap tr:last-child td { border-bottom: 0; }
   .summary-block { background: var(--paper); border-radius: 6px; padding: 14px; font-size: 0.82rem; line-height: 1.55; color: var(--ink-2); white-space: pre-wrap; }
+  .attach-list { display: grid; gap: 8px; margin-top: 4px; }
+  .attach-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 7px; }
+  .attach-name { flex: 1; min-width: 0; font-size: 0.78rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .empty-state { color: var(--muted-2); font-size: 0.78rem; padding: 10px 0; }
   @media (max-width: 800px) { .review-layout { grid-template-columns: 1fr; } }
   @media (max-width: 520px) { .rp-btns { flex-direction: column; } }
