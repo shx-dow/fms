@@ -39,6 +39,7 @@ export function getUserFromSession(sessionId: string | undefined) {
         specialization: row.specialization,
         role: row.role,
         departmentId: row.department_id,
+        mustChangePassword: row.must_change_password === 1,
       }
     : null;
 }

@@ -11,6 +11,7 @@ export interface User {
   specialization?: string | null;
   role: Role;
   departmentId?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface TeachingRecord {

@@ -12,6 +12,7 @@ export interface SessionUser {
   specialization: string | null;
   role: 'FACULTY' | 'HOD' | 'ADMIN';
   department_id?: string;
+  must_change_password?: number | null;
 }
 
 export function createSessionRecord(id: string, userId: string, expires: string, db: Db = defaultDb) {

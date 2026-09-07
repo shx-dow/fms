@@ -29,14 +29,18 @@ export function listUsers(db: Db = defaultDb): UserWithDepartment[] {
 export function findByEmailWithCredentials(email: string, db: Db = defaultDb) {
   // SAFETY: The SELECT list projects exactly these three columns from users and credentials.
   return db.get(sql`
-    SELECT u.id, u.role, c.password_hash
+    SELECT u.id, u.role, u.must_change_password, c.password_hash
     FROM users u JOIN credentials c ON c.user_id = u.id
     WHERE (lower(u.email) = lower(${email}) OR lower(u.employee_code) = lower(${email})) AND u.is_active = 1
-  `) as { id: string; role: string; password_hash: string } | undefined;
+  `) as { id: string; role: string; must_change_password: number | null; password_hash: string } | undefined;
 }
 
 export function setUserActive(userId: string, isActive: boolean, db: Db = defaultDb) {
   db.run(sql`UPDATE users SET is_active = ${isActive ? 1 : 0} WHERE id = ${userId}`);
+}
+
+export function setMustChangePassword(userId: string, mustChange: boolean, db: Db = defaultDb) {
+  db.run(sql`UPDATE users SET must_change_password = ${mustChange ? 1 : 0} WHERE id = ${userId}`);
 }
 
 export function createUser(

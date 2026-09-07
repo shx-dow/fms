@@ -28,6 +28,13 @@
       "when": 1788791125759,
       "tag": "0003_sad_spiral",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1788792313762,
+      "tag": "0004_public_hairball",
+      "breakpoints": true
     }
   ],
   "version": "7"

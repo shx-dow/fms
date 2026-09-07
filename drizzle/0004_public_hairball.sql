@@ -1,0 +1,2 @@
+ALTER TABLE `users` ADD `must_change_password` integer DEFAULT false NOT NULL;--> statement-breakpoint
+UPDATE `users` SET `must_change_password` = true WHERE EXISTS (SELECT 1 FROM `credentials` WHERE `credentials`.`user_id` = `users`.`id`);

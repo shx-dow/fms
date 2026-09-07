@@ -9,6 +9,7 @@ import {
   updateUser,
   createCredentials,
   upsertCredentials,
+  setMustChangePassword,
   defaultDepartmentId,
 } from '$lib/server/db/repositories/users';
 import { insertAuditEvent } from '$lib/server/db/repositories/audit';
@@ -63,6 +64,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       departmentId: fields.departmentId || defaultDept || null,
     });
     createCredentials(id, hashPassword(password));
+    setMustChangePassword(id, true);
     insertAuditEvent({
       id: randomUUID(),
       actorId: locals.user.id,
@@ -93,6 +95,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       if (password.length < PASSWORD_MIN_LENGTH)
         return json({ ok: false, error: passwordTooShortMessage }, { status: 400 });
       upsertCredentials(userId, hashPassword(password));
+      setMustChangePassword(userId, true);
       deleteSessionsForUser(userId);
     }
     insertAuditEvent({

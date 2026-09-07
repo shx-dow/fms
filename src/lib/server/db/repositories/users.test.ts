@@ -12,6 +12,7 @@ import {
   createCredentials,
   upsertCredentials,
   getPasswordHash,
+  setMustChangePassword,
   defaultDepartmentId,
 } from './users';
 
@@ -80,5 +81,13 @@ describe('users', () => {
   it('returns a default department id', () => {
     const db = makeDb();
     expect(defaultDepartmentId(db)?.length).toBeGreaterThan(0);
+  });
+
+  it('flags temporary passwords for rotation and clears on change', () => {
+    const db = makeDb();
+    setMustChangePassword('dev-faculty-1', true, db);
+    expect(findByEmailWithCredentials('faculty1@example.edu', db)?.must_change_password).toBe(1);
+    setMustChangePassword('dev-faculty-1', false, db);
+    expect(findByEmailWithCredentials('faculty1@example.edu', db)?.must_change_password).toBe(0);
   });
 });

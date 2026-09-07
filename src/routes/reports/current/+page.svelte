@@ -10,7 +10,10 @@
   const STEPS = ['teaching', 'research', 'duties', 'outreach', 'files', 'review'] as const;
   type Step = (typeof STEPS)[number];
   function validStep(s: string | null): Step | null {
-    return (STEPS as readonly string[]).includes(s ?? '') ? (s as Step) : null;
+    // SAFETY: STEPS is a fixed readonly tuple; membership test narrows s to a valid Step.
+    if (!(STEPS as readonly string[]).includes(s ?? '')) return null;
+    // SAFETY: Returned only after the membership test above confirmed s is a member of STEPS.
+    return s as Step;
   }
   let activeSection: Step = $state(validStep(page.url.searchParams.get('step')) ?? 'teaching');
   let submitted = $state(false);
@@ -81,14 +84,14 @@
   let statusLabel = $derived(
     reportStatus === 'APPROVED' ? 'Approved' : reportStatus === 'SUBMITTED' ? 'Submitted' : reportStatus === 'CHANGES_REQUIRED' ? 'Changes requested' : 'Draft'
   );
-  const STEP_LABELS: Record<Step, string> = {
+  const STEP_LABELS = {
     teaching: 'Teaching',
     research: 'Research',
     duties: 'Duties',
     outreach: 'Outreach',
     files: 'Files',
     review: 'Review',
-  };
+  } satisfies Record<Step, string>;
   const stepIndex = $derived(STEPS.indexOf(activeSection));
   function goStep(s: Step) {
     activeSection = s;
@@ -205,11 +208,11 @@
   async function saveActivity(kind: 'research' | 'duties' | 'outreach', records?: any[], empty?: boolean) {
     if (!reportId || !canEdit || additionalSaving) return;
     additionalSaving = true; clearTimeout(saveTimer); savedAt = 'Saving...';
-    const body: { reportId: string; records: any[]; empty?: boolean } = {
+    const body = {
       reportId,
       records: records ?? (kind === 'research' ? researchRecords : kind === 'duties' ? dutiesRecords : outreachRecords),
+      empty,
     };
-    if (empty !== undefined) body.empty = empty;
     const res = await fetch(`/api/${kind}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     additionalSaving = false;
     if (!res.ok) { show('Save failed.', 'err'); savedAt = ''; return; }
