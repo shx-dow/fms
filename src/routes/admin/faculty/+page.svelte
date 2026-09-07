@@ -103,35 +103,42 @@
   .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
   .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 28px; }
-  .dash-header h1 { font-size: 1.65rem; letter-spacing: -0.03em; margin: 0 0 3px; }
-  .dash-period { font-size: 0.82rem; color: var(--muted); }
+  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-sm); }
+  .dash-header h1 { font-size: 1.55rem; letter-spacing: -0.03em; margin: 0 0 4px; font-weight: 750; color: var(--text-1); }
+  .dash-period { font-size: 0.84rem; color: var(--text-3); }
   .dash-actions { display: flex; align-items: center; gap: 14px; }
-  .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; background: var(--navy); color: var(--paper); text-decoration: none; font-size: 0.78rem; font-weight: 700; white-space: nowrap; border: 0; cursor: pointer; transition: background 0.14s ease; }
-  .dash-cta:hover { background: var(--blue-hover); }
+  .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; background: var(--navy); color: var(--paper); text-decoration: none; font-size: 0.8rem; font-weight: 750; white-space: nowrap; border: 0; cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.14s ease; }
+  .dash-cta:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .search-bar { margin-bottom: 16px; }
-  .search-bar input { width: 100%; max-width: 380px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; font: inherit; background: var(--panel); color: var(--ink-2); }
-  .table-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: auto; }
-  .table-card table { width: 100%; border-collapse: collapse; min-width: 720px; font-size: 0.78rem; }
-  .table-card th, .table-card td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--line-2); }
-  .table-card th { text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-2); font-size: 0.62rem; font-weight: 800; }
-  .table-card td { color: var(--muted); }
-  .table-card td strong { color: var(--ink-2); }
-  .pill { display: inline-block; padding: 3px 7px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; }
-  .pill.active { background: var(--green-soft); color: var(--green); }
-  .pill.inactive { background: var(--bg-hover); color: var(--muted-3); }
+  .search-bar input { width: 100%; max-width: 400px; padding: 11px 14px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 0.84rem; background: var(--panel); color: var(--text-1); box-shadow: var(--shadow-xs); transition: border-color 0.13s ease, box-shadow 0.13s ease; }
+  .search-bar input:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+  .search-bar input::placeholder { color: var(--muted-3); }
+  .table-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: auto; box-shadow: var(--shadow-sm); }
+  .table-card table { width: 100%; border-collapse: collapse; min-width: 720px; font-size: 0.82rem; }
+  .table-card th, .table-card td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--line-2); }
+  .table-card th { text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); font-size: 0.64rem; font-weight: 800; background: rgba(248,250,252,0.7); white-space: nowrap; }
+  .table-card tbody tr:hover td { background: #f6f9fc; }
+  .table-card td { color: var(--text-2); }
+  .table-card td strong { color: var(--text-1); font-weight: 700; }
+  .pill { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 0.66rem; font-weight: 800; border: 1px solid transparent; }
+  .pill.active { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
+  .pill.inactive { background: var(--line-light); border-color: var(--line); color: var(--muted); }
   .td-acts { text-align: right; white-space: nowrap; }
-  .btn-ghost { border: 0; background: transparent; font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; margin-left: 6px; color: var(--blue); }
-  .confirm-group { display: inline-flex; gap: 6px; }
-  .btn-confirm { border: 0; border-radius: 4px; padding: 5px 9px; font: inherit; font-size: 0.68rem; font-weight: 800; cursor: pointer; background: var(--red); color: var(--panel); }
-  .btn-cancel { border: 0; border-radius: 4px; padding: 5px 9px; font: inherit; font-size: 0.68rem; font-weight: 800; cursor: pointer; background: var(--bg-hover); color: var(--muted); }
-  .empty-row { text-align: center; padding: 24px; color: var(--muted-2); font-size: 0.8rem; }
-  .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.35); display: grid; place-items: center; z-index: 100; }
-  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 28px; max-width: 440px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.12); max-height: 90vh; overflow-y: auto; }
-  .modal h3 { margin: 0 0 18px; font-size: 1.1rem; color: var(--ink-2); }
+  .btn-ghost { border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; font-size: 0.74rem; font-weight: 700; cursor: pointer; margin-left: 6px; padding: 6px 10px; color: var(--accent); transition: all 0.12s; }
+  .btn-ghost:hover { background: #eff4fb; border-color: var(--blue-border); }
+  .confirm-group { display: inline-flex; gap: 6px; align-items: center; }
+  .btn-confirm { border: 1px solid var(--navy); border-radius: 6px; padding: 6px 11px; font: inherit; font-size: 0.7rem; font-weight: 800; cursor: pointer; background: var(--navy); color: var(--paper); }
+  .btn-confirm:hover { background: var(--blue-hover); }
+  .btn-cancel { border: 1px solid var(--line); border-radius: 6px; padding: 6px 11px; font: inherit; font-size: 0.7rem; font-weight: 800; cursor: pointer; background: var(--panel); color: var(--muted); }
+  .btn-cancel:hover { background: var(--bg-hover); }
+  .empty-row { text-align: center; padding: 28px; color: var(--muted-2); font-size: 0.82rem; }
+  .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px); display: grid; place-items: center; z-index: 100; }
+  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 30px; max-width: 460px; width: 90%; box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; }
+  .modal h3 { margin: 0 0 18px; font-size: 1.15rem; font-weight: 750; letter-spacing: -0.01em; color: var(--text-1); }
   .modal-fields { display: grid; gap: 14px; }
-  .modal-fields label { display: grid; gap: 5px; font-size: 0.74rem; font-weight: 700; color: var(--muted); }
-  .modal-fields input, .modal-fields select { border: 1px solid var(--line); border-radius: 5px; padding: 9px 10px; font: inherit; background: var(--bg-input); color: var(--ink-2); }
+  .modal-fields label { display: grid; gap: 6px; font-size: 0.76rem; font-weight: 700; color: var(--text-3); }
+  .modal-fields input, .modal-fields select { border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; font: inherit; font-size: 0.86rem; background: var(--bg-input); color: var(--text-1); box-shadow: var(--shadow-xs); transition: border-color 0.13s ease, box-shadow 0.13s ease; }
+  .modal-fields input:focus, .modal-fields select:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
   .modal-acts { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
   .modal-acts .btn-ghost { border: 0; background: transparent; font: inherit; font-size: 0.8rem; color: var(--muted); cursor: pointer; padding: 8px 12px; }
   @media (max-width: 800px) { .dash-header { flex-direction: column; align-items: start; } }

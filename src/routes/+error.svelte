@@ -32,34 +32,36 @@
   .error-card {
     background: var(--panel);
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     padding: 48px 56px;
-    max-width: 460px;
+    max-width: 480px;
     text-align: center;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    box-shadow: var(--shadow-lg);
   }
   .error-code {
     display: inline-block;
     font-size: 0.72rem;
     font-weight: 800;
     letter-spacing: 0.1em;
-    color: var(--blue);
-    background: var(--bg-hover);
-    padding: 4px 10px;
-    border-radius: 6px;
+    color: var(--blue-dark);
+    background: #eff4fb;
+    border: 1px solid var(--blue-border);
+    padding: 5px 12px;
+    border-radius: 999px;
     margin-bottom: 18px;
   }
   .error-card h1 {
-    font-size: 1.5rem;
+    font-size: 1.55rem;
     letter-spacing: -0.03em;
-    color: var(--navy);
+    color: var(--text-1);
     margin: 0 0 10px;
+    font-weight: 750;
   }
   .error-card p {
     font-size: 0.88rem;
-    color: var(--muted);
+    color: var(--text-3);
     margin: 0 0 24px;
-    line-height: 1.5;
+    line-height: 1.55;
   }
   .error-detail {
     text-align: left;
@@ -74,14 +76,16 @@
   }
   .error-home {
     display: inline-block;
-    background: var(--blue);
-    color: #fff;
+    background: var(--navy);
+    border: 1px solid var(--navy);
+    color: var(--paper);
     text-decoration: none;
     font-size: 0.85rem;
-    font-weight: 700;
-    padding: 10px 20px;
-    border-radius: 7px;
-    transition: background 0.14s ease;
+    font-weight: 750;
+    padding: 11px 22px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.14s ease;
   }
-  .error-home:hover { background: var(--navy-3); }
+  .error-home:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
 </style>

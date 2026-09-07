@@ -101,16 +101,17 @@
 
 <style>
   .shell { max-width: 1100px; }
-  .viewer-head { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
-  .viewer-head h1 { font-size: 1.65rem; margin: 0; display: inline; margin-right: 10px; }
-  .head-period { font-size: 0.82rem; color: var(--muted); margin-right: 10px; }
-  .status-pill { font-size: 0.7rem; font-weight: 800; padding: 4px 8px; border-radius: 5px; background: var(--bg-hover); color: var(--muted); }
+  .viewer-head { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 22px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px 24px; box-shadow: var(--shadow-sm); }
+  .viewer-head h1 { font-size: 1.5rem; margin: 0; display: inline; margin-right: 10px; letter-spacing: -0.03em; font-weight: 750; color: var(--text-1); }
+  .head-period { font-size: 0.84rem; color: var(--text-3); margin-right: 10px; }
+  .status-pill { font-size: 0.7rem; font-weight: 800; padding: 4px 11px; border-radius: 999px; background: var(--bg-hover); border: 1px solid var(--line); color: var(--muted); }
   .viewer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  .act-link { border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; background: var(--panel); color: var(--blue); font-size: 0.73rem; font-weight: 700; text-decoration: none; }
-  .preview-paper { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 28px; }
-  .preview-kicker { font-size: 0.7rem; font-weight: 800; color: var(--blue); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px; }
-  .preview-paper h2 { font-size: 1rem; margin: 16px 0 8px; }
-  .preview-row { display: grid; grid-template-columns: 140px 1fr auto; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--line-2); font-size: 0.8rem; align-items: center; }
+  .act-link { border: 1px solid var(--line); border-radius: 7px; padding: 8px 13px; background: var(--panel); color: var(--accent-strong); font-size: 0.76rem; font-weight: 700; text-decoration: none; box-shadow: var(--shadow-xs); transition: all 0.12s; }
+  .act-link:hover { background: var(--bg-hover); border-color: var(--blue-border); box-shadow: var(--shadow-sm); }
+  .preview-paper { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 34px 36px; box-shadow: var(--shadow-sm); }
+  .preview-kicker { font-size: 0.7rem; font-weight: 800; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid var(--line-2); }
+  .preview-paper h2 { font-size: 1.02rem; margin: 22px 0 10px; letter-spacing: -0.01em; font-weight: 750; color: var(--text-1); }
+  .preview-row { display: grid; grid-template-columns: 150px 1fr auto; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line-2); font-size: 0.84rem; align-items: center; }
   .preview-stat { color: var(--muted); }
   .preview-text { background: var(--paper); border-radius: 6px; padding: 14px; font-size: 0.82rem; line-height: 1.5; white-space: pre-wrap; }
   .empty { color: var(--muted-2); font-size: 0.8rem; }
