@@ -11,6 +11,7 @@
         {#if t.action}
           <button class="toast-act" onclick={() => { t.action!.onClick(); dismissToast(t.id); }}>{t.action.label}</button>
         {/if}
+        <button class="toast-x" onclick={() => dismissToast(t.id)} aria-label="Dismiss notification">×</button>
       </div>
     {/each}
   </div>
@@ -45,6 +46,8 @@
   .toast-text { flex: 1; min-width: 0; }
   .toast-act { flex: none; border: 0; background: rgba(255, 255, 255, 0.22); color: inherit; font: inherit; font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 4px; cursor: pointer; transition: background 0.1s; }
   .toast-act:hover { background: rgba(255, 255, 255, 0.38); }
+  .toast-x { flex: none; border: 0; background: transparent; color: inherit; opacity: 0.55; font-size: 1rem; font-weight: 700; line-height: 1; padding: 2px 4px; border-radius: 4px; cursor: pointer; transition: opacity 0.1s; }
+  .toast-x:hover { opacity: 1; }
   .toast.leaving {
     opacity: 0;
     transform: translateX(30px);

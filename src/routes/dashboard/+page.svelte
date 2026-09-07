@@ -27,10 +27,12 @@
   let filesCount = $state(0);
   let loading = $state(true);
   let error = $state('');
+  let noPeriod = $state(false);
   onMount(async () => {
     try {
       const res = await fetch('/api/reports');
       const data = await res.json();
+      if (res.status === 409) { noPeriod = true; return; }
       if (!res.ok) { error = 'Unable to load dashboard data.'; return; }
       const r = data.report;
       completion = r?.completion ?? 0;
@@ -248,6 +250,12 @@
 <main class="shell app-shell">
   {#if loading}
     <div class="loading-panel"><span class="spinner"></span><span>Loading dashboard…</span></div>
+  {:else if noPeriod}
+    <div class="no-period-card">
+      <h1>Reporting is paused</h1>
+      <p>There is no open reporting period right now, so there is nothing to fill in. Ask your HOD or admin to open the next period.</p>
+      <a href="/reports" class="dash-cta">View past reports →</a>
+    </div>
   {:else if error}
     <div class="error-panel">{error}</div>
   {:else}
@@ -566,6 +574,9 @@
   .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .error-panel { padding: 16px 20px; background: var(--red-bg); color: var(--red); border-radius: 7px; font-size: 0.88rem; }
+  .no-period-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 44px 40px; box-shadow: var(--shadow-sm); text-align: center; max-width: 560px; margin: 40px auto; }
+  .no-period-card h1 { font-size: 1.5rem; letter-spacing: -0.02em; margin: 0 0 10px; font-weight: 750; color: var(--text-1); }
+  .no-period-card p { margin: 0 0 22px; color: var(--text-3); font-size: 0.88rem; line-height: 1.55; }
   .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-sm); }
   .dash-header h1 { font-size: 1.55rem; letter-spacing: -0.03em; margin: 0 0 4px; font-weight: 750; color: var(--text-1); }
   .dash-period { font-size: 0.84rem; color: var(--text-3); }

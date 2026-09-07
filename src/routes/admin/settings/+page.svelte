@@ -11,6 +11,8 @@
   let editEnds = $state('');
   let editDue = $state('');
   let showCreate = $state(false);
+  let deleteTarget: Period | null = $state(null);
+  let deleting = $state(false);
   let newStarts = $state('');
   let newEnds = $state('');
   let newDue = $state('');
@@ -71,13 +73,14 @@
     showCreate = false; newStarts = ''; newEnds = ''; newDue = ''; newOpen = true;
     load();
   }
-  async function deletePeriodConfirm(p: Period) {
-    if (!confirm(`Delete ${p.label || p.id}? This cannot be undone.`)) return;
-    saving = true;
-    const res = await fetch(`/api/periods?id=${encodeURIComponent(p.id)}`, { method: 'DELETE' });
-    saving = false;
+  async function deletePeriodConfirm() {
+    if (!deleteTarget || deleting) return;
+    deleting = true;
+    const res = await fetch(`/api/periods?id=${encodeURIComponent(deleteTarget.id)}`, { method: 'DELETE' });
+    deleting = false;
     if (!res.ok) { show('Unable to delete period.', 'err'); return; }
     show('Period deleted.');
+    deleteTarget = null;
     load();
   }
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -135,7 +138,7 @@
                 <td><span class="status-pill" class:open={p.is_open} class:closed={!p.is_open}>{p.is_open ? 'Open' : 'Closed'}</span></td>
                 <td class="td-acts">
                   <button class="btn-ghost" onclick={() => toggleOpen(p)} disabled={saving}>{p.is_open ? 'Close' : 'Open'}</button>
-                  <button class="btn-ghost btn-del" onclick={() => deletePeriodConfirm(p)} disabled={saving}>Delete</button>
+                  <button class="btn-ghost btn-del" onclick={() => (deleteTarget = p)} disabled={saving}>Delete</button>
                 </td>
               </tr>
             {/each}
@@ -143,6 +146,19 @@
         </table>
       {/if}
     </section>
+  {/if}
+
+  {#if deleteTarget}
+    <div class="overlay" role="presentation" onclick={() => (deleteTarget = null)} onkeydown={(e) => { if (e.key === 'Escape') deleteTarget = null; }}>
+      <div class="modal modal-narrow" role="dialog" aria-modal="true" aria-labelledby="del-title" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+        <h3 id="del-title">Delete {deleteTarget.label || deleteTarget.id}?</h3>
+        <p class="modal-note">Only periods without reports can be deleted. This cannot be undone.</p>
+        <div class="modal-acts">
+          <button class="btn-ghost" onclick={() => (deleteTarget = null)}>Cancel</button>
+          <button class="btn-del-solid" onclick={deletePeriodConfirm} disabled={deleting}>{deleting ? 'Deleting…' : 'Delete period'}</button>
+        </div>
+      </div>
+    </div>
   {/if}
 
   {#if showCreate}
@@ -214,6 +230,11 @@
   .check-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--ink-2); }
   .check-row input { width: 16px; height: 16px; }
   .modal-acts { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .modal-note { margin: 0 0 4px; color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+  .modal-narrow { max-width: 400px; }
+  .btn-del-solid { border: 1px solid var(--red); border-radius: 7px; padding: 9px 16px; background: var(--red); color: #fff; font: inherit; font-size: 0.78rem; font-weight: 750; cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.12s; }
+  .btn-del-solid:hover { background: var(--red-dark); border-color: var(--red-dark); }
+  .btn-del-solid:disabled { opacity: 0.55; cursor: not-allowed; }
   .modal-acts .btn-ghost { border: 0; background: transparent; font: inherit; font-size: 0.8rem; color: var(--muted); cursor: pointer; padding: 8px 12px; }
   @media (max-width: 700px) {
     .dash-header { flex-direction: column; align-items: start; }
