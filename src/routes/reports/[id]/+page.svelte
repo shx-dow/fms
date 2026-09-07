@@ -2,6 +2,7 @@
   import type { ReportWithFaculty } from '$lib/server/db/repositories/reports';
   import type { TeachingDbRow, ResearchDbRow, DutyDbRow, OutreachDbRow } from '$lib/server/db/repositories/activity';
   import type { ReviewRow } from '$lib/server/db/repositories/reviews';
+  import ReportPreview from '$lib/components/ReportPreview.svelte';
   let {
     data,
   }: {
@@ -37,53 +38,22 @@
     </div>
   </header>
 
-  <div class="preview-paper">
-    <div class="preview-kicker">Faculty weekly report · {r.period_label}</div>
-    <h2>Teaching & academic delivery</h2>
-    {#each data.teaching as item}
-      <div class="preview-row">
-        <strong>{item.course_code || 'Untitled'}</strong>
-        <span>{item.course_name || 'Course name pending'}</span>
-        <span class="preview-stat">{item.conducted} / {item.scheduled} classes · up to lecture {item.syllabus_lecture ?? '—'}</span>
-      </div>
-    {:else}
-      <p class="empty">No teaching records.</p>
-    {/each}
-    <h2>Research & publications</h2>
-    {#each data.research as item}
-      <div class="preview-row">
-        <strong>{item.title || 'Untitled'}</strong>
-        <span>{item.category}</span>
-        <span class="preview-stat">{item.status || '—'}{item.venue_or_agency ? ` · ${item.venue_or_agency}` : ''}</span>
-      </div>
-    {:else}
-      <p class="empty">No research records.</p>
-    {/each}
-    <h2>Institutional duties</h2>
-    {#each data.duties as item}
-      <div class="preview-row">
-        <strong>{item.name || 'Untitled'}</strong>
-        <span>{item.role || '—'}</span>
-        <span class="preview-stat">{item.activity || '—'}</span>
-      </div>
-    {:else}
-      <p class="empty">No duties recorded.</p>
-    {/each}
-    <h2>Outreach & admissions</h2>
-    {#each data.outreach as item}
-      <div class="preview-row">
-        <strong>{item.activity || 'Untitled'}</strong>
-        <span>{item.audience || '—'}</span>
-        <span class="preview-stat">{item.date || '—'}</span>
-      </div>
-    {:else}
-      <p class="empty">No outreach recorded.</p>
-    {/each}
-    {#if r.summary}
-      <h2>Weekly summary</h2>
-      <div class="preview-text">{r.summary}</div>
-    {/if}
-  </div>
+  <ReportPreview
+    kicker="Faculty weekly report · {r.period_label}"
+    teaching={data.teaching.map((item) => ({
+      title: item.course_code || 'Untitled',
+      sub: item.course_name || 'Course name pending',
+      meta: `${item.conducted} / ${item.scheduled} classes · up to lecture ${item.syllabus_lecture ?? '—'}`,
+    }))}
+    research={data.research.map((item) => ({
+      title: item.title || 'Untitled',
+      sub: item.category,
+      meta: `${item.status || '—'}${item.venue_or_agency ? ` · ${item.venue_or_agency}` : ''}`,
+    }))}
+    duties={data.duties.map((item) => ({ title: item.name || 'Untitled', sub: item.role, meta: item.activity }))}
+    outreach={data.outreach.map((item) => ({ title: item.activity || 'Untitled', sub: item.audience, meta: item.date }))}
+    summary={r.summary ?? ''}
+  />
 
   {#if data.reviews.length}
     <details class="review-box" open>
@@ -108,13 +78,6 @@
   .viewer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
   .act-link { border: 1px solid var(--line); border-radius: 7px; padding: 8px 13px; background: var(--panel); color: var(--accent-strong); font-size: 0.76rem; font-weight: 700; text-decoration: none; box-shadow: var(--shadow-xs); transition: all 0.12s; }
   .act-link:hover { background: var(--bg-hover); border-color: var(--blue-border); box-shadow: var(--shadow-sm); }
-  .preview-paper { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 34px 36px; box-shadow: var(--shadow-sm); }
-  .preview-kicker { font-size: 0.7rem; font-weight: 800; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid var(--line-2); }
-  .preview-paper h2 { font-size: 1.02rem; margin: 22px 0 10px; letter-spacing: -0.01em; font-weight: 750; color: var(--text-1); }
-  .preview-row { display: grid; grid-template-columns: 150px 1fr auto; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line-2); font-size: 0.84rem; align-items: center; }
-  .preview-stat { color: var(--muted); }
-  .preview-text { background: var(--paper); border-radius: 6px; padding: 14px; font-size: 0.82rem; line-height: 1.5; white-space: pre-wrap; }
-  .empty { color: var(--muted-2); font-size: 0.8rem; }
   .review-box { margin-top: 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; }
   .review-box summary { cursor: pointer; font-size: 0.78rem; font-weight: 700; }
   .review-row { padding: 10px 0; border-bottom: 1px solid var(--line-2); font-size: 0.8rem; }

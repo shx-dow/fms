@@ -4,6 +4,7 @@
   import { page } from '$app/state';
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import ReportPreview from '$lib/components/ReportPreview.svelte';
   let { data } = $props();
 
   const STEPS = ['teaching', 'research', 'duties', 'outreach', 'files', 'review'] as const;
@@ -598,51 +599,30 @@
           <div class="summary-metric"><span>Outreach</span><strong>{outreachNA ? 'N/A' : outreachCount}</strong><em>{outreachNA ? 'no activity recorded' : outreachCount === 1 ? 'item this week' : 'items this week'}</em></div>
           <div class="summary-metric"><span>Supporting files</span><strong>{attachments.length}</strong><em>{attachments.length === 1 ? 'file attached' : 'files attached'}</em></div>
         </div>
-        <div class="preview-paper review-paper">
-          <div class="preview-kicker">Faculty weekly report · {periodLabel}</div>
-          <h2>Teaching & academic delivery</h2>
-          {#each teaching.filter((t) => t.courseCode?.trim() || t.courseName?.trim()) as item}
-            <div class="preview-row">
-              <strong>{item.courseCode || 'Untitled'}</strong>
-              <span>{item.courseName || 'Course name pending'}</span>
-              <span class="preview-stat">{item.conducted} / {item.scheduled} classes · up to lecture {item.syllabusLecture || '—'}</span>
-            </div>
-          {:else}
-            <p class="empty">No teaching records.</p>
-          {/each}
-          <h2>Research & publications</h2>
-          {#each researchRecords.filter((r) => r.title?.trim() && r.title !== 'N/A') as item}
-            <div class="preview-row">
-              <strong>{item.title || 'Untitled'}</strong>
-              <span>{item.category}</span>
-              <span class="preview-stat">{item.status || '—'}{item.venueOrAgency ? ` · ${item.venueOrAgency}` : ''}</span>
-            </div>
-          {:else}
-            <p class="empty">No research records.</p>
-          {/each}
-          <h2>Institutional duties</h2>
-          {#each dutiesRecords.filter((d) => d.name?.trim() && d.name !== 'N/A') as item}
-            <div class="preview-row">
-              <strong>{item.name || 'Untitled'}</strong>
-              <span>{item.role || '—'}</span>
-              <span class="preview-stat">{item.activity || '—'}</span>
-            </div>
-          {:else}
-            <p class="empty">No duties recorded.</p>
-          {/each}
-          <h2>Outreach & admissions</h2>
-          {#each outreachRecords.filter((r) => r.activity?.trim() && r.activity !== 'N/A') as item}
-            <div class="preview-row">
-              <strong>{item.activity || 'Untitled'}</strong>
-              <span>{item.audience || '—'}</span>
-              <span class="preview-stat">{item.date || '—'}</span>
-            </div>
-          {:else}
-            <p class="empty">No outreach recorded.</p>
-          {/each}
-          <h2>Weekly summary</h2>
-          <div class="preview-text">{autoSummary}</div>
-        </div>
+        <ReportPreview
+          kicker="Faculty weekly report · {periodLabel}"
+          teaching={teaching
+            .filter((t) => t.courseCode?.trim() || t.courseName?.trim())
+            .map((item) => ({
+              title: item.courseCode || 'Untitled',
+              sub: item.courseName || 'Course name pending',
+              meta: `${item.conducted} / ${item.scheduled} classes · up to lecture ${item.syllabusLecture || '—'}`,
+            }))}
+          research={researchRecords
+            .filter((r) => r.title?.trim() && r.title !== 'N/A')
+            .map((item) => ({
+              title: item.title,
+              sub: item.category,
+              meta: `${item.status || '—'}${item.venueOrAgency ? ` · ${item.venueOrAgency}` : ''}`,
+            }))}
+          duties={dutiesRecords
+            .filter((d) => d.name?.trim() && d.name !== 'N/A')
+            .map((item) => ({ title: item.name, sub: item.role, meta: item.activity }))}
+          outreach={outreachRecords
+            .filter((r) => r.activity?.trim() && r.activity !== 'N/A')
+            .map((item) => ({ title: item.activity, sub: item.audience, meta: item.date }))}
+          summary={autoSummary}
+        />
         {#if !isReadonly}
           <div class="review-submit">
             <button
