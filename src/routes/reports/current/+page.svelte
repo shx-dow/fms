@@ -38,6 +38,7 @@
   let additionalSaving = $state(false);
   let saveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
   let deadlineDate = $state('');
+  let hasTemplate = $state(false);
   let canSubmit = $derived(Boolean(deadlineDate && new Date(deadlineDate) > new Date()));
 
   let scheduled = $derived(teaching.reduce((s, i) => s + Number(i.scheduled || 0), 0));
@@ -131,6 +132,12 @@
     const d = await res.json();
     let recurringProfile: any = null;
     try { recurringProfile = (await (await fetch('/api/me/profile')).json()).profile; } catch {}
+    hasTemplate = Boolean(
+      recurringProfile?.subjects?.length ||
+      recurringProfile?.research?.length ||
+      recurringProfile?.duties?.length ||
+      recurringProfile?.outreach?.length,
+    );
     reportId = d.report.id;
     reportStatus = d.report.status;
     history = d.reports ?? [];
@@ -460,6 +467,18 @@
           <span class="metric-badge">{deliveryRate}% delivery</span>
         </div>
         <p class="section-hint">Course details and scheduled classes come from your recurring profile. Update the weekly delivery values below.</p>
+        {#if !hasValidTeaching && !isReadonly}
+          <div class="start-helper">
+            <div>
+              <strong>Starting from a blank week?</strong>
+              <p>Pre-fill everything, then just update the numbers.</p>
+            </div>
+            <div class="start-acts">
+              {#if hasTemplate}<button class="act-link" onclick={() => (confirmTemplate = true)}>Load my template</button>{/if}
+              {#if prevReport}<button class="act-link" onclick={() => (confirmCopy = true)}>Copy from {prevReportLabel}</button>{/if}
+            </div>
+          </div>
+        {/if}
         <div class="course-list">
           {#each teaching as item, i}
             <div class="course-card">
@@ -744,6 +763,10 @@
   .section-top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
   .section-top h2 { font-size: 1.18rem; margin: 0; letter-spacing: -0.02em; font-weight: 750; color: var(--text-1); }
   .section-hint { margin: -10px 0 18px; color: var(--muted-2); font-size: 0.82rem; line-height: 1.5; }
+  .start-helper { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px 18px; margin-bottom: 18px; border-radius: var(--radius-md); border: 1px dashed var(--blue-border); background: #f4f8fd; }
+  .start-helper strong { display: block; font-size: 0.84rem; color: var(--text-1); margin-bottom: 3px; }
+  .start-helper p { margin: 0; font-size: 0.78rem; color: var(--text-3); }
+  .start-acts { display: flex; gap: 8px; flex-wrap: wrap; }
   .metric-badge { font-size: 0.7rem; font-weight: 800; padding: 5px 10px; border-radius: 999px; background: var(--success-bg); border: 1px solid var(--success-border); color: var(--green); }
   .course-list { display: grid; gap: 16px; }
   .course-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 22px; box-shadow: var(--shadow-sm); }
