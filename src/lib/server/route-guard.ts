@@ -1,6 +1,9 @@
 export interface GuardUser {
   role: 'FACULTY' | 'HOD' | 'ADMIN';
+  mustChangePassword?: boolean;
 }
+
+const PASSWORD_CHANGE_ALLOWED = ['/change-password', '/logout', '/api/me/password', '/api/health'];
 
 export function computeRouteRedirect(path: string, user: GuardUser | null): string | null {
   if (!user) {
@@ -11,6 +14,10 @@ export function computeRouteRedirect(path: string, user: GuardUser | null): stri
       path.startsWith('/_app');
     if (!isPublic) return `/login?next=${encodeURIComponent(path)}`;
     return null;
+  }
+  if (user.mustChangePassword && !PASSWORD_CHANGE_ALLOWED.some((p) => path === p || path.startsWith(`${p}/`))) {
+    if (path.startsWith('/api/')) return null;
+    return '/change-password';
   }
   if (user.role === 'FACULTY' && path.startsWith('/admin')) return '/dashboard';
   if (user.role === 'HOD' && isAdminOnlyPath(path)) return '/admin';

@@ -20,8 +20,9 @@ function hashPassword(password) {
 const db = new Database(SQLITE_PATH);
 const users = db.prepare('SELECT user_id FROM credentials').all();
 const update = db.prepare('UPDATE credentials SET password_hash = ? WHERE user_id = ?');
+const flag = db.prepare('UPDATE users SET must_change_password = 1 WHERE id = ?');
 const tx = db.transaction((rows) => {
-  for (const u of rows) update.run(hashPassword(PASSWORD), u.user_id);
+  for (const u of rows) { update.run(hashPassword(PASSWORD), u.user_id); flag.run(u.user_id); }
 });
 tx(users);
 db.close();

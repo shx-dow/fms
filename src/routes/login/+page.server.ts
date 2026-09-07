@@ -37,6 +37,6 @@ export const actions: Actions = {
       secure: cookieSecure,
       maxAge: 60 * 60 * 8,
     });
-    throw redirect(303, row.role === 'ADMIN' ? '/admin' : '/dashboard');
+    throw redirect(303, row.must_change_password === 1 ? '/change-password' : row.role === 'ADMIN' ? '/admin' : '/dashboard');
   },
 };

@@ -38,4 +38,15 @@ describe('computeRouteRedirect', () => {
     expect(computeRouteRedirect('/login', { role: 'HOD' })).toBe('/dashboard');
     expect(computeRouteRedirect('/login', { role: 'FACULTY' })).toBe('/dashboard');
   });
+
+  it('forces temporary-password holders to the change page', () => {
+    const forced = { role: 'FACULTY' as const, mustChangePassword: true };
+    expect(computeRouteRedirect('/dashboard', forced)).toBe('/change-password');
+    expect(computeRouteRedirect('/admin', forced)).toBe('/change-password');
+    expect(computeRouteRedirect('/reports/current', forced)).toBe('/change-password');
+    expect(computeRouteRedirect('/change-password', forced)).toBeNull();
+    expect(computeRouteRedirect('/logout', forced)).toBeNull();
+    expect(computeRouteRedirect('/api/me/password', forced)).toBeNull();
+    expect(computeRouteRedirect('/dashboard', { role: 'FACULTY' as const })).toBeNull();
+  });
 });

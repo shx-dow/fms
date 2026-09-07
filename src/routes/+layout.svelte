@@ -122,7 +122,7 @@ import { onDestroy, onMount } from 'svelte';
   }
 </script>
 
-{#if page.url.pathname === '/login' || page.url.pathname.includes('/print')}
+{#if page.url.pathname === '/login' || page.url.pathname === '/change-password' || page.url.pathname.includes('/print')}
   {@render children()}
 {:else}
   <div class="app-frame" class:sidebar-collapsed={sidebarCollapsed}>

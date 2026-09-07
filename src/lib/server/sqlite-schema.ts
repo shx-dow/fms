@@ -13,6 +13,7 @@ export const users = sqliteTable('users', {
   role: text('role').notNull(),
   departmentId: text('department_id'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  mustChangePassword: integer('must_change_password', { mode: 'boolean' }).notNull().default(false),
 });
 export const departments = sqliteTable('departments', {
   id: text('id').primaryKey(),

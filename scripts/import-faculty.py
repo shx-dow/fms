@@ -93,7 +93,7 @@ def main() -> None:
         if existing:
             user_id = existing[0]
             connection.execute(
-                "UPDATE users SET name=?, email=?, employee_code=?, personal_email=?, mobile=?, specialization=?, role='FACULTY', department_id='tech', is_active=1 WHERE id=?",
+                "UPDATE users SET name=?, email=?, employee_code=?, personal_email=?, mobile=?, specialization=?, role='FACULTY', department_id='tech', is_active=1, must_change_password=1 WHERE id=?",
                 (name, login_email, employee_code, personal_email, mobile, specialization, user_id),
             )
             password = secrets.token_urlsafe(12)
@@ -101,7 +101,7 @@ def main() -> None:
         else:
             password = secrets.token_urlsafe(12)
             connection.execute(
-                "INSERT INTO users (id, name, email, employee_code, personal_email, mobile, specialization, role, department_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, 'FACULTY', 'tech', 1)",
+                "INSERT INTO users (id, name, email, employee_code, personal_email, mobile, specialization, role, department_id, is_active, must_change_password) VALUES (?, ?, ?, ?, ?, ?, ?, 'FACULTY', 'tech', 1, 1)",
                 (user_id, name, login_email, employee_code, personal_email, mobile, specialization),
             )
             connection.execute("INSERT INTO credentials (user_id, password_hash) VALUES (?, ?)", (user_id, password_hash(password)))
