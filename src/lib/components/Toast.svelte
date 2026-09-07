@@ -11,6 +11,7 @@
         {#if t.action}
           <button class="toast-act" onclick={() => { t.action!.onClick(); dismissToast(t.id); }}>{t.action.label}</button>
         {/if}
+        <button class="toast-x" onclick={() => dismissToast(t.id)} aria-label="Dismiss notification">×</button>
       </div>
     {/each}
   </div>
@@ -32,25 +33,28 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 16px;
-    border-radius: 6px;
-    font-size: 0.78rem;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    font-size: 0.8rem;
     font-weight: 600;
     line-height: 1.4;
-    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.1);
+    box-shadow: var(--shadow-md);
     animation: toast-in 0.2s ease-out;
     transition: opacity 0.25s ease, transform 0.25s ease;
   }
   .toast-text { flex: 1; min-width: 0; }
   .toast-act { flex: none; border: 0; background: rgba(255, 255, 255, 0.22); color: inherit; font: inherit; font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 4px; cursor: pointer; transition: background 0.1s; }
   .toast-act:hover { background: rgba(255, 255, 255, 0.38); }
+  .toast-x { flex: none; border: 0; background: transparent; color: inherit; opacity: 0.55; font-size: 1rem; font-weight: 700; line-height: 1; padding: 2px 4px; border-radius: 4px; cursor: pointer; transition: opacity 0.1s; }
+  .toast-x:hover { opacity: 1; }
   .toast.leaving {
     opacity: 0;
     transform: translateX(30px);
   }
-  .toast-ok { background: var(--green-soft); color: var(--green); }
-  .toast-err { background: var(--red-bg); color: var(--red); }
-  .toast-info { background: var(--blue-soft); color: var(--blue-dark); }
+  .toast-ok { background: #f2f9f4; border-color: var(--success-border); color: var(--green); }
+  .toast-err { background: var(--red-bg-alt); border-color: var(--red-border); color: var(--red-dark); }
+  .toast-info { background: #eff4fb; border-color: var(--blue-border); color: var(--blue-dark); }
   @keyframes toast-in {
     from { opacity: 0; transform: translateX(30px); }
     to { opacity: 1; transform: translateX(0); }

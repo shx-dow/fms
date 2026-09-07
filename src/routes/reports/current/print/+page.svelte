@@ -15,6 +15,10 @@
     };
   } = $props();
   const r = $derived(data.report);
+  // Legacy "N/A" sentinel rows (pre empty-flag) never render as real records.
+  const research = $derived(data.research.filter((x) => (x.title ?? '').trim() && x.title !== 'N/A'));
+  const duties = $derived(data.duties.filter((x) => (x.name ?? '').trim() && x.name !== 'N/A'));
+  const outreach = $derived(data.outreach.filter((x) => (x.activity ?? '').trim() && x.activity !== 'N/A'));
 </script>
 
 <svelte:head><title>Printable faculty report · {r.period_label}</title></svelte:head>
@@ -50,13 +54,34 @@
       </table>{:else}<p>No teaching records entered.</p>{/if}
   </section>
   <section>
-    <h2>2. Weekly summary</h2>
+    <h2>2. Research & publications</h2>
+    {#if research.length}<table>
+        <thead><tr><th>Title</th><th>Category</th><th>Venue / agency</th><th>Role</th><th>Status</th></tr></thead>
+        <tbody>{#each research as item}<tr><td>{item.title || '—'}</td><td>{item.category || '—'}</td><td>{item.venue_or_agency || '—'}</td><td>{item.role || '—'}</td><td>{item.status || '—'}</td></tr>{/each}</tbody>
+      </table>{:else}<p>No research records entered.</p>{/if}
+  </section>
+  <section>
+    <h2>3. Institutional duties</h2>
+    {#if duties.length}<table>
+        <thead><tr><th>Duty / committee</th><th>Role</th><th>Activity</th><th>Outcome</th></tr></thead>
+        <tbody>{#each duties as item}<tr><td>{item.name || '—'}</td><td>{item.role || '—'}</td><td>{item.activity || '—'}</td><td>{item.outcome || '—'}</td></tr>{/each}</tbody>
+      </table>{:else}<p>No institutional duties entered.</p>{/if}
+  </section>
+  <section>
+    <h2>4. Outreach & admissions</h2>
+    {#if outreach.length}<table>
+        <thead><tr><th>Activity</th><th>Audience</th><th>Date</th><th>Outcome</th></tr></thead>
+        <tbody>{#each outreach as item}<tr><td>{item.activity || '—'}</td><td>{item.audience || '—'}</td><td>{item.date || '—'}</td><td>{item.outcome || '—'}</td></tr>{/each}</tbody>
+      </table>{:else}<p>No outreach activity entered.</p>{/if}
+  </section>
+  <section>
+    <h2>5. Weekly summary</h2>
     <div class="summary-box">{r.summary || 'No weekly summary entered.'}</div>
   </section>
   {#if data.reviews.length}<section>
-      <h2>3. Review history</h2>
+      <h2>6. Review history</h2>
       {#each data.reviews as rv}<div class="review-line">
-          <span class="rv-decision">{rv.decision}</span><strong>{rv.reviewer_name}</strong><span
+          <span class="rv-decision" class:rv-ok={rv.decision === 'APPROVED'} class:rv-chg={rv.decision === 'CHANGES_REQUIRED'}>{rv.decision === 'APPROVED' ? 'Approved' : rv.decision === 'CHANGES_REQUIRED' ? 'Changes requested' : rv.decision}</span><strong>{rv.reviewer_name}</strong><span
             >· {new Date(rv.created_at).toLocaleDateString()}</span
           >{#if rv.remarks}<p>{rv.remarks}</p>{/if}
         </div>{/each}
@@ -166,7 +191,11 @@
     padding: 2px 6px;
     border-radius: 3px;
     font-size: 9px;
+    background: var(--bg-hover);
+    color: var(--muted-2);
   }
+  .rv-decision.rv-ok { background: var(--success-bg); color: var(--green); }
+  .rv-decision.rv-chg { background: var(--red-soft); color: var(--red-dark); }
   .review-line p {
     width: 100%;
     margin: 4px 0 0;

@@ -68,4 +68,11 @@ describe('teaching and report schemas', () => {
     expect(reviewSchema.safeParse({ reportId: 'r-1', decision: 'MAYBE' }).success).toBe(false);
     expect(reviewSchema.safeParse({ reportId: 'r-1', decision: 'APPROVED' }).success).toBe(true);
   });
+
+  it('requires remarks when requesting changes', () => {
+    expect(reviewSchema.safeParse({ reportId: 'r-1', decision: 'CHANGES_REQUIRED' }).success).toBe(false);
+    expect(reviewSchema.safeParse({ reportId: 'r-1', decision: 'CHANGES_REQUIRED', remarks: '  ' }).success).toBe(false);
+    expect(reviewSchema.safeParse({ reportId: 'r-1', decision: 'CHANGES_REQUIRED', remarks: 'Fix the numbers' }).success).toBe(true);
+    expect(reviewSchema.safeParse({ reportId: 'r-1', decision: 'APPROVED' }).success).toBe(true);
+  });
 });

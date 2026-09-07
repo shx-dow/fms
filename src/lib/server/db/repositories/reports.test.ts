@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { createDatabase } from '../../local-db';
 import type { Db } from '../client';
-import { insertReportOrIgnore, saveReport, listWeeksForFaculty, listWeeksAggregate, listReportsForPeriod, getReportForExport, listExportTeaching, countExportTeaching, MAX_EXPORT_TEACHING_ROWS } from './reports';
+import { insertReport, insertReportOrIgnore, saveReport, setSectionEmpty, getReportForPeriod, listWeeksForFaculty, listWeeksAggregate, listReportsForPeriod, getReportForExport, listExportTeaching, countExportTeaching, MAX_EXPORT_TEACHING_ROWS } from './reports';
 import { replaceResearch, listResearch, listTeaching, cloneTeachingIntoReport } from './activity';
 
 function makeDb(): Db {
@@ -198,5 +198,25 @@ describe('getReportForExport', () => {
     expect(getReportForExport(facultyId, { reportId, submitted: false }, db)).toBeUndefined();
     expect(listExportTeaching(reportId, db)).toHaveLength(MAX_EXPORT_TEACHING_ROWS);
     expect(countExportTeaching(reportId, db)).toMatchObject({ total: 12, scheduled: 24, conducted: 12 });
+  });
+});
+
+describe('section empty flags and faculty-period uniqueness', () => {
+  it('toggles section empty flags per report', () => {
+    const db = makeDb();
+    setup(db);
+    setSectionEmpty(reportId, 'research', true, db);
+    expect(getReportForPeriod(facultyId, 'week-2026-07-27', db)).toMatchObject({ research_empty: 1, duties_empty: 0 });
+    setSectionEmpty(reportId, 'research', false, db);
+    setSectionEmpty(reportId, 'outreach', true, db);
+    expect(getReportForPeriod(facultyId, 'week-2026-07-27', db)).toMatchObject({ research_empty: 0, outreach_empty: 1 });
+  });
+
+  it('rejects a second report for the same faculty and period', () => {
+    const db = makeDb();
+    setup(db);
+    expect(() =>
+      insertReport({ id: 'test-report-dupe', facultyId, periodId: 'week-2026-07-27', createdAt: now, updatedAt: now }, db),
+    ).toThrow();
   });
 });

@@ -96,7 +96,7 @@ import { NOTIFICATION_POLL_MS } from '$lib/constants';
     flex: none;
   }
   .notif-btn {
-    border: 0;
+    border: 1px solid transparent;
     background: transparent;
     cursor: pointer;
     position: relative;
@@ -104,12 +104,13 @@ import { NOTIFICATION_POLL_MS } from '$lib/constants';
     display: grid;
     place-items: center;
     color: var(--muted-2);
-    border-radius: 7px;
-    transition: color 0.14s ease, background 0.14s ease;
+    border-radius: 8px;
+    transition: color 0.14s ease, background 0.14s ease, border-color 0.14s ease;
   }
   .notif-btn:hover {
     color: var(--navy);
-    background: var(--line);
+    background: var(--bg-hover);
+    border-color: var(--line);
   }
   .notif-badge {
     position: absolute;
@@ -133,10 +134,10 @@ import { NOTIFICATION_POLL_MS } from '$lib/constants';
     right: 0;
     top: calc(100% + 10px);
     width: 380px;
-    background: #fff;
+    background: var(--panel);
     border: 1px solid var(--line);
-    border-radius: 10px;
-    box-shadow: 0 15px 35px rgba(15, 23, 42, 0.18);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
     color: var(--navy);
     z-index: 120;
     overflow: hidden;
@@ -147,8 +148,9 @@ import { NOTIFICATION_POLL_MS } from '$lib/constants';
     align-items: center;
     padding: 14px 16px;
     border-bottom: 1px solid var(--line);
+    background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent);
   }
-  .notif-head strong { font-size: 0.82rem; }
+  .notif-head strong { font-size: 0.84rem; font-weight: 750; color: var(--text-1); }
   .notif-markall {
     border: 0;
     background: transparent;
@@ -168,12 +170,13 @@ import { NOTIFICATION_POLL_MS } from '$lib/constants';
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 11px 16px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--line-2);
+    border-left: 3px solid transparent;
     transition: background 0.1s;
   }
-  .notif-row:hover { background: var(--paper); }
-  .notif-row.unread { background: var(--bg-hover); }
+  .notif-row:hover { background: #f6f9fc; }
+  .notif-row.unread { background: #eff4fb; border-left-color: var(--accent); }
   .notif-body { min-width: 0; flex: 1; }
   .notif-body strong {
     display: block;
@@ -189,33 +192,34 @@ import { NOTIFICATION_POLL_MS } from '$lib/constants';
   .notif-meta { display: flex; align-items: center; gap: 8px; }
   .notif-tag {
     flex: none;
-    font-size: 0.55rem;
+    font-size: 0.6rem;
     font-weight: 800;
-    padding: 2px 5px;
-    border-radius: 3px;
+    padding: 3px 7px;
+    border-radius: 999px;
     letter-spacing: 0.03em;
+    border: 1px solid transparent;
   }
-  .pill-sub { background: var(--blue-soft); color: var(--blue-dark); }
-  .pill-ok { background: var(--green-soft); color: var(--green); }
-  .pill-chg { background: var(--red-soft); color: var(--red-dark); }
+  .pill-sub { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue-dark); }
+  .pill-ok { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
+  .pill-chg { background: var(--red-soft); border-color: var(--red-border); color: var(--red-dark); }
   .notif-time { color: var(--muted-2); font-size: 0.65rem; }
   .notif-hover-act {
     flex: none;
-    border: 0;
+    border: 1px solid transparent;
     background: transparent;
-    color: var(--blue);
+    color: var(--accent);
     font: inherit;
     font-size: 0.68rem;
     font-weight: 700;
     cursor: pointer;
-    padding: 4px 6px;
-    border-radius: 4px;
+    padding: 5px 8px;
+    border-radius: 6px;
     white-space: nowrap;
     opacity: 0;
-    transition: opacity 0.1s, background 0.1s;
+    transition: opacity 0.1s, background 0.1s, border-color 0.1s;
   }
-  .notif-row:hover .notif-hover-act { opacity: 1; }
-  .notif-hover-act:hover { background: var(--bg-hover); }
+  .notif-row:hover .notif-hover-act, .notif-hover-act:focus-visible { opacity: 1; }
+  .notif-hover-act:hover { background: var(--bg-hover); border-color: var(--line); }
   .notif-more {
     width: 100%;
     border: 0;

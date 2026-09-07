@@ -1,5 +1,5 @@
 // Codegen-only: consumed by drizzle-kit (drizzle.config.ts). Runtime queries use raw sql`` in repositories.
-import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -44,8 +44,15 @@ export const reports = sqliteTable(
     submittedAt: text('submitted_at'),
     reopenedUntil: text('reopened_until'),
     reopenReason: text('reopen_reason'),
+    researchEmpty: integer('research_empty').notNull().default(0),
+    dutiesEmpty: integer('duties_empty').notNull().default(0),
+    outreachEmpty: integer('outreach_empty').notNull().default(0),
   },
-  (t) => [index('reports_faculty_id_idx').on(t.facultyId), index('reports_period_id_idx').on(t.periodId)],
+  (t) => [
+    index('reports_faculty_id_idx').on(t.facultyId),
+    index('reports_period_id_idx').on(t.periodId),
+    uniqueIndex('reports_faculty_period_uniq').on(t.facultyId, t.periodId),
+  ],
 );
 export const credentials = sqliteTable('credentials', {
   userId: text('user_id').primaryKey(),
