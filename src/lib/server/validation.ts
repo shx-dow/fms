@@ -29,11 +29,16 @@ export const reportSaveSchema = z.object({
   teaching: z.array(teachingRecordSchema).optional().default([]),
 });
 
-export const reviewSchema = z.object({
-  reportId: z.string().min(1, 'Report ID is required'),
-  decision: z.enum(['APPROVED', 'CHANGES_REQUIRED'], { message: 'Decision must be APPROVED or CHANGES_REQUIRED' }),
-  remarks: z.string().optional().nullable().default(null),
-});
+export const reviewSchema = z
+  .object({
+    reportId: z.string().min(1, 'Report ID is required'),
+    decision: z.enum(['APPROVED', 'CHANGES_REQUIRED'], { message: 'Decision must be APPROVED or CHANGES_REQUIRED' }),
+    remarks: z.string().optional().nullable().default(null),
+  })
+  .refine((v) => v.decision !== 'CHANGES_REQUIRED' || (v.remarks ?? '').trim().length > 0, {
+    message: 'Remarks are required when requesting changes',
+    path: ['remarks'],
+  });
 
 export const departmentSchema = z.object({
   id: z.string().min(1, 'Department ID is required'),

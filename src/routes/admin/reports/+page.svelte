@@ -17,6 +17,7 @@
   let reason = $state('');
   let allowedUntil = $state('');
   let loading = $state(true);
+  let reviewBusy: 'APPROVED' | 'CHANGES_REQUIRED' | null = $state(null);
   let reportContent: {
     teaching: TeachingRow[];
     research: ResearchRow[];
@@ -65,14 +66,22 @@
     finally { contentLoading = false; }
   }
   async function review(next: 'APPROVED' | 'CHANGES_REQUIRED') {
-    if (!selected) return; error = '';
-    const res = await fetch('/api/reviews', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportId: selected.id, decision: next, remarks: comment }) });
-    const d = await res.json().catch(() => ({}));
-    if (!res.ok) { error = d.error ?? 'Unable to save review.'; return; }
-    show('Review saved.');
-    selected = { ...selected, status: next };
-    reports = reports.map(r => r.id === selected?.id ? { ...r, status: next } : r);
-    loadContent(selected.id);
+    if (!selected || reviewBusy) return;
+    error = '';
+    if (next === 'CHANGES_REQUIRED' && !comment.trim()) {
+      error = 'Add remarks explaining what needs to change.';
+      return;
+    }
+    reviewBusy = next;
+    try {
+      const res = await fetch('/api/reviews', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportId: selected.id, decision: next, remarks: comment }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { error = d.error ?? 'Unable to save review.'; return; }
+      show('Review saved.');
+      selected = { ...selected, status: next };
+      reports = reports.map(r => r.id === selected?.id ? { ...r, status: next } : r);
+      loadContent(selected.id);
+    } finally { reviewBusy = null; }
   }
   async function reopen() {
     if (!selected) return; error = '';
@@ -152,8 +161,8 @@
               <label class="rp-label" for="review-remarks">Reviewer remarks</label>
               <textarea id="review-remarks" class="rp-textarea" bind:value={comment} rows="4" placeholder="Record feedback for the faculty member…"></textarea>
               <div class="rp-btns">
-                <button class="btn-approve" onclick={() => review('APPROVED')}>Approve</button>
-                <button class="btn-changes" onclick={() => review('CHANGES_REQUIRED')}>Request changes</button>
+                <button class="btn-approve" disabled={reviewBusy !== null} onclick={() => review('APPROVED')}>{reviewBusy === 'APPROVED' ? 'Approving…' : 'Approve'}</button>
+                <button class="btn-changes" disabled={reviewBusy !== null} onclick={() => review('CHANGES_REQUIRED')}>{reviewBusy === 'CHANGES_REQUIRED' ? 'Sending…' : 'Request changes'}</button>
               </div>
               <details class="rp-reopen">
                 <summary>Reopen report for editing</summary>
@@ -262,6 +271,7 @@
   .rp-textarea:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
   .rp-btns { display: flex; gap: 10px; margin-bottom: 18px; }
   .btn-approve, .btn-changes { border: 1px solid transparent; border-radius: 8px; padding: 10px 18px; font: inherit; font-size: 0.8rem; font-weight: 750; cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.12s; }
+  .btn-approve:disabled, .btn-changes:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
   .btn-approve { background: var(--navy); border-color: var(--navy); color: var(--paper); }
   .btn-approve:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .btn-changes { background: var(--red-bg-alt); border-color: var(--red-border); color: var(--red-dark); }
