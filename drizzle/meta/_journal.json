@@ -21,6 +21,13 @@
       "when": 1786789388989,
       "tag": "0002_common_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1788791125759,
+      "tag": "0003_sad_spiral",
+      "breakpoints": true
     }
   ],
   "version": "7"

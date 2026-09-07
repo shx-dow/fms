@@ -178,13 +178,19 @@
                     sub: t.course_name || 'Course name pending',
                     meta: `${t.conducted} / ${t.scheduled} classes`,
                   }))}
-                  research={reportContent.research.map((r) => ({
-                    title: r.title || 'Untitled',
-                    sub: r.category,
-                    meta: `${r.status || '—'}${r.venue_or_agency ? ` · ${r.venue_or_agency}` : ''}`,
-                  }))}
-                  duties={reportContent.duties.map((d) => ({ title: d.name || 'Untitled', sub: d.role, meta: d.activity }))}
-                  outreach={reportContent.outreach.map((o) => ({ title: o.activity || 'Untitled', sub: o.audience, meta: o.date }))}
+                  research={reportContent.research
+                    .filter((r) => (r.title ?? '').trim() && r.title !== 'N/A')
+                    .map((r) => ({
+                      title: r.title || 'Untitled',
+                      sub: r.category,
+                      meta: `${r.status || '—'}${r.venue_or_agency ? ` · ${r.venue_or_agency}` : ''}`,
+                    }))}
+                  duties={reportContent.duties
+                    .filter((d) => (d.name ?? '').trim() && d.name !== 'N/A')
+                    .map((d) => ({ title: d.name || 'Untitled', sub: d.role, meta: d.activity }))}
+                  outreach={reportContent.outreach
+                    .filter((o) => (o.activity ?? '').trim() && o.activity !== 'N/A')
+                    .map((o) => ({ title: o.activity || 'Untitled', sub: o.audience, meta: o.date }))}
                   summary={reportContent.summary}
                 />
                 {#if reportContent.attachments.length}

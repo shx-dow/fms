@@ -25,8 +25,12 @@ export const GET: RequestHandler = ({ locals }) => {
   if (!report) {
     const now = new Date().toISOString();
     const id = randomUUID();
-    insertReport({ id, facultyId: userId, periodId: period.id, createdAt: now, updatedAt: now });
-    const created = getReportById(id);
+    try {
+      insertReport({ id, facultyId: userId, periodId: period.id, createdAt: now, updatedAt: now });
+    } catch {
+      // Concurrent request won the auto-create race (unique faculty+period); fall through to re-select.
+    }
+    const created = getReportForPeriod(userId, period.id) ?? getReportById(id);
     if (!created) throw new Error('Failed to load created report');
     report = created;
   }

@@ -43,6 +43,22 @@ export interface ReportRow {
   submitted_at: string | null;
   reopened_until: string | null;
   reopen_reason: string | null;
+  research_empty: number | null;
+  duties_empty: number | null;
+  outreach_empty: number | null;
+}
+
+const SECTION_EMPTY_COLUMNS = {
+  research: 'research_empty',
+  duties: 'duties_empty',
+  outreach: 'outreach_empty',
+} as const;
+
+export type ActivitySection = keyof typeof SECTION_EMPTY_COLUMNS;
+
+export function setSectionEmpty(reportId: string, section: ActivitySection, empty: boolean, db: Db = defaultDb) {
+  const column = SECTION_EMPTY_COLUMNS[section];
+  db.run(sql`UPDATE reports SET ${sql.raw(column)} = ${empty ? 1 : 0}, updated_at = ${new Date().toISOString()} WHERE id = ${reportId}`);
 }
 
 export interface ReportWithPeriod extends ReportRow {

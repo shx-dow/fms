@@ -32,6 +32,9 @@
   let researchRecords: any[] = $state([]);
   let dutiesRecords: any[] = $state([]);
   let outreachRecords: any[] = $state([]);
+  let researchEmpty = $state(false);
+  let dutiesEmpty = $state(false);
+  let outreachEmpty = $state(false);
   let additionalSaving = $state(false);
   let saveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
   let deadlineDate = $state('');
@@ -46,9 +49,9 @@
     if (!i.courseCode?.trim() && !i.courseName?.trim()) return true;
     return Number(i.conducted ?? 0) <= Number(i.scheduled ?? 0);
   }));
-  let researchNA = $derived(researchRecords.some(r => r.title === 'N/A'));
-  let dutiesNA = $derived(dutiesRecords.some(d => d.name === 'N/A'));
-  let outreachNA = $derived(outreachRecords.some(r => r.activity === 'N/A'));
+  let researchNA = $derived(researchEmpty || researchRecords.some(r => r.title === 'N/A'));
+  let dutiesNA = $derived(dutiesEmpty || dutiesRecords.some(d => d.name === 'N/A'));
+  let outreachNA = $derived(outreachEmpty || outreachRecords.some(r => r.activity === 'N/A'));
   let researchActive = $derived(researchRecords.filter(r => r.title?.trim() && r.title !== 'N/A').length);
   let dutiesCount = $derived(dutiesRecords.filter(d => d.name?.trim() && d.name !== 'N/A').length);
   let outreachCount = $derived(outreachRecords.filter(r => r.activity?.trim() && r.activity !== 'N/A').length);
@@ -144,6 +147,9 @@
     if (!outreachRecords.length && recurringProfile?.outreach?.length) outreachRecords = recurringProfile.outreach.map((r: any) => ({ activity: r.activity ?? '', audience: r.audience ?? '', outcome: '', date: '' }));
     canEdit = d.policy?.canEdit ?? true;
     deadlineDate = d.policy?.deadline ?? '';
+    researchEmpty = Number(d.report?.research_empty ?? 0) === 1;
+    dutiesEmpty = Number(d.report?.duties_empty ?? 0) === 1;
+    outreachEmpty = Number(d.report?.outreach_empty ?? 0) === 1;
     if (reportId) {
       try { const r = await fetch(`/api/reports/${reportId}`); const rd = await r.json(); reviews = rd.reviews ?? []; }
       catch { show('Could not load review history.', 'err'); }
@@ -189,17 +195,30 @@
     clearTimeout(saveTimers[kind]);
     saveTimers[kind] = setTimeout(() => saveActivity(kind), 600);
   }
-  async function saveActivity(kind: 'research' | 'duties' | 'outreach') {
+  async function saveActivity(kind: 'research' | 'duties' | 'outreach', records?: any[], empty?: boolean) {
     if (!reportId || !canEdit || additionalSaving) return;
     additionalSaving = true; clearTimeout(saveTimer); savedAt = 'Saving...';
-    await fetch(`/api/${kind}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportId, records: kind === 'research' ? researchRecords : kind === 'duties' ? dutiesRecords : outreachRecords }) });
-    additionalSaving = false; flashSaved();
+    const body: { reportId: string; records: any[]; empty?: boolean } = {
+      reportId,
+      records: records ?? (kind === 'research' ? researchRecords : kind === 'duties' ? dutiesRecords : outreachRecords),
+    };
+    if (empty !== undefined) body.empty = empty;
+    const res = await fetch(`/api/${kind}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    additionalSaving = false;
+    if (!res.ok) { show('Save failed.', 'err'); savedAt = ''; return; }
+    if (empty !== undefined) {
+      if (kind === 'research') researchEmpty = empty;
+      if (kind === 'duties') dutiesEmpty = empty;
+      if (kind === 'outreach') outreachEmpty = empty;
+    }
+    flashSaved();
   }
-  function setNotApplicable(kind: 'research' | 'duties' | 'outreach') {
-    if (kind === 'research') researchRecords = researchNA ? [] : [{ category: 'Journal Paper', title: 'N/A', venueOrAgency: '', indexingOrQuality: '', role: '', status: '' }];
-    if (kind === 'duties') dutiesRecords = dutiesNA ? [] : [{ name: 'N/A', role: '', activity: '', reach: '', outcome: '' }];
-    if (kind === 'outreach') outreachRecords = outreachNA ? [] : [{ activity: 'N/A', audience: '', outcome: '', date: '' }];
-    saveActivity(kind);
+  async function setNotApplicable(kind: 'research' | 'duties' | 'outreach') {
+    const current = kind === 'research' ? researchEmpty : kind === 'duties' ? dutiesEmpty : outreachEmpty;
+    if (kind === 'research') researchRecords = [];
+    if (kind === 'duties') dutiesRecords = [];
+    if (kind === 'outreach') outreachRecords = [];
+    await saveActivity(kind, [], !current);
   }
   function addTeaching() { teaching = [...teaching, { courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }]; scheduleTeachingSave(); }
   const UNDO_MS = 8000;

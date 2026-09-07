@@ -83,6 +83,7 @@ export const outreachRecordSchema = z.object({
 export const reportRecordsSchema = z.object({
   reportId: z.string().min(1, 'Report ID is required'),
   records: z.array(z.unknown()).default([]),
+  empty: z.coerce.boolean().optional(),
 });
 
 export const notificationUpdateSchema = z.object({
