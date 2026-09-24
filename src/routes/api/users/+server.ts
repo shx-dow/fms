@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
+import { auditEvent, requireRole, requireUser } from '$lib/server/api';
 import { hashPassword } from '$lib/server/auth';
 import type { RequestHandler } from './$types';
 import {
@@ -12,19 +13,16 @@ import {
   setMustChangePassword,
   defaultDepartmentId,
 } from '$lib/server/db/repositories/users';
-import { insertAuditEvent } from '$lib/server/db/repositories/audit';
 import { deleteSessionsForUser } from '$lib/server/db/repositories/sessions';
 import { PASSWORD_MIN_LENGTH, passwordTooShortMessage, setActiveSchema, createUserSchema, updateUserSchema } from '$lib/server/validation';
 
 export const GET: RequestHandler = ({ locals }) => {
-  if (!locals.user || locals.user.role !== 'ADMIN')
-    return json({ ok: false, error: 'Only Admin may manage users.' }, { status: 403 });
+  requireRole(requireUser(locals), 'ADMIN');
   return json({ users: listUsers() });
 };
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-  if (!locals.user || locals.user.role !== 'ADMIN')
-    return json({ ok: false, error: 'Only Admin may manage users.' }, { status: 403 });
+  const user = requireRole(requireUser(locals), 'ADMIN');
   const body = await request.json().catch(() => ({}));
 
   const setActive = setActiveSchema.safeParse(body);
@@ -32,14 +30,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const { userId, isActive } = setActive.data;
     setUserActive(userId, isActive);
     if (!isActive) deleteSessionsForUser(userId);
-    insertAuditEvent({
-      id: randomUUID(),
-      actorId: locals.user.id,
-      action: isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
-      entityType: 'USER',
-      entityId: userId,
-      createdAt: new Date().toISOString(),
-    });
+    auditEvent(user.id, isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED', 'USER', userId);
     return json({ ok: true });
   }
 
@@ -65,14 +56,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     });
     createCredentials(id, hashPassword(password));
     setMustChangePassword(id, true);
-    insertAuditEvent({
-      id: randomUUID(),
-      actorId: locals.user.id,
-      action: 'USER_CREATED',
-      entityType: 'USER',
-      entityId: id,
-      createdAt: new Date().toISOString(),
-    });
+    auditEvent(user.id, 'USER_CREATED', 'USER', id);
     return json({ ok: true, id });
   }
 
@@ -98,14 +82,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       setMustChangePassword(userId, true);
       deleteSessionsForUser(userId);
     }
-    insertAuditEvent({
-      id: randomUUID(),
-      actorId: locals.user.id,
-      action: 'USER_UPDATED',
-      entityType: 'USER',
-      entityId: userId,
-      createdAt: new Date().toISOString(),
-    });
+    auditEvent(user.id, 'USER_UPDATED', 'USER', userId);
     return json({ ok: true });
   }
 

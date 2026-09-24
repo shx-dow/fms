@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { requireUser } from '$lib/server/api';
 import { csvCell } from '$lib/server/csv';
 import {
   MAX_EXPORT_TEACHING_ROWS,
@@ -9,10 +10,10 @@ import {
 } from '$lib/server/db/repositories/reports';
 
 export const GET: RequestHandler = ({ locals, url }) => {
-  if (!locals.user) throw error(401, 'Sign in required');
+  const user = requireUser(locals);
   const statusParam = url.searchParams.get('status');
   const submittedParam = url.searchParams.get('submitted');
-  const report = getReportForExport(locals.user.id, {
+  const report = getReportForExport(user.id, {
     reportId: url.searchParams.get('reportId') ?? undefined,
     periodId: url.searchParams.get('period') ?? url.searchParams.get('periodId') ?? undefined,
     status: statusParam ?? undefined,

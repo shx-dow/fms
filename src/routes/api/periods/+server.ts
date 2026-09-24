@@ -1,21 +1,19 @@
 import { json } from '@sveltejs/kit';
-import { randomUUID } from 'node:crypto';
 import type { RequestHandler } from './$types';
+import { auditEvent, requireRole, requireUser } from '$lib/server/api';
 import { periodSchema } from '$lib/server/validation';
 import { computeWeekLabel } from '$lib/week-label';
 import { listPeriods, upsertPeriod, closeOtherOpenPeriods, deletePeriod } from '$lib/server/db/repositories/periods';
-import { insertAuditEvent } from '$lib/server/db/repositories/audit';
 
 export const GET: RequestHandler = ({ locals }) => {
-  if (!locals.user) return json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  requireUser(locals);
   const periods = listPeriods();
   for (const p of periods) p.label = computeWeekLabel(String(p.starts_on));
   return json({ periods });
 };
 
 export const DELETE: RequestHandler = async ({ url, locals }) => {
-  if (!locals.user || locals.user.role !== 'ADMIN')
-    return json({ ok: false, error: 'Only Admin may delete reporting periods.' }, { status: 403 });
+  const user = requireRole(requireUser(locals), 'ADMIN');
   const id = url.searchParams.get('id');
   if (!id) return json({ ok: false, error: 'Missing period id.' }, { status: 400 });
   try {
@@ -24,20 +22,12 @@ export const DELETE: RequestHandler = async ({ url, locals }) => {
     const message = error instanceof Error ? error.message : 'Unable to delete period.';
     return json({ ok: false, error: message }, { status: 409 });
   }
-  insertAuditEvent({
-    id: randomUUID(),
-    actorId: locals.user.id,
-    action: 'PERIOD_DELETED',
-    entityType: 'REPORTING_PERIOD',
-    entityId: id,
-    createdAt: new Date().toISOString(),
-  });
+  auditEvent(user.id, 'PERIOD_DELETED', 'REPORTING_PERIOD', id);
   return json({ ok: true });
 };
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-  if (!locals.user || locals.user.role !== 'ADMIN')
-    return json({ ok: false, error: 'Only Admin may update reporting periods.' }, { status: 403 });
+  const user = requireRole(requireUser(locals), 'ADMIN');
   const parsed = periodSchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success)
     return json({ ok: false, error: parsed.error.issues.map(i => i.message).join('; ') }, { status: 400 });
@@ -45,13 +35,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   const label = computeWeekLabel(startsOn);
   upsertPeriod({ id, label, startsOn, endsOn, dueOn, isOpen });
   if (isOpen) closeOtherOpenPeriods(id);
-  insertAuditEvent({
-    id: randomUUID(),
-    actorId: locals.user.id,
-    action: 'PERIOD_UPDATED',
-    entityType: 'REPORTING_PERIOD',
-    entityId: id,
-    createdAt: new Date().toISOString(),
-  });
+  auditEvent(user.id, 'PERIOD_UPDATED', 'REPORTING_PERIOD', id);
   return json({ ok: true });
 };

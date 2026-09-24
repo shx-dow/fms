@@ -5,7 +5,8 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { computeWeekLabel } from '$lib/week-label';
 import { reportStatusLabel } from '$lib/domain';
-import { getReportByIdForPdf, getReviewScope } from '$lib/server/db/repositories/reports';
+import { canAccessReport } from '$lib/server/report-policy';
+import { getReportByIdForPdf } from '$lib/server/db/repositories/reports';
 import { listTeaching, listResearch, listDuties, listOutreach } from '$lib/server/db/repositories/activity';
 import { listReviewsForReport } from '$lib/server/db/repositories/reviews';
 import { listAttachments } from '$lib/server/db/repositories/attachments';
@@ -67,11 +68,7 @@ export const GET: RequestHandler = ({ locals, params }) => {
   if (!report) throw error(404, 'Report not found');
   report.period_label = computeWeekLabel(String(report.period_starts_on));
 
-  if (locals.user.role === 'FACULTY' && report.faculty_id !== locals.user.id) throw error(403, 'Forbidden');
-  if (locals.user.role === 'HOD') {
-    const allowed = getReviewScope(reportId, { departmentId: locals.user.departmentId ?? '' });
-    if (!allowed) throw error(403, 'Report is outside your scope.');
-  }
+  if (!canAccessReport(locals.user, reportId)) throw error(403, 'Report is outside your scope.');
 
   const teaching = listTeaching(reportId);
   const research = listResearch(reportId);

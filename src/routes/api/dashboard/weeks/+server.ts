@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { requireUser, reviewScope } from '$lib/server/api';
 import { computeWeekLabel } from '$lib/week-label';
 import { getPeriod } from '$lib/server/db/repositories/periods';
 import {
@@ -10,8 +11,7 @@ import {
 } from '$lib/server/db/repositories/reports';
 
 export const GET: RequestHandler = ({ locals, url }) => {
-  if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
-  const user = locals.user;
+  const user = requireUser(locals);
   const now = new Date();
 
   const periodId = url.searchParams.get('period');
@@ -23,7 +23,7 @@ export const GET: RequestHandler = ({ locals, url }) => {
       const report = getReportForPeriod(user.id, periodId);
       return json({ period: enriched, report: report ?? null });
     }
-    const opts = user.role === 'HOD' ? { departmentId: user.departmentId ?? '' } : {};
+    const opts = reviewScope(user);
     const reports = listReportsForPeriod(periodId, opts);
     return json({ period: enriched, reports });
   }
@@ -35,7 +35,7 @@ export const GET: RequestHandler = ({ locals, url }) => {
       week_label: computeWeekLabel(String(w.starts_on)),
     }));
   } else {
-    const opts = user.role === 'HOD' ? { departmentId: user.departmentId ?? '' } : {};
+    const opts = reviewScope(user);
     weeks = listWeeksAggregate(opts).map((w) => {
       const total = Number(w.total) || 1;
       const ratio = (Number(w.submitted) + Number(w.approved)) / total;

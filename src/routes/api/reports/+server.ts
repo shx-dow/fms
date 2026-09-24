@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
 import type { RequestHandler } from './$types';
+import { requireUser } from '$lib/server/api';
 import { policyFor } from '$lib/server/report-policy';
 import { ensureCurrentPeriod } from '$lib/server/db/repositories/periods';
 import { reportSaveSchema } from '$lib/server/validation';
@@ -17,8 +18,8 @@ import {
 import { listTeaching, listResearch, listDuties, listOutreach, cloneTeachingIntoReport } from '$lib/server/db/repositories/activity';
 
 export const GET: RequestHandler = ({ locals }) => {
-  if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
-  const userId = locals.user.id;
+  const user = requireUser(locals);
+  const userId = user.id;
   const period = ensureCurrentPeriod();
   if (!period) return json({ error: 'No open reporting period.' }, { status: 409 });
   let report = getReportForPeriod(userId, period.id);
@@ -61,8 +62,8 @@ export const GET: RequestHandler = ({ locals }) => {
 };
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-  if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
-  const userId = locals.user.id;
+  const user = requireUser(locals);
+  const userId = user.id;
   const period = ensureCurrentPeriod();
   if (!period) return json({ ok: false, error: 'No open reporting period.' }, { status: 409 });
 
@@ -74,9 +75,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
   const reportId = String(payload.reportId || randomUUID());
   const now = new Date().toISOString();
-  insertReportOrIgnore({ id: reportId, facultyId: userId, periodId: period.id, createdAt: now, updatedAt: now });
-  const existing = getReportForUser(reportId, userId);
-  if (!existing) return json({ ok: false, error: 'Report not found' }, { status: 404 });
+  let existing = getReportForUser(reportId, userId);
+  if (!existing) {
+    const probe = policyFor({ status: 'DRAFT' }, new Date(now), undefined, period);
+    if (!probe.canEdit)
+      return json(
+        { ok: false, error: 'This report is closed or locked. Request an authorized reopening.', code: 'REPORT_LOCKED' },
+        { status: 403 },
+      );
+    insertReportOrIgnore({ id: reportId, facultyId: userId, periodId: period.id, createdAt: now, updatedAt: now });
+    existing = getReportForUser(reportId, userId);
+    if (!existing) return json({ ok: false, error: 'Report not found' }, { status: 404 });
+  }
   const policy = policyFor(existing, new Date(now), undefined, existing);
   if (!policy.canEdit)
     return json(
