@@ -3,6 +3,7 @@
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import ReportPreview from '$lib/components/ReportPreview.svelte';
+  import StatusPill from '$lib/components/StatusPill.svelte';
   type ReviewRow = { id: string; status: string; updated_at: string; completion: number; faculty_name: string; period_label: string };
   type TeachingRow = { course_code: string; course_name: string; program_level: string; class_type: string; scheduled: number; conducted: number; missed: number; missed_action: string; syllabus_completion: number };
   type ResearchRow = { category: string; title: string; venue_or_agency: string; status: string };
@@ -91,8 +92,6 @@
     show('Report reopened for editing.');
   }
   function selectReport(r: ReviewRow) { selected = r; comment = ''; error = ''; showReport = false; loadContent(r.id); }
-  function pillClass(s: string) { return s === 'SUBMITTED' ? 'r-sub' : s === 'APPROVED' ? 'r-ok' : 'r-chg'; }
-  function pillLabel(s: string) { return s === 'CHANGES_REQUIRED' ? 'Changes required' : s[0] + s.slice(1).toLowerCase(); }
 </script>
 
 <svelte:head><title>Review queue · Faculty Reporting System</title></svelte:head>
@@ -127,7 +126,7 @@
                 <strong>{r.faculty_name}</strong>
                 <small>{r.period_label} — Updated {new Date(r.updated_at).toLocaleDateString()}</small>
               </div>
-              <span class="report-pill {pillClass(r.status)}">{pillLabel(r.status)}</span>
+              <StatusPill status={r.status} />
             </button>
           {/each}
         {/if}
@@ -139,7 +138,7 @@
               <h2>{selected.faculty_name}</h2>
               <span class="rp-head-meta">{selected.period_label} · Updated {new Date(selected.updated_at).toLocaleDateString()}</span>
             </div>
-            <span class="report-pill {pillClass(selected.status)}">{pillLabel(selected.status)}</span>
+            <StatusPill status={selected.status} />
           </div>
           <div class="rp-tabs">
             <button class:active={!showReport} onclick={() => (showReport = false)}>Review</button>
@@ -152,7 +151,7 @@
                   <h3>Review history</h3>
                   {#each reportContent.reviews as rv}
                     <div class="rp-rv-row">
-                      <span class="report-pill" class:r-ok={rv.decision === 'APPROVED'} class:r-chg={rv.decision === 'CHANGES_REQUIRED'}>{rv.decision === 'APPROVED' ? 'Approved' : 'Changes'}</span>
+                      <StatusPill status={rv.decision} />
                       <span class="rv-text"><strong>{rv.reviewer_name}</strong>{rv.remarks ? ` — ${rv.remarks}` : ''}</span>
                     </div>
                   {/each}
@@ -233,10 +232,6 @@
   .act-link { border: 1px solid var(--line); border-radius: 7px; padding: 8px 13px; background: var(--panel); color: var(--accent-strong); font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; text-decoration: none; white-space: nowrap; box-shadow: var(--shadow-xs); transition: all 0.12s; }
   .act-link:hover { background: var(--bg-hover); border-color: var(--blue-border); box-shadow: var(--shadow-sm); }
   .msg.err { padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px; font-size: 0.8rem; background: var(--red-bg-alt); border: 1px solid var(--red-border); color: var(--red-dark); box-shadow: var(--shadow-xs); }
-  .report-pill { flex: none; font-size: 0.66rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.02em; white-space: nowrap; border: 1px solid transparent; }
-  .r-sub { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue-dark); }
-  .r-ok { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
-  .r-chg { background: var(--red-soft); border-color: var(--red-border); color: var(--red-dark); }
   .review-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
   .queue-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }
   .queue-head { padding: 15px 18px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); color: var(--text-3); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -281,7 +276,6 @@
   .rp-reopen-body label { font-size: 0.72rem; font-weight: 700; color: var(--muted); }
   .rp-reopen-body input { border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; font: inherit; background: var(--bg-input); width: 100%; box-sizing: border-box; margin-top: 4px; }
   .rp-reopen-body .act-link { align-self: start; }
-  .summary-block { background: var(--paper); border-radius: 6px; padding: 14px; font-size: 0.82rem; line-height: 1.55; color: var(--ink-2); white-space: pre-wrap; }
   .attach-list { display: grid; gap: 8px; margin-top: 4px; }
   .attach-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 7px; }
   .attach-name { flex: 1; min-width: 0; font-size: 0.78rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

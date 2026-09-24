@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import StatusPill from '$lib/components/StatusPill.svelte';
   let currentPeriod = $state('');
   let currentStatus = $state('');
   let loading = $state(true);
@@ -131,9 +132,7 @@
               <strong class="report-period">{item.period_label}</strong>
               <span class="report-date">Updated {new Date(item.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
             </div>
-            <span class="report-pill" class:r-draft={item.status === 'DRAFT'} class:r-sub={item.status === 'SUBMITTED'} class:r-ok={item.status === 'APPROVED'} class:r-chg={item.status === 'CHANGES_REQUIRED'}>
-              {item.status === 'CHANGES_REQUIRED' ? 'Changes requested' : item.status === 'DRAFT' ? `Draft · ${item.completion}%` : item.status === 'APPROVED' ? 'Approved' : 'Submitted'}
-            </span>
+            <StatusPill status={item.status} detail={item.status === 'DRAFT' ? `${item.completion}%` : undefined} />
             <span class="report-view">View →</span>
           </a>
         {/each}
@@ -181,11 +180,6 @@
   .report-meta { min-width: 0; flex: 1; }
   .report-period { display: block; font-size: 0.86rem; color: var(--text-1); margin-bottom: 2px; font-weight: 700; }
   .report-date { display: block; font-size: 0.72rem; color: var(--text-3); }
-  .report-pill { flex: none; font-size: 0.66rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.02em; border: 1px solid transparent; }
-  .r-draft { background: var(--draft-bg); border-color: var(--draft-border); color: var(--warn-dark); }
-  .r-sub { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue-dark); }
-  .r-ok { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
-  .r-chg { background: var(--red-soft); border-color: var(--red-border); color: var(--red-dark); }
   .report-view { flex: none; font-size: 0.73rem; font-weight: 700; color: var(--blue); }
   .reports-empty { padding: 40px 20px; text-align: center; color: var(--muted-2); font-size: 0.8rem; }
   .reports-empty a { color: var(--blue); text-decoration: none; font-weight: 700; }

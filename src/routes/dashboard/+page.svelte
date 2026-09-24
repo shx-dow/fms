@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import StatusPill from '$lib/components/StatusPill.svelte';
   let { data } = $props();
   const user = $derived(data.user);
   function greetingName(name: string | undefined) {
@@ -452,7 +453,11 @@
               <span class="spinner"></span>
             {:else if weekDetail}
               <div class="selected-status">
-                <span class="wp-pill {weekDetail.report ? 'wp-' + (weekDetail.report.status === 'APPROVED' ? 'ok' : weekDetail.report.status === 'SUBMITTED' ? 'sub' : weekDetail.report.status === 'CHANGES_REQUIRED' ? 'chg' : 'draft') : 'wp-none'}">{weekDetail.report ? statusLabel(weekDetail.report.status) : 'Not started'}</span>
+                {#if weekDetail.report}
+                  <StatusPill status={weekDetail.report.status} />
+                {:else}
+                  <span class="wp-none">Not started</span>
+                {/if}
               </div>
             {/if}
           </div>
@@ -493,7 +498,7 @@
           {#each history.slice(0, 3) as r}
             <a class="hist-row" href="/reports/{r.id}">
               <strong>{r.period_label}</strong>
-              <span class="hist-status">{r.status === 'DRAFT' ? 'Draft' : r.status === 'SUBMITTED' ? 'Submitted' : r.status === 'APPROVED' ? 'Approved' : 'Changes requested'}</span>
+              <StatusPill status={r.status} />
             </a>
           {/each}
         {:else}
@@ -551,11 +556,6 @@
   .hist-row:last-child { border-bottom: 0; }
   .hist-row:hover { background: #f6f9fc; }
   .hist-row strong { font-size: 0.82rem; color: var(--ink-2); font-weight: 700; }
-  .hist-pill { font-size: 0.66rem; font-weight: 800; padding: 4px 9px; border-radius: 999px; border: 1px solid transparent; }
-  .hist-draft { background: var(--draft-bg); border-color: var(--draft-border); color: var(--warn-dark); }
-  .hist-sub { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue-dark); }
-  .hist-ok { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
-  .hist-chg { background: var(--red-soft); border-color: var(--red-border); color: var(--red-dark); }
   .hist-empty { padding: 24px 18px; text-align: center; color: var(--muted-2); font-size: 0.8rem; }
   .weeks-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); min-width: 0; overflow: hidden; box-shadow: var(--shadow-sm); }
   .weeks-head { gap: 14px; flex-wrap: wrap; overflow: hidden; border-radius: 8px 8px 0 0; }
@@ -608,12 +608,7 @@
     z-index: 9999;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
-  .wp-pill { font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; }
-  .wp-ok { background: var(--green-soft); color: var(--green); }
-  .wp-sub { background: var(--blue-soft); color: var(--blue-dark); }
-  .wp-chg { background: var(--red-soft); color: var(--red-dark); }
-  .wp-draft { background: var(--warn-soft); color: var(--warn-dark); }
-  .wp-none { background: var(--line-light); color: var(--gray); }
+  .wp-none { background: var(--line-light); color: var(--gray); font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; }
   .hero { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 20px; background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 60%, #28354d 100%); border: 1px solid var(--navy); border-radius: var(--radius-lg); padding: 28px 30px; box-shadow: var(--shadow-md); color: var(--paper); }
   .hero-main { min-width: 0; }
   .hero-eyebrow { display: block; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue-soft); margin-bottom: 8px; }
@@ -655,7 +650,6 @@
   .graph-cell:hover { transform: scale(1.15); z-index: 2; }
   .graph-cell.current { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
   .graph-empty { padding: 26px 22px; color: var(--muted-2); font-size: 0.82rem; text-align: center; }
-  .hist-status { flex: none; font-size: 0.74rem; color: var(--text-3); font-weight: 600; }
   @media (max-width: 800px) {
     .dash-header { flex-direction: column; align-items: start; }
     .hero { flex-direction: column; align-items: start; padding: 24px; }

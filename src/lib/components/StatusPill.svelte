@@ -1,7 +1,7 @@
 <script lang="ts">
   import { reportStatusLabel } from '$lib/domain';
 
-  let { status }: { status: string } = $props();
+  let { status, detail }: { status: string; detail?: string } = $props();
 
   const cls = $derived(
     status === 'APPROVED'
@@ -18,7 +18,7 @@
   const label = $derived((reportStatusLabel as Record<string, string>)[status] ?? status);
 </script>
 
-<span class={cls}>{label}</span>
+<span class={cls}>{label}{detail ? ` · ${detail}` : ''}</span>
 
 <style>
   .pill { display: inline-flex; align-items: center; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.02em; padding: 4px 11px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }

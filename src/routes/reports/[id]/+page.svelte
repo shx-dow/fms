@@ -3,6 +3,7 @@
   import type { TeachingDbRow, ResearchDbRow, DutyDbRow, OutreachDbRow } from '$lib/server/db/repositories/activity';
   import type { ReviewRow } from '$lib/server/db/repositories/reviews';
   import ReportPreview from '$lib/components/ReportPreview.svelte';
+  import StatusPill from '$lib/components/StatusPill.svelte';
   let {
     data,
   }: {
@@ -16,9 +17,7 @@
     };
   } = $props();
   const r = $derived(data.report);
-  const statusLabel = $derived(
-    r.status === 'APPROVED' ? 'Approved' : r.status === 'SUBMITTED' ? 'Submitted' : r.status === 'CHANGES_REQUIRED' ? 'Changes requested' : 'Draft',
-  );
+
 </script>
 
 <svelte:head><title>Report {r.period_label} · Faculty Reporting System</title></svelte:head>
@@ -27,7 +26,7 @@
     <div>
       <h1>Report</h1>
       <span class="head-period">{r.period_label}</span>
-      <span class="status-pill">{statusLabel} · {r.completion ?? 0}%</span>
+      <StatusPill status={r.status} detail={`${r.completion ?? 0}%`} />
     </div>
     <div class="viewer-actions">
       <a class="act-link" href="/reports">← All reports</a>
@@ -74,7 +73,6 @@
   .viewer-head { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 22px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px 24px; box-shadow: var(--shadow-sm); }
   .viewer-head h1 { font-size: 1.5rem; margin: 0; display: inline; margin-right: 10px; letter-spacing: -0.03em; font-weight: 750; color: var(--text-1); }
   .head-period { font-size: 0.84rem; color: var(--text-3); margin-right: 10px; }
-  .status-pill { font-size: 0.7rem; font-weight: 800; padding: 4px 11px; border-radius: 999px; background: var(--bg-hover); border: 1px solid var(--line); color: var(--muted); }
   .viewer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
   .act-link { border: 1px solid var(--line); border-radius: 7px; padding: 8px 13px; background: var(--panel); color: var(--accent-strong); font-size: 0.76rem; font-weight: 700; text-decoration: none; box-shadow: var(--shadow-xs); transition: all 0.12s; }
   .act-link:hover { background: var(--bg-hover); border-color: var(--blue-border); box-shadow: var(--shadow-sm); }

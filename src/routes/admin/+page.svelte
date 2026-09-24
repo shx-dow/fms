@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import StatusPill from '$lib/components/StatusPill.svelte';
   type ReviewItem = { id: string; status: string; updated_at: string; faculty_name: string; period_label: string; completion: number };
   type FacultyStatus = { id: string; name: string; email: string; status: string | null; completion: number | null; submitted_at: string | null };
   type AuditEvent = { id: string; action: string; created_at: string; actor_name: string | null };
@@ -122,12 +123,11 @@
                 <tr>
                   <td><span class="row-name"><strong>{f.name}</strong><span class="row-email">{f.email}</span></span></td>
                   <td>
-                    <span class="report-pill"
-                      class:r-ok={f.status === 'APPROVED'}
-                      class:r-sub={f.status === 'SUBMITTED' || f.status === 'CHANGES_REQUIRED'}
-                      class:r-drf={!f.status || f.status === 'DRAFT'}>
-                      {!f.status || f.status === 'DRAFT' ? 'Not submitted' : f.status === 'CHANGES_REQUIRED' ? 'Changes required' : f.status[0] + f.status.slice(1).toLowerCase()}
-                    </span>
+                    {#if !f.status || f.status === 'DRAFT'}
+                      <span class="report-pill r-drf">Not submitted</span>
+                    {:else}
+                      <StatusPill status={f.status} />
+                    {/if}
                   </td>
                   <td>{f.completion ?? 0}%</td>
                   <td class="row-date">{f.submitted_at ? new Date(f.submitted_at).toLocaleDateString() : '—'}</td>
@@ -146,9 +146,7 @@
             {#each items.slice(0, 5) as item}
               <a class="admin-row" href="/admin/reports">
                 <span class="row-name">{item.faculty_name}</span>
-                <span class="report-pill" class:r-sub={item.status === 'SUBMITTED'} class:r-chg={item.status === 'CHANGES_REQUIRED'} class:r-ok={item.status === 'APPROVED'}>
-                  {item.status === 'CHANGES_REQUIRED' ? 'Changes required' : item.status[0] + item.status.slice(1).toLowerCase()}
-                </span>
+                <StatusPill status={item.status} />
                 <span class="row-date">{new Date(item.updated_at).toLocaleDateString()}</span>
                 <span class="row-act">Review →</span>
               </a>
@@ -244,9 +242,7 @@
             {#each items.slice(0, 5) as item}
               <a class="admin-row" href="/admin/reports">
                 <span class="row-name">{item.faculty_name}</span>
-                <span class="report-pill" class:r-sub={item.status === 'SUBMITTED'} class:r-chg={item.status === 'CHANGES_REQUIRED'} class:r-ok={item.status === 'APPROVED'}>
-                  {item.status === 'CHANGES_REQUIRED' ? 'Changes required' : item.status[0] + item.status.slice(1).toLowerCase()}
-                </span>
+                <StatusPill status={item.status} />
                 <span class="row-date">{new Date(item.updated_at).toLocaleDateString()}</span>
                 <span class="row-act">Review →</span>
               </a>

@@ -5,6 +5,7 @@
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import ReportPreview from '$lib/components/ReportPreview.svelte';
+  import StatusPill from '$lib/components/StatusPill.svelte';
   let { data } = $props();
 
   const STEPS = ['teaching', 'research', 'duties', 'outreach', 'files', 'review'] as const;
@@ -78,12 +79,6 @@
   let prevReport = $derived(history.find(r => r.id !== reportId));
   let prevReportLabel = $derived(prevReport?.period_label ?? '');
   let latestReview = $derived(reviews.find(r => r.decision === 'CHANGES_REQUIRED'));
-  let statusClass = $derived(
-    reportStatus === 'APPROVED' ? 'approved' : reportStatus === 'SUBMITTED' ? 'submitted' : reportStatus === 'CHANGES_REQUIRED' ? 'changes' : 'draft'
-  );
-  let statusLabel = $derived(
-    reportStatus === 'APPROVED' ? 'Approved' : reportStatus === 'SUBMITTED' ? 'Submitted' : reportStatus === 'CHANGES_REQUIRED' ? 'Changes requested' : 'Draft'
-  );
   const STEP_LABELS = {
     teaching: 'Teaching',
     research: 'Research',
@@ -329,7 +324,7 @@
     <div class="editor-head-left">
       <h1>Report</h1>
       <span class="head-period">{periodLabel}</span>
-      <span class="status-pill {statusClass}">{statusLabel} · {completion}%</span>
+      <StatusPill status={reportStatus} detail={`${completion}%`} />
     </div>
     <div class="editor-actions">
       <NotificationBell />
@@ -385,7 +380,7 @@
       <summary>Review history ({reviews.length})</summary>
       {#each reviews as rv}
         <div class="review-row">
-          <span class="review-pill" class:rv-ok={rv.decision === 'APPROVED'} class:rv-chg={rv.decision === 'CHANGES_REQUIRED'}>{rv.decision === 'APPROVED' ? 'Approved' : 'Changes'}</span>
+          <StatusPill status={rv.decision} />
           <div class="review-body">
             <strong>{rv.reviewer_name}</strong>
             <span class="review-date">{new Date(rv.created_at).toLocaleString()}</span>
@@ -699,11 +694,6 @@
   .editor-head-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .editor-head-left h1 { font-size: 1.5rem; letter-spacing: -0.03em; margin: 0; font-weight: 750; color: var(--text-1); }
   .head-period { font-size: 0.84rem; color: var(--text-3); white-space: nowrap; }
-  .status-pill { font-size: 0.7rem; font-weight: 800; padding: 4px 11px; border-radius: 999px; letter-spacing: 0.02em; border: 1px solid transparent; white-space: nowrap; }
-  .status-pill.draft { background: var(--draft-bg); border-color: var(--draft-border); color: var(--warn-dark); }
-  .status-pill.submitted { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue-dark); }
-  .status-pill.approved { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
-  .status-pill.changes { background: var(--red-soft); border-color: var(--red-border); color: var(--red-dark); }
   .editor-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   .save-note { font-size: 0.74rem; color: var(--muted-2); white-space: nowrap; min-width: 86px; text-align: right; font-weight: 600; }
   .act-link { border: 1px solid var(--line); border-radius: 7px; padding: 8px 13px; background: var(--panel); color: var(--accent-strong); font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; text-decoration: none; white-space: nowrap; box-shadow: var(--shadow-xs); transition: all 0.12s; }
@@ -731,9 +721,6 @@
   .review-box summary { cursor: pointer; font-size: 0.78rem; font-weight: 700; color: var(--muted); }
   .review-row { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-2); font-size: 0.8rem; }
   .review-row:last-child { border-bottom: 0; }
-  .review-pill { flex: none; padding: 3px 7px; border-radius: 4px; font-size: 0.62rem; font-weight: 800; align-self: start; }
-  .rv-ok { background: var(--green-soft); color: var(--green); }
-  .rv-chg { background: var(--red-soft); color: var(--red-dark); }
   .review-body strong { display: block; font-size: 0.78rem; }
   .review-date { display: block; font-size: 0.68rem; color: var(--muted-2); margin-top: 2px; }
   .review-body p { margin: 6px 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.4; }
@@ -759,7 +746,6 @@
   .issue-text { flex: 1; }
   .issue-go { flex: none; font-weight: 800; font-size: 0.76rem; }
   .issues-ok { padding: 13px 16px; border-radius: var(--radius-md); border: 1px solid var(--success-border); background: #f2f9f4; color: var(--green); font-size: 0.84rem; font-weight: 600; margin-bottom: 18px; }
-  .review-paper { margin-top: 20px; }
   .review-submit { display: grid; gap: 8px; justify-items: center; margin-top: 24px; padding: 24px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
   .act-submit.big { font-size: 0.9rem; padding: 13px 34px; border-radius: 9px; }
   .submit-note { margin: 0; font-size: 0.78rem; color: var(--red-dark); }
@@ -778,11 +764,10 @@
   .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
   .number-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
   .course-card label, .record-card label { display: block; color: var(--text-3); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.005em; }
-  .course-card input, .course-card select, .record-card input, .record-card select, .summary-area { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg-input); color: var(--text-1); font: inherit; font-size: 0.86rem; box-shadow: var(--shadow-xs); transition: border-color 0.13s ease, box-shadow 0.13s ease; }
-  .course-card input:focus, .course-card select:focus, .record-card input:focus, .record-card select:focus, .summary-area:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+  .course-card input, .course-card select, .record-card input, .record-card select { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg-input); color: var(--text-1); font: inherit; font-size: 0.86rem; box-shadow: var(--shadow-xs); transition: border-color 0.13s ease, box-shadow 0.13s ease; }
+  .course-card input:focus, .course-card select:focus, .record-card input:focus, .record-card select:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
   .course-card input::placeholder, .record-card input::placeholder { color: var(--muted-3); }
   .missed-label { display: block; color: var(--muted); font-size: 0.72rem; font-weight: 700; }
-  .summary-area { border-radius: 6px; min-height: 160px; resize: vertical; }
   .attach-list { display: grid; gap: 6px; margin-bottom: 14px; }
   .attach-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; }
   .attach-info { flex: 1; min-width: 0; }
