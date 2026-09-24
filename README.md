@@ -121,11 +121,18 @@ Backups include both the database and the uploads directory. Set `BACKUP_DIR` an
 
 ```bash
 npm run check     # svelte-check (types + diagnostics)
-npm run test:unit # vitest unit tests (repositories, auth, policies, route guards)
+npm run test:unit # vitest unit tests (repositories, auth, policies, route guards, API access matrix, PDF export)
 npm test          # both
 ```
 
 Tests run against isolated in-memory SQLite databases and do not touch the real data directory.
+
+Live end-to-end smoke against a running dev server (needs seeded users):
+
+```bash
+SEED=true npm run dev  # in one terminal, then:
+FACULTY_PASSWORD=... HOD_PASSWORD=... npm run smoke
+```
 
 ## Project structure
 

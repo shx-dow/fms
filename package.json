@@ -15,6 +15,7 @@
     "seed": "node scripts/seed.mjs",
     "backup": "node scripts/backup.mjs",
     "restore": "node scripts/restore.mjs",
+    "smoke": "bash scripts/api-smoke.sh",
     "test": "npm run lint && npm run check && npm run test:unit",
     "test:unit": "vitest run"
   },
