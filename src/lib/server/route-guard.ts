@@ -20,6 +20,7 @@ export function computeRouteRedirect(path: string, user: GuardUser | null): stri
     return '/change-password';
   }
   if (user.role === 'FACULTY' && path.startsWith('/admin')) return '/dashboard';
+  if (user.role !== 'FACULTY' && path.startsWith('/reports')) return user.role === 'ADMIN' ? '/admin' : '/dashboard';
   if (user.role === 'HOD' && isAdminOnlyPath(path)) return '/admin';
   if (path === '/login') return user.role === 'ADMIN' ? '/admin' : '/dashboard';
   return null;

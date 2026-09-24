@@ -18,6 +18,14 @@ describe('computeRouteRedirect', () => {
     expect(computeRouteRedirect('/dashboard', { role: 'FACULTY' })).toBeNull();
   });
 
+  it('keeps /reports faculty-only', () => {
+    for (const path of ['/reports', '/reports/current', '/reports/current/print', '/reports/abc']) {
+      expect(computeRouteRedirect(path, { role: 'FACULTY' })).toBeNull();
+      expect(computeRouteRedirect(path, { role: 'HOD' })).toBe('/dashboard');
+      expect(computeRouteRedirect(path, { role: 'ADMIN' })).toBe('/admin');
+    }
+  });
+
   it('lets HOD reach admin overview and review queue but blocks admin-only pages', () => {
     expect(computeRouteRedirect('/admin', { role: 'HOD' })).toBeNull();
     expect(computeRouteRedirect('/admin/reports', { role: 'HOD' })).toBeNull();

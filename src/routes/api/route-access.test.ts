@@ -5,7 +5,7 @@ import type { User } from '$lib/domain';
 import { upsertDepartment } from '$lib/server/db/repositories/departments';
 import { createUser } from '$lib/server/db/repositories/users';
 import { upsertPeriod } from '$lib/server/db/repositories/periods';
-import { insertReportOrIgnore } from '$lib/server/db/repositories/reports';
+import { insertReportOrIgnore, getReportForPeriod } from '$lib/server/db/repositories/reports';
 import { insertAttachment } from '$lib/server/db/repositories/attachments';
 import { GET as reportsGET, POST as reportsPOST } from './reports/+server';
 import { GET as reportGET } from './reports/[id]/+server';
@@ -190,12 +190,20 @@ describe('attachment download follows report scope', () => {
   });
 });
 
-describe('P0 tripwires (must flip to 403 in Phase 2)', () => {
-  it.fails('HOD GET /api/reports is rejected instead of auto-creating a report', async () => {
+describe('report endpoints are faculty-only', () => {
+  it('rejects HOD readers without creating a report', async () => {
     await shows(() => reportsGET(getEvent(hodCse, '/api/reports')), 403);
+    expect(getReportForPeriod(hodCse.id, PERIOD)).toBeUndefined();
   });
 
-  it.fails('HOD POST /api/reports is rejected instead of creating a report', async () => {
+  it('rejects HOD writers without creating a report', async () => {
     await shows(() => reportsPOST(reportsPostEvent(hodCse, { reportId: 'matrix-hod-stray', completion: 0, status: 'DRAFT' })), 403);
+    expect(getReportForPeriod(hodCse.id, PERIOD)).toBeUndefined();
+  });
+
+  it('rejects admins', async () => {
+    await shows(() => reportsGET(getEvent(admin, '/api/reports')), 403);
+    await shows(() => reportsPOST(reportsPostEvent(admin, { reportId: 'matrix-admin-stray', completion: 0, status: 'DRAFT' })), 403);
+    expect(getReportForPeriod(admin.id, PERIOD)).toBeUndefined();
   });
 });

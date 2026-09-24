@@ -151,9 +151,11 @@ import { onDestroy, onMount } from 'svelte';
             <a href="/dashboard" class:active={page.url.pathname === '/dashboard'}
               ><LayoutDashboard size={18} /><span class="nav-label">Dashboard</span></a
             >
-            <a href="/reports" class:active={page.url.pathname.startsWith('/reports')}
-              ><FileText size={18} /><span class="nav-label">My reports</span></a
-            >
+            {#if user?.role === 'FACULTY'}
+              <a href="/reports" class:active={page.url.pathname.startsWith('/reports')}
+                ><FileText size={18} /><span class="nav-label">My reports</span></a
+              >
+            {/if}
           </nav>
         {/if}
         {#if user?.role === 'HOD' || user?.role === 'ADMIN'}

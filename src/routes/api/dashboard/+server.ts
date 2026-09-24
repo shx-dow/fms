@@ -1,11 +1,11 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { requireUser } from '$lib/server/api';
+import { requireRole, requireUser } from '$lib/server/api';
 import { computeWeekLabel } from '$lib/week-label';
 import { getLatestReportForUser, getTeachingStats } from '$lib/server/db/repositories/reports';
 
 export const GET: RequestHandler = ({ locals }) => {
-  const user = requireUser(locals);
+  const user = requireRole(requireUser(locals), 'FACULTY');
   const userId = user.id;
   const report = getLatestReportForUser(userId);
   if (!report)

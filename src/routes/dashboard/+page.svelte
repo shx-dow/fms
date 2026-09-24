@@ -29,6 +29,7 @@
   let error = $state('');
   let noPeriod = $state(false);
   onMount(async () => {
+    if (!isFaculty) { loading = false; return; }
     try {
       const res = await fetch('/api/reports');
       const data = await res.json();
@@ -380,25 +381,9 @@
       </div>
       <div class="dash-actions">
         <NotificationBell />
-        <a href="/reports/current" class="dash-cta"
-          >{status === 'Approved' ? 'View report' : status === 'Submitted' ? 'View submitted' : 'Continue report'} →</a
-        >
+        <a href="/admin/reports" class="dash-cta">Review queue →</a>
       </div>
     </header>
-
-    <div class="dash-status-line">
-      {#if !teaching.length}
-        <span>No classes added yet</span>
-      {:else}
-        <span>{conducted}<em> / {scheduled}</em> classes</span>
-      {/if}
-      {#if deadline}
-        <span class="dash-sep">·</span>
-        <span class:urgent={deadlineUrgent} class:passed={deadlinePassed}>{deadlinePassed ? 'Deadline passed' : deadlineUrgent ? `${deadlineHours}h left` : `Due ${deadline}`}</span>
-      {/if}
-      <span class="dash-sep">·</span>
-      <span class="dash-pill dash-pill-{status === 'Draft' ? 'draft' : status === 'Submitted' ? 'submitted' : status === 'Approved' ? 'approved' : status === 'Changes required' ? 'changes' : 'none'}">{status}</span>
-    </div>
 
     <div class="dash-row">
       <section class="weeks-card">
@@ -485,45 +470,16 @@
 
       <div class="attention-card">
         <div class="panel-head">
-          <h2>Attention</h2>
+          <h2>Review</h2>
         </div>
-        {#if status === 'No report' || status === 'Draft'}
-          <div class="attn-row">
-            <span class="attn-icon warn">!</span>
-            <div>
-              <strong>Report is {status === 'No report' ? 'not started' : 'incomplete'}</strong>
-              <p>Add this week's classes and submit before Friday's deadline. Tip: save your repeating subjects once as a recurring template and every week starts pre-filled.</p>
-            </div>
+        <div class="attn-row">
+          <span class="attn-icon info">i</span>
+          <div>
+            <strong>Reports awaiting review</strong>
+            <p>Review submitted reports from your department and approve or request changes.</p>
           </div>
-          <a href="/reports/current" class="attn-action">{status === 'No report' ? 'Start your first report →' : 'Open report →'}</a>
-        {:else if status === 'Submitted'}
-          <div class="attn-row">
-            <span class="attn-icon info">i</span>
-            <div>
-              <strong>Report under review</strong>
-              <p>Your HOD will review it shortly.</p>
-            </div>
-          </div>
-          <a href="/reports/current" class="attn-action">View submitted →</a>
-        {:else if status === 'Approved'}
-          <div class="attn-row">
-            <span class="attn-icon ok">✓</span>
-            <div>
-              <strong>Report approved</strong>
-              <p>No action needed for {periodLabel}.</p>
-            </div>
-          </div>
-          <a href="/reports/current" class="attn-action">View report →</a>
-        {:else if status === 'Changes required'}
-          <div class="attn-row">
-            <span class="attn-icon warn">!</span>
-            <div>
-              <strong>Changes requested</strong>
-              <p>Review HOD feedback and resubmit.</p>
-            </div>
-          </div>
-          <a href="/reports/current" class="attn-action">Review →</a>
-        {/if}
+        </div>
+        <a href="/admin/reports" class="attn-action">Open review queue →</a>
       </div>
     </div>
     {/if}
@@ -548,19 +504,10 @@
     {:else}
     <section class="reports-panel">
       <div class="panel-head">
-        <h2>Recent reports</h2>
+        <h2>Review queue</h2>
       </div>
-      {#if history.length}
-        {#each history as r}
-          <a class="hist-row" href="/reports/{r.id}">
-            <strong>{r.period_label}</strong>
-            <span class="hist-pill" class:hist-draft={r.status === 'DRAFT'} class:hist-sub={r.status === 'SUBMITTED'} class:hist-ok={r.status === 'APPROVED'} class:hist-chg={r.status === 'CHANGES_REQUIRED'}>{r.status === 'DRAFT' ? 'Draft' : r.status === 'SUBMITTED' ? 'Submitted' : r.status === 'APPROVED' ? 'Approved' : 'Changes'}</span>
-          </a>
-        {/each}
-      {:else}
-        <div class="hist-empty">Nothing here yet — your submitted reports will appear in this list.</div>
-      {/if}
-      <a href="/reports" class="reports-viewall">View all reports →</a>
+      <div class="hist-empty">Submitted reports from your department appear in the review queue.</div>
+      <a href="/admin/reports" class="reports-viewall">Open review queue →</a>
     </section>
     {/if}
   {/if}
@@ -583,17 +530,6 @@
   .dash-actions { display: flex; align-items: center; gap: 14px; }
   .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 11px 20px; border-radius: 8px; background: var(--navy); color: var(--paper); text-decoration: none; font-size: 0.82rem; font-weight: 750; white-space: nowrap; box-shadow: var(--shadow-sm); transition: background 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease; }
   .dash-cta:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
-  .dash-status-line { display: flex; align-items: center; gap: 10px; font-size: 0.84rem; color: var(--text-3); margin-bottom: 24px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 11px 16px; box-shadow: var(--shadow-xs); }
-  .dash-status-line em { font-style: normal; color: var(--muted-2); }
-  .dash-sep { color: var(--muted-3); }
-  .dash-status-line .urgent { color: var(--warn-dark); font-weight: 700; }
-  .dash-status-line .passed { color: var(--red); font-weight: 700; }
-  .dash-pill { display: inline-flex; align-items: center; padding: 4px 11px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.01em; border: 1px solid transparent; }
-  .dash-pill-draft { background: var(--draft-bg); border-color: var(--draft-border); color: var(--warn-dark); }
-  .dash-pill-submitted { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue-dark); }
-  .dash-pill-approved { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
-  .dash-pill-changes { background: var(--red-soft); border-color: var(--red-border); color: var(--red-dark); }
-  .dash-pill-none { background: var(--line-light); border-color: var(--line); color: var(--gray); }
   .dash-row { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; margin-bottom: 24px; }
   .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 17px 22px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); }
   .panel-head h2 { font-size: 0.92rem; margin: 0; letter-spacing: -0.01em; font-weight: 750; color: var(--text-1); }

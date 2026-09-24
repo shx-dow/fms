@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
 import type { RequestHandler } from './$types';
-import { requireUser } from '$lib/server/api';
+import { requireRole, requireUser } from '$lib/server/api';
 import { policyFor } from '$lib/server/report-policy';
 import { ensureCurrentPeriod } from '$lib/server/db/repositories/periods';
 import { reportSaveSchema } from '$lib/server/validation';
@@ -18,7 +18,7 @@ import {
 import { listTeaching, listResearch, listDuties, listOutreach, cloneTeachingIntoReport } from '$lib/server/db/repositories/activity';
 
 export const GET: RequestHandler = ({ locals }) => {
-  const user = requireUser(locals);
+  const user = requireRole(requireUser(locals), 'FACULTY');
   const userId = user.id;
   const period = ensureCurrentPeriod();
   if (!period) return json({ error: 'No open reporting period.' }, { status: 409 });
@@ -62,7 +62,7 @@ export const GET: RequestHandler = ({ locals }) => {
 };
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-  const user = requireUser(locals);
+  const user = requireRole(requireUser(locals), 'FACULTY');
   const userId = user.id;
   const period = ensureCurrentPeriod();
   if (!period) return json({ ok: false, error: 'No open reporting period.' }, { status: 409 });
