@@ -1,28 +1,17 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { show } from '$lib/stores/toast.svelte.ts';
-  import AsyncState from '$lib/components/AsyncState.svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
-  let currentPeriod = $state('');
-  let currentStatus = $state('');
-  let loading = $state(true);
-  let loadError = $state('');
-  let history: {
-    id: string;
-    period_id: string;
-    period_label: string;
-    status: string;
-    completion: number;
-    updated_at: string;
-    submitted_at?: string;
-  }[] = $state([]);
+
+  let { data } = $props();
+  const reports = $derived(data.reports);
+  const currentPeriod = $derived(data.currentPeriodLabel);
+  const currentStatus = $derived(data.currentStatus ?? '');
   let periodFilter = $state('');
   let statusFilter = $state('');
   let search = $state('');
   const visible = $derived(
-    history.filter(
+    reports.filter(
       (r) =>
         (!periodFilter || r.period_id === periodFilter) &&
         (!statusFilter || r.status === statusFilter) &&
@@ -42,40 +31,14 @@
     const s = q.toString();
     return `/api/reports/current/export${s ? `?${s}` : ''}`;
   });
-  onMount(async () => {
-    try {
-      const res = await fetch('/api/reports');
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error ?? 'Unable to load reports.');
-      currentPeriod = d.policy?.period?.label ?? '';
-      currentStatus =
-        d.report?.status === 'SUBMITTED' ? 'Submitted'
-        : d.report?.status === 'APPROVED' ? 'Approved'
-        : d.report?.status === 'CHANGES_REQUIRED' ? 'Changes required'
-        : d.report?.status ? 'Draft' : '—';
-      history = d.reports ?? [];
-    } catch (e) {
-      loadError = e instanceof Error ? e.message : 'Unable to load reports.';
-      show(loadError, 'err');
-    } finally { loading = false; }
-  });
-  const total = $derived(history.length);
-  const draft = $derived(history.filter(r => r.status === 'DRAFT').length);
-  const submitted = $derived(history.filter(r => r.status === 'SUBMITTED').length);
-  const approved = $derived(history.filter(r => r.status === 'APPROVED').length);
+  const total = $derived(reports.length);
+  const draft = $derived(reports.filter((r) => r.status === 'DRAFT').length);
+  const submitted = $derived(reports.filter((r) => r.status === 'SUBMITTED').length);
+  const approved = $derived(reports.filter((r) => r.status === 'APPROVED').length);
 </script>
 
 <svelte:head><title>My reports · Faculty Reporting System</title></svelte:head>
 <main class="shell app-shell">
-  {#if loading}
-    <AsyncState kind="loading" message="Loading reports…" />
-  {:else if loadError}
-    <AsyncState kind="banner" message={loadError}>
-      {#snippet action()}
-        <a href="/reports" onclick={(e) => { e.preventDefault(); location.reload(); }}>Try again</a>
-      {/snippet}
-    </AsyncState>
-  {:else}
     <PageHeader title="My reports" sub={currentPeriod || 'All periods'}>
       {#snippet actions()}
         <NotificationBell />
@@ -108,7 +71,7 @@
           />
           <select bind:value={periodFilter} aria-label="Filter by period">
             <option value="">All periods</option>
-            {#each history as h}
+            {#each reports as h}
               <option value={h.period_id}>{h.period_label}</option>
             {/each}
           </select>
@@ -142,7 +105,6 @@
         {/if}
       {/if}
     </section>
-  {/if}
 </main>
 
 <style>
