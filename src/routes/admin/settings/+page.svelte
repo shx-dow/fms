@@ -1,18 +1,24 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
-  import AsyncState from '$lib/components/AsyncState.svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
-  type Period = { id: string; label: string; kind: string; starts_on: string; ends_on: string; due_on: string; is_open: number };
-  let periods: Period[] = $state([]);
-  let error = $state('');
-  let loading = $state(true);
+  let { data } = $props();
+  type Period = (typeof data.periods)[number];
+  // Seeded once, then owned by the page so writes can update rows in place.
+  const initialPeriods = (): Period[] => data.periods;
+  let periods = $state(initialPeriods());
   let saving = $state(false);
-  let editStarts = $state('');
-  let editEnds = $state('');
-  let editDue = $state('');
+  // Seeded once, then owned by the form; reload() re-seeds after a write.
+  const initialDates = () => ({
+    starts: data.openPeriod?.startsOn ?? '',
+    ends: data.openPeriod?.endsOn ?? '',
+    due: data.openPeriod?.dueOnInput ?? '',
+  });
+  const seeded = initialDates();
+  let editStarts = $state(seeded.starts);
+  let editEnds = $state(seeded.ends);
+  let editDue = $state(seeded.due);
   let showCreate = $state(false);
   let deleteTarget: Period | null = $state(null);
   let deleting = $state(false);
@@ -20,24 +26,21 @@
   let newEnds = $state('');
   let newDue = $state('');
   let newOpen = $state(true);
-  const openPeriod = $derived(periods.find(p => p.is_open) ?? null);
+  const openPeriod = $derived(periods.find((p) => p.is_open) ?? null);
 
+  const fromLocalInput = (v: string) => (v ? `${v}:00+05:30` : '');
+
+  /** Re-reads periods after a write so the table reflects the server. */
   const toLocalInput = (iso: string) => {
     const m = iso.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
     return m ? `${m[1]}T${m[2]}:${m[3]}` : iso.slice(0, 16);
   };
-  const fromLocalInput = (v: string) => (v ? `${v}:00+05:30` : '');
 
-  onMount(load);
-  async function load() {
-    try {
-      const res = await fetch('/api/periods');
-      const d = await res.json();
-      periods = d.periods ?? [];
-      const op = (d.periods ?? []).find((p: any) => p.is_open);
-      if (op) { editStarts = op.starts_on; editEnds = op.ends_on; editDue = toLocalInput(op.due_on); }
-    } catch { error = 'Unable to load periods.'; }
-    finally { loading = false; }
+  async function reload() {
+    const d = await (await fetch('/api/periods')).json();
+    periods = d.periods ?? [];
+    const op = periods.find((p: Period) => p.is_open);
+    if (op) { editStarts = op.starts_on; editEnds = op.ends_on; editDue = toLocalInput(op.due_on); }
   }
   async function saveOpen() {
     if (!openPeriod) return;
@@ -50,7 +53,7 @@
     saving = false;
     if (!res.ok) { show('Unable to save period.', 'err'); return; }
     show('Period saved.');
-    load();
+    await reload();
   }
   async function toggleOpen(p: Period) {
     saving = true;
@@ -61,7 +64,7 @@
     saving = false;
     if (!res.ok) { show('Unable to update period.', 'err'); return; }
     show(p.is_open ? 'Period closed.' : 'Period opened.');
-    load();
+    await reload();
   }
   async function createPeriod() {
     if (!newStarts || !newEnds || !newDue) { show('All dates are required.', 'err'); return; }
@@ -74,7 +77,7 @@
     if (!res.ok) { show('Unable to create period.', 'err'); return; }
     show('Period created.');
     showCreate = false; newStarts = ''; newEnds = ''; newDue = ''; newOpen = true;
-    load();
+    await reload();
   }
   async function deletePeriodConfirm() {
     if (!deleteTarget || deleting) return;
@@ -84,7 +87,7 @@
     if (!res.ok) { show('Unable to delete period.', 'err'); return; }
     show('Period deleted.');
     deleteTarget = null;
-    load();
+    await reload();
   }
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   const fmtDateTime = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
@@ -97,10 +100,6 @@
       <NotificationBell /><button class="btn btn-primary" onclick={() => (showCreate = true)}>+ New period</button>
     {/snippet}
   </PageHeader>
-  {#if error}<AsyncState kind="banner" message={error} />{/if}
-  {#if loading}
-    <AsyncState kind="loading" message="Loading…" />
-  {:else}
     {#if openPeriod}
       <section class="settings-card">
         <div class="setting-head">
@@ -147,7 +146,6 @@
         </table>
       {/if}
     </section>
-  {/if}
 
   {#if deleteTarget}
     <Modal title="Delete {deleteTarget.label || deleteTarget.id}?" size="sm" onclose={() => (deleteTarget = null)}>

@@ -1,26 +1,20 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
-  import AsyncState from '$lib/components/AsyncState.svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
+  import type { UserWithDepartment } from '$lib/server/db/repositories/users';
+
+  type User = UserWithDepartment;
   let { data } = $props();
-  type User = { id: string; name: string; email: string; employee_code?: string | null; specialization?: string | null; role: string; is_active: number };
-  let users: User[] = $state([]);
+  // Seeded once, then owned by the page so writes can update rows in place.
+  const initialUsers = (): User[] => data.users;
+  let users = $state(initialUsers());
   let search = $state('');
-  let loading = $state(true);
   let confirmId = $state<string | null>(null);
   let showForm = $state(false);
   let editUser: User | null = $state(null);
   let formName = $state(''); let formEmail = $state(''); let formRole = $state('FACULTY'); let formPass = $state('');
-  onMount(async () => {
-    try {
-      const res = await fetch('/api/users');
-      users = (await res.json()).users ?? [];
-    } catch { show('Unable to load data.', 'err'); }
-    finally { loading = false; }
-  });
   let filtered = $derived(users.filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase())));
   async function toggle(user: User) {
     confirmId = null;
@@ -39,7 +33,7 @@
     if (!res.ok) { show(d.error ?? 'Save failed.', 'err'); return; }
     show('User saved.');
     showForm = false; editUser = null;
-    users = (await (await fetch('/api/users')).json()).users ?? [];
+    users = (await (await fetch('/api/users')).json()).users ?? []; // re-sync after a write
   }
 </script>
 
@@ -50,10 +44,7 @@
       <NotificationBell /><button class="btn btn-primary" onclick={openCreate}>+ Add user</button>
     {/snippet}
   </PageHeader>
-  {#if loading}
-    <AsyncState kind="loading" message="Loading…" />
-  {:else}
-    <div class="search-bar"><input type="search" placeholder="Search by name or email…" bind:value={search} /></div>
+  <div class="search-bar"><input type="search" placeholder="Search by name or email…" bind:value={search} /></div>
     <section class="table-card">
       <table>
         <thead><tr><th>Name</th><th>Login</th><th>Employee code</th><th>Specialization</th><th>Role</th><th>Status</th><th></th></tr></thead>
@@ -83,7 +74,6 @@
         </tbody>
       </table>
     </section>
-  {/if}
   {#if showForm}
     <Modal title={editUser ? 'Edit user' : 'Add user'} onclose={() => (showForm = false)}>
       <div class="modal-fields">
