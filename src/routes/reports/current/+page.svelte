@@ -330,7 +330,7 @@
       <NotificationBell />
       <span class="save-note">{savedAt}</span>
       {#if !isReadonly}
-        <a class="act-link" href="/dashboard">← Dashboard</a>
+        <a class="btn" href="/dashboard">← Dashboard</a>
       {/if}
     </div>
   </header>
@@ -342,7 +342,7 @@
         <h3>Submit this report?</h3>
         <p>Once submitted you will not be able to edit it unless an HOD or Admin reopens it.</p>
         <div class="confirm-actions">
-          <button class="act-link" onclick={() => (confirmSubmit = false)}>Cancel</button>
+          <button class="btn" onclick={() => (confirmSubmit = false)}>Cancel</button>
           <button class="act-submit" disabled={!canSubmit} onclick={handleSubmit}>Confirm →</button>
         </div>
       </div>
@@ -355,7 +355,7 @@
         <h3>Copy from last week?</h3>
         <p>This will replace all the data you currently have across all sections (Teaching, Research, Duties, Outreach) with the report from {prevReportLabel}. Do you still want to copy?</p>
         <div class="confirm-actions">
-          <button class="act-link" onclick={() => (confirmCopy = false)}>Cancel</button>
+          <button class="btn" onclick={() => (confirmCopy = false)}>Cancel</button>
           <button class="act-submit" onclick={copyFromLastWeek}>Copy →</button>
         </div>
       </div>
@@ -368,7 +368,7 @@
         <h3>Load recurring template?</h3>
         <p>This will replace all currently filled report data across Teaching, Research, Duties, and Outreach. Any weekly changes you have entered will be removed.</p>
         <div class="confirm-actions">
-          <button class="act-link" onclick={() => (confirmTemplate = false)}>Cancel</button>
+          <button class="btn" onclick={() => (confirmTemplate = false)}>Cancel</button>
           <button class="act-submit" onclick={loadRecurringTemplate}>Replace with template</button>
         </div>
       </div>
@@ -472,8 +472,8 @@
               <p>Pre-fill everything, then just update the numbers.</p>
             </div>
             <div class="start-acts">
-              {#if hasTemplate}<button class="act-link" onclick={() => (confirmTemplate = true)}>Load my template</button>{/if}
-              {#if prevReport}<button class="act-link" onclick={() => (confirmCopy = true)}>Copy from {prevReportLabel}</button>{/if}
+              {#if hasTemplate}<button class="btn" onclick={() => (confirmTemplate = true)}>Load my template</button>{/if}
+              {#if prevReport}<button class="btn" onclick={() => (confirmCopy = true)}>Copy from {prevReportLabel}</button>{/if}
             </div>
           </div>
         {/if}
@@ -528,7 +528,7 @@
         {/each}
         <div class="record-acts">
           {#if !researchNA}<button class="act-add" onclick={() => (researchRecords = [...researchRecords, { category: 'Journal Paper', title: '', venueOrAgency: '', indexingOrQuality: '', role: '', status: '' }])}>+ Add record</button>{/if}
-          <button class="act-link" onclick={() => saveActivity('research')}>{additionalSaving ? 'Saving…' : 'Save research'}</button>
+          <button class="btn" onclick={() => saveActivity('research')}>{additionalSaving ? 'Saving…' : 'Save research'}</button>
         </div>
       {:else if activeSection === 'duties'}
         <div class="section-top"><h2>Institutional duties</h2><button class="na-toggle" class:active={dutiesNA} onclick={() => setNotApplicable('duties')}>{dutiesNA ? 'Undo' : 'Nothing this week'}</button></div>
@@ -554,7 +554,7 @@
         {/each}
         <div class="record-acts">
           {#if !dutiesNA}<button class="act-add" onclick={() => (dutiesRecords = [...dutiesRecords, { name: '', role: '', activity: '', reach: '', outcome: '' }])}>+ Add duty</button>{/if}
-          <button class="act-link" onclick={() => saveActivity('duties')}>{additionalSaving ? 'Saving…' : 'Save duties'}</button>
+          <button class="btn" onclick={() => saveActivity('duties')}>{additionalSaving ? 'Saving…' : 'Save duties'}</button>
         </div>
       {:else if activeSection === 'outreach'}
         <div class="section-top"><h2>Outreach activity</h2><button class="na-toggle" class:active={outreachNA} onclick={() => setNotApplicable('outreach')}>{outreachNA ? 'Undo' : 'Nothing this week'}</button></div>
@@ -579,7 +579,7 @@
         {/each}
         <div class="record-acts">
           {#if !outreachNA}<button class="act-add" onclick={() => (outreachRecords = [...outreachRecords, { activity: '', audience: '', outcome: '', date: '' }])}>+ Add outreach</button>{/if}
-          <button class="act-link" onclick={() => saveActivity('outreach')}>{additionalSaving ? 'Saving…' : 'Save outreach'}</button>
+          <button class="btn" onclick={() => saveActivity('outreach')}>{additionalSaving ? 'Saving…' : 'Save outreach'}</button>
         </div>
       {:else if activeSection === 'files'}
         <div class="section-top"><h2>Supporting files</h2></div>
@@ -608,10 +608,10 @@
         <p class="section-hint">Check everything below, then submit. A submitted report locks until your HOD reopens it.</p>
         {#if !isReadonly}
           <div class="speed-row">
-            {#if prevReport}<button class="act-link" onclick={() => (confirmCopy = true)} title={`Fill this report from ${prevReportLabel}`}>Copy from {prevReportLabel}</button>{/if}
-            <button class="act-link" onclick={() => (confirmTemplate = true)} title="Replace this report with your recurring template">Load recurring template</button>
-            <a class="act-link" href="/api/reports/{reportId}/pdf" target="_blank">PDF</a>
-            <a class="act-link" href="/api/reports/current/export">CSV</a>
+            {#if prevReport}<button class="btn" onclick={() => (confirmCopy = true)} title={`Fill this report from ${prevReportLabel}`}>Copy from {prevReportLabel}</button>{/if}
+            <button class="btn" onclick={() => (confirmTemplate = true)} title="Replace this report with your recurring template">Load recurring template</button>
+            <a class="btn" href="/api/reports/{reportId}/pdf" target="_blank">PDF</a>
+            <a class="btn" href="/api/reports/current/export">CSV</a>
           </div>
         {/if}
         {#if reviewNotes.length}
@@ -674,14 +674,14 @@
     {#if !isReadonly}
       <div class="wizard-nav">
         {#if stepIndex > 0}
-          <button class="act-link" onclick={prevStep}>← Back</button>
+          <button class="btn" onclick={prevStep}>← Back</button>
         {:else}
           <span></span>
         {/if}
         {#if activeSection !== 'review'}
           <button class="act-submit" onclick={nextStep}>Continue →</button>
         {:else}
-          <button class="act-link" onclick={() => goStep('files')}>← Review files</button>
+          <button class="btn" onclick={() => goStep('files')}>← Review files</button>
         {/if}
       </div>
     {/if}
@@ -696,8 +696,6 @@
   .head-period { font-size: 0.84rem; color: var(--text-3); white-space: nowrap; }
   .editor-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   .save-note { font-size: 0.74rem; color: var(--muted-2); white-space: nowrap; min-width: 86px; text-align: right; font-weight: 600; }
-  .act-link { border: 1px solid var(--line); border-radius: 7px; padding: 8px 13px; background: var(--panel); color: var(--accent-strong); font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; text-decoration: none; white-space: nowrap; box-shadow: var(--shadow-xs); transition: all 0.12s; }
-  .act-link:hover { background: var(--bg-hover); border-color: var(--blue-border); box-shadow: var(--shadow-sm); }
   .act-submit { border: 1px solid var(--navy); border-radius: 7px; padding: 9px 17px; background: var(--navy); color: var(--paper); font: inherit; font-size: 0.78rem; font-weight: 750; cursor: pointer; white-space: nowrap; box-shadow: var(--shadow-sm); transition: all 0.12s; }
   .act-submit:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .act-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }

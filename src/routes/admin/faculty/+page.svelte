@@ -92,7 +92,7 @@
           <label>Role<select bind:value={formRole}><option value="FACULTY">Faculty</option><option value="HOD">HOD</option><option value="ADMIN">Admin</option></select></label>
           <label>Password{editUser ? ' (leave blank to keep current)' : ''}<input bind:value={formPass} type="password" placeholder="Password" /></label>
         </div>
-        <div class="modal-acts"><button class="btn-ghost" onclick={() => (showForm = false)}>Cancel</button><button class="btn btn-primary" onclick={saveUser}>{editUser ? 'Save changes' : 'Create user'}</button></div>
+        <div class="modal-acts"><button class="btn" onclick={() => (showForm = false)}>Cancel</button><button class="btn btn-primary" onclick={saveUser}>{editUser ? 'Save changes' : 'Create user'}</button></div>
       </div>
     </div>
   {/if}
@@ -117,8 +117,6 @@
   .pill.active { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
   .pill.inactive { background: var(--line-light); border-color: var(--line); color: var(--muted); }
   .td-acts { text-align: right; white-space: nowrap; }
-  .btn-ghost { border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; font-size: 0.74rem; font-weight: 700; cursor: pointer; margin-left: 6px; padding: 6px 10px; color: var(--accent); transition: all 0.12s; }
-  .btn-ghost:hover { background: #eff4fb; border-color: var(--blue-border); }
   .confirm-group { display: inline-flex; gap: 6px; align-items: center; }
   .btn-confirm { border: 1px solid var(--navy); border-radius: 6px; padding: 6px 11px; font: inherit; font-size: 0.7rem; font-weight: 800; cursor: pointer; background: var(--navy); color: var(--paper); }
   .btn-confirm:hover { background: var(--blue-hover); }
@@ -133,5 +131,4 @@
   .modal-fields input, .modal-fields select { border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; font: inherit; font-size: 0.86rem; background: var(--bg-input); color: var(--text-1); box-shadow: var(--shadow-xs); transition: border-color 0.13s ease, box-shadow 0.13s ease; }
   .modal-fields input:focus, .modal-fields select:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
   .modal-acts { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-  .modal-acts .btn-ghost { border: 0; background: transparent; font: inherit; font-size: 0.8rem; color: var(--muted); cursor: pointer; padding: 8px 12px; }
 </style>

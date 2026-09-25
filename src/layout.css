@@ -90,6 +90,10 @@ body {
 }
 .btn:hover { background: var(--bg-hover); border-color: var(--blue-border); box-shadow: var(--shadow-xs); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+.btn-ghost { border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; font-size: 0.74rem; font-weight: 700; cursor: pointer; margin-left: 6px; padding: 6px 10px; color: var(--accent); transition: all 0.12s; }
+.btn-ghost:hover { background: #eff4fb; border-color: var(--blue-border); }
+.btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ghost.btn-del { color: var(--red); }
 .btn-primary { background: var(--navy); border-color: var(--navy); color: var(--paper); box-shadow: var(--shadow-sm); }
 .btn-primary:hover { background: var(--blue-hover); border-color: var(--blue-hover); box-shadow: var(--shadow-md); }
 .pill {

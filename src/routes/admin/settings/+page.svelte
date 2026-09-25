@@ -153,7 +153,7 @@
         <h3 id="del-title">Delete {deleteTarget.label || deleteTarget.id}?</h3>
         <p class="modal-note">Only periods without reports can be deleted. This cannot be undone.</p>
         <div class="modal-acts">
-          <button class="btn-ghost" onclick={() => (deleteTarget = null)}>Cancel</button>
+          <button class="btn" onclick={() => (deleteTarget = null)}>Cancel</button>
           <button class="btn-del-solid" onclick={deletePeriodConfirm} disabled={deleting}>{deleting ? 'Deleting…' : 'Delete period'}</button>
         </div>
       </div>
@@ -171,7 +171,7 @@
           <label class="check-row"><input type="checkbox" bind:checked={newOpen} /> Open for submissions</label>
         </div>
         <div class="modal-acts">
-          <button class="btn-ghost" onclick={() => (showCreate = false)}>Cancel</button>
+          <button class="btn" onclick={() => (showCreate = false)}>Cancel</button>
           <button class="btn btn-primary" onclick={createPeriod} disabled={saving}>Create period</button>
         </div>
       </div>
@@ -209,8 +209,6 @@
   .table-card td { color: var(--text-2); }
   .table-card td strong { color: var(--text-1); }
   .td-acts { text-align: right; white-space: nowrap; }
-  .btn-ghost { border: 0; background: transparent; font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; margin-left: 6px; color: var(--blue); }
-  .btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-del { color: var(--red); }
   .empty-state { padding: 24px; color: var(--muted-2); font-size: 0.82rem; }
   .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.35); display: grid; place-items: center; z-index: 100; }
@@ -227,7 +225,6 @@
   .btn-del-solid { border: 1px solid var(--red); border-radius: 7px; padding: 9px 16px; background: var(--red); color: #fff; font: inherit; font-size: 0.78rem; font-weight: 750; cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.12s; }
   .btn-del-solid:hover { background: var(--red-dark); border-color: var(--red-dark); }
   .btn-del-solid:disabled { opacity: 0.55; cursor: not-allowed; }
-  .modal-acts .btn-ghost { border: 0; background: transparent; font: inherit; font-size: 0.8rem; color: var(--muted); cursor: pointer; padding: 8px 12px; }
   @media (max-width: 700px) {
     .setting-form { grid-template-columns: 1fr; }
   }

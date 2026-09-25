@@ -165,7 +165,7 @@
                 <div class="rp-reopen-body">
                   <label>Reason<input bind:value={reason} placeholder="Why is this being reopened?" /></label>
                   <label>Allow editing until<input type="date" bind:value={allowedUntil} /></label>
-                  <button class="act-link" onclick={reopen}>Reopen</button>
+                  <button class="btn" onclick={reopen}>Reopen</button>
                 </div>
               </details>
             </div>
@@ -204,7 +204,7 @@
                     {#each reportContent.attachments as a}
                       <div class="attach-row">
                         <span class="attach-name">{a.filename}</span>
-                        <a class="act-link" href="/api/attachments/{a.id}" download>Download</a>
+                        <a class="btn" href="/api/attachments/{a.id}" download>Download</a>
                       </div>
                     {/each}
                   </div>
@@ -222,8 +222,6 @@
   .dash-loading { display: flex; align-items: center; gap: 12px; padding: 24px; color: var(--muted-3); font-size: 0.88rem; }
   .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .act-link { border: 1px solid var(--line); border-radius: 7px; padding: 8px 13px; background: var(--panel); color: var(--accent-strong); font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; text-decoration: none; white-space: nowrap; box-shadow: var(--shadow-xs); transition: all 0.12s; }
-  .act-link:hover { background: var(--bg-hover); border-color: var(--blue-border); box-shadow: var(--shadow-sm); }
   .msg.err { padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px; font-size: 0.8rem; background: var(--red-bg-alt); border: 1px solid var(--red-border); color: var(--red-dark); box-shadow: var(--shadow-xs); }
   .review-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
   .queue-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }
@@ -268,7 +266,7 @@
   .rp-reopen-body { display: grid; gap: 10px; padding: 12px 0; }
   .rp-reopen-body label { font-size: 0.72rem; font-weight: 700; color: var(--muted); }
   .rp-reopen-body input { border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; font: inherit; background: var(--bg-input); width: 100%; box-sizing: border-box; margin-top: 4px; }
-  .rp-reopen-body .act-link { align-self: start; }
+  .rp-reopen-body .btn { align-self: start; }
   .attach-list { display: grid; gap: 8px; margin-top: 4px; }
   .attach-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 7px; }
   .attach-name { flex: 1; min-width: 0; font-size: 0.78rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

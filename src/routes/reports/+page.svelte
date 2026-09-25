@@ -118,8 +118,8 @@
             <option value="APPROVED">Approved only</option>
             <option value="CHANGES_REQUIRED">Changes required</option>
           </select>
-          {#if filtersActive}<button class="dl-link dl-reset" onclick={resetFilters}>Reset</button>{/if}
-          <a class="dl-link" href={downloadHref()}>Download CSV</a>
+          {#if filtersActive}<button class="btn" onclick={resetFilters}>Reset</button>{/if}
+          <a class="btn" href={downloadHref()}>Download CSV</a>
         </div>
       </div>
       {#if visible.length}
@@ -162,9 +162,6 @@
   .download-filters select:focus, .hist-search:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
   .hist-search { width: 170px; }
   .hist-search::placeholder { color: var(--muted-3); }
-  .dl-link { font: inherit; font-size: 0.73rem; font-weight: 700; color: var(--accent-strong); text-decoration: none; border: 1px solid var(--line); border-radius: 7px; padding: 7px 11px; background: var(--panel); cursor: pointer; box-shadow: var(--shadow-xs); transition: all 0.12s; white-space: nowrap; }
-  .dl-link:hover { background: var(--bg-hover); border-color: var(--blue-border); }
-  .dl-reset { color: var(--muted); }
   .report-row-link { display: flex; align-items: center; gap: 14px; padding: 15px 22px; border-bottom: 1px solid var(--line-2); text-decoration: none; transition: background 0.1s ease; }
   .report-row-link:last-child { border-bottom: 0; }
   .report-row-link:hover { background: #f6f9fc; }

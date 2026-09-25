@@ -29,11 +29,11 @@
       <StatusPill status={r.status} detail={`${r.completion ?? 0}%`} />
     </div>
     <div class="viewer-actions">
-      <a class="act-link" href="/reports">← All reports</a>
-      <a class="act-link" href="/reports/current">Current report →</a>
-      <a class="act-link" href="/api/reports/{r.id}/pdf" target="_blank">PDF</a>
-      <a class="act-link" href="/api/reports/current/export?reportId={r.id}">CSV</a>
-      <a class="act-link" href="/reports/current/print?id={r.id}" target="_blank">Print</a>
+      <a class="btn" href="/reports">← All reports</a>
+      <a class="btn" href="/reports/current">Current report →</a>
+      <a class="btn" href="/api/reports/{r.id}/pdf" target="_blank">PDF</a>
+      <a class="btn" href="/api/reports/current/export?reportId={r.id}">CSV</a>
+      <a class="btn" href="/reports/current/print?id={r.id}" target="_blank">Print</a>
     </div>
   </header>
 
@@ -74,8 +74,6 @@
   .viewer-head h1 { font-size: 1.5rem; margin: 0; display: inline; margin-right: 10px; letter-spacing: -0.03em; font-weight: 750; color: var(--text-1); }
   .head-period { font-size: 0.84rem; color: var(--text-3); margin-right: 10px; }
   .viewer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  .act-link { border: 1px solid var(--line); border-radius: 7px; padding: 8px 13px; background: var(--panel); color: var(--accent-strong); font-size: 0.76rem; font-weight: 700; text-decoration: none; box-shadow: var(--shadow-xs); transition: all 0.12s; }
-  .act-link:hover { background: var(--bg-hover); border-color: var(--blue-border); box-shadow: var(--shadow-sm); }
   .review-box { margin-top: 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; }
   .review-box summary { cursor: pointer; font-size: 0.78rem; font-weight: 700; }
   .review-row { padding: 10px 0; border-bottom: 1px solid var(--line-2); font-size: 0.8rem; }
