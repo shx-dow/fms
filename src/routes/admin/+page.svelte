@@ -1,68 +1,21 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { page } from '$app/state';
-  import AsyncState from '$lib/components/AsyncState.svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
-  type ReviewItem = { id: string; status: string; updated_at: string; faculty_name: string; period_label: string; completion: number };
-  type FacultyStatus = { id: string; name: string; email: string; status: string | null; completion: number | null; submitted_at: string | null };
-  type AuditEvent = { id: string; action: string; created_at: string; actor_name: string | null };
-  const isAdmin = $derived(page.data.user?.role === 'ADMIN');
-  let loading = $state(true);
-  let error = $state('');
-  let facultyCount = $state(0);
-  let submittedCount = $state(0);
-  let reviewNeeded = $state(0);
-  let items: ReviewItem[] = $state([]);
-  let missingReports: { id: string; name: string; email: string }[] = $state([]);
-  let missingPeriod = $state('');
-  let trends: { period: string; total: number; submitted: number; submission_rate: number; avg_completion: number }[] = $state([]);
-  let currentPeriod: { period: string; faculty_count: number; submitted_count: number } | null = $state(null);
-  let facultyStatus: FacultyStatus[] = $state([]);
-  let auditEvents: AuditEvent[] = $state([]);
-  onMount(async () => {
-    try {
-      if (isAdmin) {
-        const [trendsRes, reviewsRes, missingRes, facultyRes, auditRes] = await Promise.all([
-          fetch('/api/dashboard/trends'),
-          fetch('/api/reviews'),
-          fetch('/api/reports/missing'),
-          fetch('/api/dashboard/faculty'),
-          fetch('/api/audit'),
-        ]);
-        const trendsData = await trendsRes.json();
-        const reviews = await reviewsRes.json();
-        const missing = await missingRes.json();
-        const faculty = await facultyRes.json();
-        const audit = await auditRes.json();
-        trends = trendsData.trends ?? [];
-        currentPeriod = trendsData.currentPeriod ?? null;
-        facultyCount = currentPeriod?.faculty_count ?? 0;
-        submittedCount = currentPeriod?.submitted_count ?? 0;
-        items = reviews.reports ?? [];
-        reviewNeeded = items.filter((r: ReviewItem) => r.status === 'SUBMITTED' || r.status === 'CHANGES_REQUIRED').length;
-        missingReports = missing.missing ?? [];
-        missingPeriod = missing.periodLabel ?? '';
-        facultyStatus = faculty.faculty ?? [];
-        auditEvents = (audit.events ?? []).slice(0, 8);
-      } else {
-        const [reviewsRes, missingRes, trendsRes] = await Promise.all([fetch('/api/reviews'), fetch('/api/reports/missing'), fetch('/api/dashboard/trends')]);
-        const reviews = await reviewsRes.json();
-        const missing = await missingRes.json();
-        const trendsData = await trendsRes.json();
-        items = reviews.reports ?? [];
-        reviewNeeded = items.filter((r: ReviewItem) => r.status === 'SUBMITTED' || r.status === 'CHANGES_REQUIRED').length;
-        submittedCount = items.filter((r: ReviewItem) => r.status === 'SUBMITTED' || r.status === 'APPROVED').length;
-        missingReports = missing.missing ?? [];
-        missingPeriod = missing.periodLabel ?? '';
-        trends = trendsData.trends ?? [];
-        currentPeriod = trendsData.currentPeriod ?? null;
-        facultyCount = currentPeriod?.faculty_count ?? 0;
-      }
-    } catch { error = 'Unable to load department data.'; }
-    finally { loading = false; }
-  });
+  type ReviewItem = (typeof data.queue)[number];
+  let { data } = $props();
+  const isAdmin = $derived(data.role === 'ADMIN');
+
+  const items = $derived(data.queue);
+  const trends = $derived(data.trends);
+  const missingReports = $derived(data.missing);
+  const facultyStatus = $derived(data.facultyStatus);
+  const auditEvents = $derived(data.auditEvents);
+  const facultyCount = $derived(data.facultyCount);
+  const submittedCount = $derived(data.submittedCount);
+  const reviewNeeded = $derived(items.filter((r) => r.status === 'SUBMITTED' || r.status === 'CHANGES_REQUIRED').length);
+
   function auditPill(action: string) {
     if (action === 'APPROVED') return 'r-ok';
     if (action === 'CHANGES_REQUIRED' || action === 'REPORT_REOPENED') return 'r-chg';
@@ -71,21 +24,13 @@
   function fmtAudit(iso: string) {
     return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   }
-  const rateDelta = $derived(
-    trends.length >= 2 ? Number(trends[0].submission_rate ?? 0) - Number(trends[1].submission_rate ?? 0) : null,
-  );
 </script>
 
 <svelte:head><title>{isAdmin ? 'Administration' : 'Department overview'} · Faculty Reporting System</title></svelte:head>
 
 {#if isAdmin}
   <main class="shell">
-    {#if loading}
-      <AsyncState kind="loading" message="Loading administration…" />
-    {:else if error}
-      <AsyncState kind="error" message={error} />
-    {:else}
-      <PageHeader title="Administration" sub={missingPeriod || 'Current reporting period'}>
+      <PageHeader title="Administration" sub={data.periodLabel || 'Current reporting period'}>
         {#snippet actions()}
           <NotificationBell />
           <a class="btn" href="/admin/settings">Manage periods</a>
@@ -93,7 +38,7 @@
       </PageHeader>
       <div class="dash-metrics wide">
         <div><span>Faculty</span><strong>{facultyCount}</strong><small>in the department</small></div>
-        <div><span>Submitted</span><strong>{submittedCount}</strong><small>for the open period</small>{#if rateDelta !== null}<em class="metric-delta" class:up={rateDelta >= 0} class:down={rateDelta < 0}>{rateDelta >= 0 ? '↑' : '↓'} {Math.abs(rateDelta)}% vs last period</em>{/if}</div>
+        <div><span>Submitted</span><strong>{submittedCount}</strong><small>for the open period</small>{#if data.rateDelta !== null}<em class="metric-delta" class:up={data.rateDelta >= 0} class:down={data.rateDelta < 0}>{data.rateDelta >= 0 ? '↑' : '↓'} {Math.abs(data.rateDelta)}% vs last period</em>{/if}</div>
         <div><span>Review needed</span><strong>{reviewNeeded}</strong><small>awaiting attention</small></div>
         <div><span>Missing</span><strong>{missingReports.length}</strong><small>not yet submitted</small></div>
       </div>
@@ -103,7 +48,7 @@
         <a href="/admin/audit">Audit history</a>
       </div>
       <section class="admin-card">
-        <div class="panel-head"><h2>Faculty submissions</h2><span class="head-tag">{missingPeriod}</span></div>
+        <div class="panel-head"><h2>Faculty submissions</h2><span class="head-tag">{data.periodLabel}</span></div>
         <table class="trends-table">
           <thead>
             <tr>
@@ -152,7 +97,7 @@
           {/if}
         </section>
         <section class="admin-card">
-          <div class="panel-head"><h2>Missing reports</h2><span class="head-tag">{missingPeriod}</span></div>
+          <div class="panel-head"><h2>Missing reports</h2><span class="head-tag">{data.periodLabel}</span></div>
           {#if !missingReports.length}
             <div class="empty-state">All faculty have submitted for this period.</div>
           {:else}
@@ -161,7 +106,7 @@
                 <div class="row-name"><strong>{m.name}</strong><span class="row-email">{m.email}</span></div>
               </div>
             {/each}
-            <p class="missing-note">{missingReports.length} faculty {missingReports.length === 1 ? 'has' : 'have'} not yet submitted for {missingPeriod}.</p>
+            <p class="missing-note">{missingReports.length} faculty {missingReports.length === 1 ? 'has' : 'have'} not yet submitted for {data.periodLabel}.</p>
           {/if}
         </section>
       </div>
@@ -208,15 +153,9 @@
           {/each}
         {/if}
       </section>
-    {/if}
   </main>
 {:else}
   <main class="shell">
-    {#if loading}
-      <AsyncState kind="loading" message="Loading overview…" />
-    {:else if error}
-      <AsyncState kind="error" message={error} />
-    {:else}
       <PageHeader title="Department overview" sub="Current reporting period">
         {#snippet actions()}
           <NotificationBell />
@@ -224,7 +163,7 @@
       </PageHeader>
       <div class="dash-metrics">
         <div><span>Faculty</span><strong>{facultyCount}</strong><small>in department</small></div>
-        <div><span>Submitted</span><strong>{submittedCount}</strong><small>{facultyCount ? Math.round((submittedCount / facultyCount) * 100) : 0}% rate</small>{#if rateDelta !== null}<em class="metric-delta" class:up={rateDelta >= 0} class:down={rateDelta < 0}>{rateDelta >= 0 ? '↑' : '↓'} {Math.abs(rateDelta)}% vs last period</em>{/if}</div>
+        <div><span>Submitted</span><strong>{submittedCount}</strong><small>{facultyCount ? Math.round((submittedCount / facultyCount) * 100) : 0}% rate</small>{#if data.rateDelta !== null}<em class="metric-delta" class:up={data.rateDelta >= 0} class:down={data.rateDelta < 0}>{data.rateDelta >= 0 ? '↑' : '↓'} {Math.abs(data.rateDelta)}% vs last period</em>{/if}</div>
         <div><span>Review needed</span><strong>{reviewNeeded}</strong><small>awaiting attention</small></div>
       </div>
       <div class="admin-grid">
@@ -244,7 +183,7 @@
           {/if}
         </section>
         <section class="admin-card">
-          <div class="panel-head"><h2>Missing reports</h2><span class="head-tag">{missingPeriod}</span></div>
+          <div class="panel-head"><h2>Missing reports</h2><span class="head-tag">{data.periodLabel}</span></div>
           {#if !missingReports.length}
             <div class="empty-state">All faculty have submitted for this period.</div>
           {:else}
@@ -253,7 +192,7 @@
                 <div class="row-name"><strong>{m.name}</strong><span class="row-email">{m.email}</span></div>
               </div>
             {/each}
-            <p class="missing-note">{missingReports.length} faculty {missingReports.length === 1 ? 'has' : 'have'} not yet submitted for {missingPeriod}.</p>
+            <p class="missing-note">{missingReports.length} faculty {missingReports.length === 1 ? 'has' : 'have'} not yet submitted for {data.periodLabel}.</p>
           {/if}
         </section>
       </div>
@@ -287,7 +226,6 @@
           </table>
         </section>
       {/if}
-    {/if}
   </main>
 {/if}
 
