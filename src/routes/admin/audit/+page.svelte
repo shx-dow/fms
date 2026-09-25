@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
-  import type { AuditFilters } from './+page.server';
+  import type { AuditFilters } from '$lib/audit-filter';
 
   let { data } = $props();
   // Page size is a server constant; read it through a closure so the value

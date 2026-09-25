@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { User } from '$lib/domain';
 import { createUser } from '$lib/server/db/repositories/users';
 import { insertAuditEvent } from '$lib/server/db/repositories/audit';
-import { AUDIT_PAGE_SIZE, load } from './+page.server';
+import { AUDIT_PAGE_SIZE } from '$lib/audit-filter';
+import { load } from './+page.server';
 
 const admin: User = { id: 'audit-admin', name: 'Audit Admin', email: 'audit-admin@example.edu', role: 'ADMIN' };
 const faculty: User = { id: 'audit-fac', name: 'Audit Faculty', email: 'audit-fac@example.edu', role: 'FACULTY' };
