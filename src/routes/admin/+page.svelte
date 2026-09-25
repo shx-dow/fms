@@ -292,8 +292,6 @@
 
 <style>
   .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
-  .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
   .dash-error { padding: 16px 20px; background: var(--red-bg); color: var(--red); border-radius: 7px; font-size: 0.88rem; }
   .dash-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
   .dash-metrics.wide { grid-template-columns: repeat(4, 1fr); }
@@ -310,10 +308,6 @@
   .quick-actions a:hover { background: var(--bg-hover); border-color: var(--blue-border); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
   .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   .admin-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }
-  .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 17px 22px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); }
-  .panel-head h2 { font-size: 0.92rem; margin: 0; letter-spacing: -0.01em; font-weight: 750; color: var(--text-1); }
-  .panel-head a { color: var(--accent); text-decoration: none; font-size: 0.75rem; font-weight: 750; }
-  .panel-head a:hover { text-decoration: underline; }
   .head-tag { font-size: 0.68rem; color: var(--muted-2); background: var(--bg-hover); border: 1px solid var(--line); padding: 3px 8px; border-radius: 999px; font-weight: 700; white-space: nowrap; }
   .admin-row { display: flex; align-items: center; gap: 12px; padding: 14px 22px; border-bottom: 1px solid var(--line-2); text-decoration: none; transition: background 0.1s; }
   .admin-row:last-child { border-bottom: 0; }

@@ -220,8 +220,6 @@
 
 <style>
   .dash-loading { display: flex; align-items: center; gap: 12px; padding: 24px; color: var(--muted-3); font-size: 0.88rem; }
-  .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
   .msg.err { padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px; font-size: 0.8rem; background: var(--red-bg-alt); border: 1px solid var(--red-border); color: var(--red-dark); box-shadow: var(--shadow-xs); }
   .review-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
   .queue-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }

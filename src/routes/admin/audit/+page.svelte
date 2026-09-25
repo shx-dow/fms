@@ -126,8 +126,6 @@
 
 <style>
   .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
-  .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
   .dash-error { padding: 16px 20px; background: var(--red-bg); color: var(--red); border-radius: 7px; font-size: 0.88rem; }
   .filter-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px 14px; box-shadow: var(--shadow-xs); }
   .filter-search, .filter-select, .filter-date input {
@@ -144,13 +142,6 @@
   }
   .btn-link:hover:not(:disabled) { text-decoration: underline; }
   .btn-link:disabled { color: var(--muted-3); cursor: default; }
-  .table-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: auto; box-shadow: var(--shadow-sm); }
-  .table-card table { width: 100%; border-collapse: collapse; min-width: 600px; font-size: 0.82rem; }
-  .table-card th, .table-card td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--line-2); }
-  .table-card th { text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); font-size: 0.64rem; font-weight: 800; background: rgba(248,250,252,0.7); }
-  .table-card tbody tr:hover td { background: #f6f9fc; }
-  .table-card td { color: var(--text-2); }
-  .table-card td strong { color: var(--text-1); }
   .td-time { min-width: 150px; }
   .time-ago { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-1); }
   .time-full { display: block; color: var(--muted-2); font-size: 0.68rem; margin-top: 2px; }

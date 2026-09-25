@@ -117,6 +117,17 @@ body {
 .banner-info { background: #eff4fb; border-color: var(--blue-border); color: var(--blue-dark); }
 .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.table-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: auto; box-shadow: var(--shadow-sm); }
+.table-card table { width: 100%; border-collapse: collapse; min-width: 720px; font-size: 0.82rem; }
+.table-card th, .table-card td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--line-2); }
+.table-card th { text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); font-size: 0.64rem; font-weight: 800; background: rgba(248,250,252,0.7); white-space: nowrap; }
+.table-card tbody tr:hover td { background: #f6f9fc; }
+.table-card td { color: var(--text-2); }
+.table-card td strong { color: var(--text-1); font-weight: 700; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 17px 22px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); }
+.panel-head h2 { font-size: 0.92rem; margin: 0; letter-spacing: -0.01em; font-weight: 750; color: var(--text-1); }
+.panel-head a { color: var(--accent); text-decoration: none; font-size: 0.75rem; font-weight: 750; }
+.panel-head a:hover { text-decoration: underline; }
 .app-frame {
   min-height: 100vh;
 }

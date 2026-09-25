@@ -181,8 +181,6 @@
 
 <style>
   .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
-  .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
   .msg.err { padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px; font-size: 0.8rem; background: var(--red-bg-alt); border: 1px solid var(--red-border); color: var(--red-dark); box-shadow: var(--shadow-xs); }
   .settings-card { max-width: 760px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow-sm); border-top: 3px solid var(--success-border); }
   .setting-head { display: flex; justify-content: space-between; gap: 20px; padding: 22px 24px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); }
@@ -199,15 +197,6 @@
   .btn-close { border: 1px solid var(--red-border); border-radius: 6px; padding: 8px 14px; background: var(--panel); color: var(--red); font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.12s; }
   .btn-close:hover { background: var(--red-bg-alt); }
   .btn-close:disabled { opacity: 0.55; cursor: not-allowed; }
-  .table-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: auto; box-shadow: var(--shadow-sm); }
-  .panel-head { padding: 17px 22px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); }
-  .panel-head h2 { font-size: 0.92rem; margin: 0; letter-spacing: -0.01em; font-weight: 750; color: var(--text-1); }
-  .table-card table { width: 100%; border-collapse: collapse; min-width: 720px; font-size: 0.82rem; }
-  .table-card th, .table-card td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--line-2); }
-  .table-card th { text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); font-size: 0.64rem; font-weight: 800; background: rgba(248,250,252,0.7); white-space: nowrap; }
-  .table-card tbody tr:hover td { background: #f6f9fc; }
-  .table-card td { color: var(--text-2); }
-  .table-card td strong { color: var(--text-1); }
   .td-acts { text-align: right; white-space: nowrap; }
   .btn-del { color: var(--red); }
   .empty-state { padding: 24px; color: var(--muted-2); font-size: 0.82rem; }

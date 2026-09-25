@@ -523,8 +523,6 @@
 
 <style>
   .loading-panel { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
-  .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
   .error-panel { padding: 16px 20px; background: var(--red-bg); color: var(--red); border-radius: 7px; font-size: 0.88rem; }
   .no-period-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 44px 40px; box-shadow: var(--shadow-sm); text-align: center; max-width: 560px; margin: 40px auto; }
   .no-period-card h1 { font-size: 1.5rem; letter-spacing: -0.02em; margin: 0 0 10px; font-weight: 750; color: var(--text-1); }
@@ -532,8 +530,6 @@
   .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 11px 20px; border-radius: 8px; background: var(--navy); color: var(--paper); text-decoration: none; font-size: 0.82rem; font-weight: 750; white-space: nowrap; box-shadow: var(--shadow-sm); transition: background 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease; }
   .dash-cta:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .dash-row { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; margin-bottom: 24px; }
-  .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 17px 22px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); }
-  .panel-head h2 { font-size: 0.92rem; margin: 0; letter-spacing: -0.01em; font-weight: 750; color: var(--text-1); }
   .attention-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; align-self: stretch; display: flex; flex-direction: column; box-shadow: var(--shadow-sm); border-top: 3px solid var(--accent); }
   .attention-card .attn-row { flex: 1; }
   .reports-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow-sm); }

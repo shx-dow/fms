@@ -100,19 +100,10 @@
 
 <style>
   .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
-  .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
   .search-bar { margin-bottom: 16px; }
   .search-bar input { width: 100%; max-width: 400px; padding: 11px 14px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 0.84rem; background: var(--panel); color: var(--text-1); box-shadow: var(--shadow-xs); transition: border-color 0.13s ease, box-shadow 0.13s ease; }
   .search-bar input:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
   .search-bar input::placeholder { color: var(--muted-3); }
-  .table-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: auto; box-shadow: var(--shadow-sm); }
-  .table-card table { width: 100%; border-collapse: collapse; min-width: 720px; font-size: 0.82rem; }
-  .table-card th, .table-card td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--line-2); }
-  .table-card th { text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); font-size: 0.64rem; font-weight: 800; background: rgba(248,250,252,0.7); white-space: nowrap; }
-  .table-card tbody tr:hover td { background: #f6f9fc; }
-  .table-card td { color: var(--text-2); }
-  .table-card td strong { color: var(--text-1); font-weight: 700; }
   .pill { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 0.66rem; font-weight: 800; border: 1px solid transparent; }
   .pill.active { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
   .pill.inactive { background: var(--line-light); border-color: var(--line); color: var(--muted); }
