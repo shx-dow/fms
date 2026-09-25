@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
-import type { SQL } from 'drizzle-orm';
 import type { Db } from '../client';
 import { db as defaultDb } from '../client';
 
@@ -90,15 +89,6 @@ export interface ReportHistoryRow {
   period_label?: string;
 }
 
-export const MAX_EXPORT_TEACHING_ROWS = 10;
-
-export interface ExportReportFilter {
-  reportId?: string;
-  periodId?: string;
-  status?: string;
-  submitted?: boolean;
-}
-
 export interface LatestReportRow extends ReportRow {
   starts_on: string;
   due_on: string;
@@ -116,97 +106,6 @@ export interface TeachingStatsRow {
   scheduled: number;
   conducted: number;
   syllabus_lecture: number;
-}
-
-export interface ReviewQueueRow {
-  id: string;
-  status: string;
-  updated_at: string;
-  completion: number;
-  submitted_at: string | null;
-  faculty_name: string;
-  faculty_email: string;
-  period_starts_on: string;
-  period_label?: string;
-}
-
-export interface MissingFacultyRow {
-  id: string;
-  name: string;
-  email: string;
-}
-
-export interface WeekRow {
-  id: string;
-  label: string;
-  starts_on: string;
-  ends_on: string;
-  due_on: string;
-  is_open: number;
-  status: string | null;
-  completion: number | null;
-  report_id: string | null;
-}
-
-export interface WeekAggregateRow {
-  id: string;
-  label: string;
-  starts_on: string;
-  ends_on: string;
-  due_on: string;
-  is_open: number;
-  total: number;
-  submitted: number;
-  approved: number;
-  drafts: number;
-}
-
-export interface PeriodReportRow {
-  id: string;
-  status: string;
-  completion: number;
-  summary: string | null;
-  submitted_at: string | null;
-  updated_at: string;
-  faculty_name: string;
-  faculty_email: string;
-}
-
-export interface ExportTeachingRow {
-  course_code: string;
-  course_name: string;
-  program_level: string;
-  class_type: string;
-  scheduled: number;
-  conducted: number;
-  missed: number;
-  syllabus_lecture: number | null;
-}
-
-export interface DashboardFacultyRow {
-  id: string;
-  name: string;
-  email: string;
-  status: string | null;
-  completion: number | null;
-  submitted_at: string | null;
-}
-
-export interface TrendRow {
-  starts_on: string;
-  total: number;
-  submitted: number;
-  avg_completion: number;
-  submission_rate: number;
-  period?: string;
-}
-
-export interface PeriodStatsRow {
-  starts_on: string;
-  due_on: string;
-  faculty_count: number;
-  submitted_count: number;
-  period?: string;
 }
 
 export function getReportForPeriod(facultyId: string, periodId: string, db: Db = defaultDb) {
@@ -298,38 +197,7 @@ export function listReportHistory(facultyId: string, db: Db = defaultDb): Report
   `) as ReportHistoryRow[];
 }
 
-function exportStatusMatches(status: string, filter: ExportReportFilter): boolean {
-  if (filter.status && status !== filter.status) return false;
-  if (filter.submitted === true && status !== 'SUBMITTED' && status !== 'APPROVED') return false;
-  if (filter.submitted === false && (status === 'SUBMITTED' || status === 'APPROVED')) return false;
-  return true;
-}
 
-export function getReportForExport(facultyId: string, filter: ExportReportFilter, db: Db = defaultDb) {
-  if (filter.reportId) {
-    // SAFETY: The SELECT list projects the export header columns plus period start for labeling.
-    const row = db.get(sql`
-      SELECT r.*, p.starts_on AS period_starts_on
-      FROM reports r JOIN reporting_periods p ON p.id = r.period_id
-      WHERE r.id = ${filter.reportId} AND r.faculty_id = ${facultyId} LIMIT 1
-    `) as (ReportWithPeriod & { submitted_at: string | null }) | undefined;
-    if (!row || !exportStatusMatches(String(row.status), filter)) return undefined;
-    return row;
-  }
-  if (filter.periodId) {
-    const row = getReportForPeriod(facultyId, filter.periodId, db);
-    if (!row || !exportStatusMatches(String(row.status), filter)) return undefined;
-    // SAFETY: getReportForPeriod returns ReportWithPeriod which already carries the joined period columns.
-    return row as ReportWithPeriod & { submitted_at: string | null };
-  }
-  // SAFETY: The SELECT list projects the export header columns plus period start for labeling.
-  const rows = db.all(sql`
-    SELECT r.*, p.starts_on AS period_starts_on
-    FROM reports r JOIN reporting_periods p ON p.id = r.period_id
-    WHERE r.faculty_id = ${facultyId} ORDER BY r.updated_at DESC
-  `) as (ReportWithPeriod & { submitted_at: string | null })[];
-  return rows.find((r) => exportStatusMatches(String(r.status), filter));
-}
 
 export function getLatestReportForUser(facultyId: string, db: Db = defaultDb) {
   // SAFETY: The SELECT list matches LatestReportRow (report columns plus the joined period columns).
@@ -384,150 +252,27 @@ export function saveReport(input: SaveReportInput, db: Db = defaultDb) {
   });
 }
 
-export function listReviewQueue(opts: { departmentId?: string }, db: Db = defaultDb): ReviewQueueRow[] {
-  const clauses: SQL[] = [sql`r.status IN ('SUBMITTED','CHANGES_REQUIRED','APPROVED')`];
-  if (opts.departmentId) clauses.push(sql`u.department_id = ${opts.departmentId}`);
-  // SAFETY: The SELECT list matches ReviewQueueRow (report, user and period columns).
-  return db.all(sql`
-    SELECT r.id, r.status, r.updated_at, r.completion, r.submitted_at, u.name AS faculty_name,
-           u.email AS faculty_email, p.starts_on AS period_starts_on
-    FROM reports r JOIN users u ON u.id = r.faculty_id JOIN reporting_periods p ON p.id = r.period_id
-    WHERE ${sql.join(clauses, sql` AND `)}
-    ORDER BY r.updated_at DESC
-  `) as ReviewQueueRow[];
-}
 
-export function getReviewScope(reportId: string, opts: { departmentId?: string }, db: Db = defaultDb) {
-  const where = opts.departmentId
-    ? sql`r.id = ${reportId} AND u.department_id = ${opts.departmentId}`
-    : sql`r.id = ${reportId}`;
-  // SAFETY: The SELECT list projects exactly the report id column.
-  return db.get(sql`SELECT r.id FROM reports r JOIN users u ON u.id = r.faculty_id WHERE ${where}`) as
-    | { id: string }
-    | undefined;
-}
 
 export function setReportStatus(reportId: string, status: string, updatedAt: string, db: Db = defaultDb) {
   db.run(sql`UPDATE reports SET status = ${status}, updated_at = ${updatedAt} WHERE id = ${reportId}`);
 }
 
-export function listMissing(periodId: string, opts: { departmentId?: string }, db: Db = defaultDb): MissingFacultyRow[] {
-  const clauses: SQL[] = [
-    sql`u.role = 'FACULTY'`,
-    sql`u.is_active = 1`,
-    sql`u.id NOT IN (SELECT r.faculty_id FROM reports r WHERE r.period_id = ${periodId} AND r.status IN ('SUBMITTED', 'APPROVED'))`,
-  ];
-  if (opts.departmentId) clauses.push(sql`u.department_id = ${opts.departmentId}`);
-  // SAFETY: The SELECT list projects exactly the three user columns in MissingFacultyRow.
-  return db.all(sql`
-    SELECT u.id, u.name, u.email FROM users u
-    WHERE ${sql.join(clauses, sql` AND `)}
-  `) as MissingFacultyRow[];
-}
+// Focused query modules split out of this file; re-exported so existing imports
+// keep a single entry point for report data.
+export { listReviewQueue, getReviewScope, listMissing } from './report-review';
+export type { ReviewQueueRow, MissingFacultyRow } from './report-review';
 
-export function listWeeksForFaculty(facultyId: string, db: Db = defaultDb): WeekRow[] {
-  // SAFETY: The SELECT list matches WeekRow (period columns plus the left-joined report columns).
-  return db.all(sql`
-    SELECT p.id, p.label, p.starts_on, p.ends_on, p.due_on, p.is_open,
-           r.status, r.completion, r.id AS report_id
-    FROM reporting_periods p
-    LEFT JOIN reports r ON r.period_id = p.id AND r.faculty_id = ${facultyId}
-    ORDER BY p.starts_on ASC
-  `) as WeekRow[];
-}
+export { listWeeksForFaculty, listWeeksAggregate, listReportsForPeriod } from './report-weeks';
+export type { WeekRow, WeekAggregateRow, PeriodReportRow } from './report-weeks';
 
-export function listWeeksAggregate(
-  opts: { departmentId?: string },
-  db: Db = defaultDb,
-): WeekAggregateRow[] {
-  const dept = opts.departmentId ? sql`AND u.department_id = ${opts.departmentId}` : sql``;
-  // SAFETY: The SELECT list matches WeekAggregateRow (period columns plus the aggregate counts).
-  return db.all(sql`
-    SELECT p.id, p.label, p.starts_on, p.ends_on, p.due_on, p.is_open,
-      COUNT(u.id) AS total,
-      COALESCE(SUM(CASE WHEN r.status IN ('SUBMITTED','CHANGES_REQUIRED') THEN 1 ELSE 0 END), 0) AS submitted,
-      COALESCE(SUM(CASE WHEN r.status = 'APPROVED' THEN 1 ELSE 0 END), 0) AS approved,
-      COALESCE(SUM(CASE WHEN r.status = 'DRAFT' THEN 1 ELSE 0 END), 0) AS drafts
-    FROM reporting_periods p
-    CROSS JOIN users u
-    LEFT JOIN reports r ON r.period_id = p.id AND r.faculty_id = u.id
-    WHERE u.role = 'FACULTY' AND u.is_active = 1 ${dept}
-    GROUP BY p.id
-    ORDER BY p.starts_on ASC
-  `) as WeekAggregateRow[];
-}
+export {
+  MAX_EXPORT_TEACHING_ROWS,
+  getReportForExport,
+  listExportTeaching,
+  countExportTeaching,
+} from './report-export';
+export type { ExportReportFilter, ExportTeachingRow } from './report-export';
 
-export function listReportsForPeriod(
-  periodId: string,
-  opts: { departmentId?: string },
-  db: Db = defaultDb,
-): PeriodReportRow[] {
-  const dept = opts.departmentId ? sql`AND u.department_id = ${opts.departmentId}` : sql``;
-  // SAFETY: The SELECT list matches PeriodReportRow (report columns plus the joined user columns).
-  return db.all(sql`
-    SELECT r.id, r.status, r.completion, r.summary, r.submitted_at, r.updated_at,
-           u.name AS faculty_name, u.email AS faculty_email
-    FROM reports r JOIN users u ON u.id = r.faculty_id
-    WHERE r.period_id = ${periodId} ${dept}
-    ORDER BY u.name
-  `) as PeriodReportRow[];
-}
-
-export function listExportTeaching(reportId: string, db: Db = defaultDb): ExportTeachingRow[] {
-  // SAFETY: The SELECT list matches ExportTeachingRow (the exported teaching columns).
-  return db.all(sql`
-    SELECT course_code, course_name, program_level, class_type, scheduled, conducted, missed, syllabus_lecture
-    FROM teaching_records WHERE report_id = ${reportId} ORDER BY rowid LIMIT ${MAX_EXPORT_TEACHING_ROWS}
-  `) as ExportTeachingRow[];
-}
-
-export function countExportTeaching(reportId: string, db: Db = defaultDb): { total: number; scheduled: number; conducted: number } {
-  // SAFETY: The COUNT/SUM expressions return numeric totals for the export footer.
-  return db.get(sql`
-    SELECT COUNT(*) AS total, COALESCE(SUM(scheduled),0) AS scheduled, COALESCE(SUM(conducted),0) AS conducted
-    FROM teaching_records WHERE report_id = ${reportId}
-  `) as { total: number; scheduled: number; conducted: number };
-}
-
-export function listDashboardFaculty(periodId: string | null, db: Db = defaultDb): DashboardFacultyRow[] {
-  // SAFETY: The SELECT list matches DashboardFacultyRow (user columns plus the left-joined report columns).
-  return db.all(sql`
-    SELECT u.id, u.name, u.email, r.status, r.completion, r.submitted_at
-    FROM users u LEFT JOIN reports r ON r.faculty_id = u.id AND r.period_id = ${periodId}
-    WHERE u.role = 'FACULTY' AND u.is_active = 1 ORDER BY u.name
-  `) as DashboardFacultyRow[];
-}
-
-export function listTrends(
-  opts: { facultyId?: string; departmentId?: string },
-  db: Db = defaultDb,
-): TrendRow[] {
-  const clauses: SQL[] = [sql`p.is_open = 0`];
-  if (opts.facultyId) clauses.push(sql`r.faculty_id = ${opts.facultyId}`);
-  if (opts.departmentId) clauses.push(sql`u.department_id = ${opts.departmentId}`);
-  // SAFETY: The SELECT list matches TrendRow (period column plus the aggregate expressions).
-  return db.all(sql`
-    SELECT p.starts_on, COUNT(r.id) AS total,
-      SUM(CASE WHEN r.status IN ('SUBMITTED','APPROVED') THEN 1 ELSE 0 END) AS submitted,
-      ROUND(AVG(r.completion), 0) AS avg_completion,
-      ROUND(AVG(CASE WHEN r.status IN ('SUBMITTED','APPROVED') THEN 1 ELSE 0 END) * 100, 0) AS submission_rate
-    FROM reporting_periods p
-    LEFT JOIN reports r ON r.period_id = p.id
-    LEFT JOIN users u ON u.id = r.faculty_id
-    WHERE ${sql.join(clauses, sql` AND `)}
-    GROUP BY p.id ORDER BY p.starts_on DESC LIMIT 6
-  `) as TrendRow[];
-}
-
-export function getCurrentPeriodStats(opts: { departmentId?: string }, db: Db = defaultDb): PeriodStatsRow[] {
-  const facultySub = opts.departmentId ? sql` AND department_id = ${opts.departmentId}` : sql``;
-  const reportSub = opts.departmentId ? sql` AND u.department_id = ${opts.departmentId}` : sql``;
-  // SAFETY: The SELECT list matches PeriodStatsRow (period columns plus the subquery counts).
-  return db.all(sql`
-    SELECT p.starts_on, p.due_on,
-      (SELECT COUNT(*) FROM users WHERE role = 'FACULTY' AND is_active = 1${facultySub}) AS faculty_count,
-      (SELECT COUNT(*) FROM reports r JOIN users u ON u.id = r.faculty_id
-        WHERE r.period_id = p.id AND r.status IN ('SUBMITTED','APPROVED')${reportSub}) AS submitted_count
-    FROM reporting_periods p WHERE p.is_open = 1 LIMIT 1
-  `) as PeriodStatsRow[];
-}
+export { listDashboardFaculty, listTrends, getCurrentPeriodStats } from './report-trends';
+export type { DashboardFacultyRow, TrendRow, PeriodStatsRow } from './report-trends';
