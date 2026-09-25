@@ -1,61 +1,26 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { requireUser, reviewScope } from '$lib/server/api';
+import { requireUser } from '$lib/server/api';
+import { aggregateWeeks, facultyWeeks } from '$lib/dashboard-weeks';
 import { computeWeekLabel } from '$lib/week-label';
 import { getPeriod } from '$lib/server/db/repositories/periods';
-import {
-  getReportForPeriod,
-  listReportsForPeriod,
-  listWeeksAggregate,
-  listWeeksForFaculty,
-} from '$lib/server/db/repositories/reports';
+import { getReportForPeriod, listReportsForPeriod } from '$lib/server/db/repositories/reports';
+import { reviewScope } from '$lib/server/api';
 
 export const GET: RequestHandler = ({ locals, url }) => {
   const user = requireUser(locals);
-  const now = new Date();
-
   const periodId = url.searchParams.get('period');
+
   if (periodId) {
     const period = getPeriod(periodId);
     if (!period) return json({ error: 'Period not found' }, { status: 404 });
     const enriched = { ...period, week_label: computeWeekLabel(String(period.starts_on)) };
     if (user.role === 'FACULTY') {
-      const report = getReportForPeriod(user.id, periodId);
-      return json({ period: enriched, report: report ?? null });
+      return json({ period: enriched, report: getReportForPeriod(user.id, periodId) ?? null });
     }
-    const opts = reviewScope(user);
-    const reports = listReportsForPeriod(periodId, opts);
-    return json({ period: enriched, reports });
+    return json({ period: enriched, reports: listReportsForPeriod(periodId, reviewScope(user)) });
   }
 
-  let weeks;
-  if (user.role === 'FACULTY') {
-    weeks = listWeeksForFaculty(user.id).map((w) => ({
-      ...w,
-      week_label: computeWeekLabel(String(w.starts_on)),
-    }));
-  } else {
-    const opts = reviewScope(user);
-    weeks = listWeeksAggregate(opts).map((w) => {
-      const total = Number(w.total) || 1;
-      const ratio = (Number(w.submitted) + Number(w.approved)) / total;
-      return {
-        ...w,
-        week_label: computeWeekLabel(String(w.starts_on)),
-        level:
-          Number(w.approved) === Number(w.total)
-            ? 4
-            : ratio >= 1
-              ? 3
-              : ratio >= 0.5
-                ? 2
-                : ratio > 0
-                  ? 1
-                  : 0,
-        late: ratio < 1 && (!Number(w.is_open) || new Date(String(w.due_on)) < now) ? 1 : 0,
-      };
-    });
-  }
-
+  const weeks = user.role === 'FACULTY' ? facultyWeeks(user.id) : aggregateWeeks(user);
   return json({ weeks });
 };

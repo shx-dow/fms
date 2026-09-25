@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import AsyncState from '$lib/components/AsyncState.svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import ReviewerDashboard from '$lib/components/ReviewerDashboard.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
@@ -27,67 +25,20 @@
     return title ? `${title} ${firstName}` : firstName;
   }
   const isFaculty = $derived(user?.role === 'FACULTY');
-  let completion = $state(0);
-  let scheduled = $state(0);
-  let conducted = $state(0);
-  let syllabus = $state(0);
-  let periodLabel = $state('');
-  let status = $state('Draft');
-  let dueDate = $state('');
-  let history = $state<{ id: string; status: string; completion: number; period_label: string; period_id?: string; updated_at: string; submitted_at?: string }[]>([]);
-  let teaching = $state<{ course_code: string; course_name: string; class_type: string; scheduled: number; conducted: number; syllabus_completion: number }[]>([]);
-  let reportId = $state('');
-  let researchCount = $state(0);
-  let dutiesCount = $state(0);
-  let outreachCount = $state(0);
-  let filesCount = $state(0);
-  let loading = $state(true);
-  let error = $state('');
-  let noPeriod = $state(false);
-  onMount(async () => {
-    if (!isFaculty) { loading = false; return; }
-    try {
-      const res = await fetch('/api/reports');
-      const data = await res.json();
-      if (res.status === 409) { noPeriod = true; return; }
-      if (!res.ok) { error = 'Unable to load dashboard data.'; return; }
-      const r = data.report;
-      completion = r?.completion ?? 0;
-      reportId = r?.id ?? '';
-      periodLabel = r?.period_label ?? '';
-      dueDate = r?.due_on ?? '';
-      status = !r ? 'No report' : r.status === 'SUBMITTED' ? 'Submitted' : r.status === 'APPROVED' ? 'Approved' : r.status === 'CHANGES_REQUIRED' ? 'Changes required' : 'Draft';
-      history = (data.reports ?? []).slice(0, 5);
-      const realRows = (arr: any[] | undefined, key: string) =>
-        (arr ?? []).filter((x: any) => (x[key] ?? '').trim() && (x[key] ?? '').trim() !== 'N/A').length;
-      researchCount = realRows(data.research, 'title');
-      dutiesCount = realRows(data.duties, 'name');
-      outreachCount = realRows(data.outreach, 'activity');
-      if (data.teaching?.length) {
-        teaching = data.teaching.map((t: any) => ({
-          course_code: t.course_code ?? '',
-          course_name: t.course_name ?? '',
-          class_type: t.class_type ?? '',
-          scheduled: Number(t.scheduled) || 0,
-          conducted: Number(t.conducted) || 0,
-          syllabus_completion: Number(t.syllabus_completion) || 0,
-        }));
-      } else {
-        teaching = [];
-      }
-      scheduled = teaching.reduce((a, t) => a + t.scheduled, 0);
-      conducted = teaching.reduce((a, t) => a + t.conducted, 0);
-      syllabus = teaching.length ? Math.round(teaching.reduce((a, t) => a + t.syllabus_completion, 0) / teaching.length) : 0;
-      if (reportId) {
-        try {
-          const ar = await fetch(`/api/attachments?reportId=${reportId}`);
-          const ad = await ar.json();
-          filesCount = (ad.attachments ?? []).length;
-        } catch { filesCount = 0; }
-      }
-    } catch { error = 'Unable to connect to the server.'; }
-    finally { loading = false; }
-  });
+  const report = $derived(data.report);
+  const completion = $derived(report?.completion ?? 0);
+  const scheduled = $derived(report?.scheduled ?? 0);
+  const conducted = $derived(report?.conducted ?? 0);
+  const syllabus = $derived(report?.syllabus ?? 0);
+  const periodLabel = $derived(report?.periodLabel ?? '');
+  const status = $derived(report?.status ?? 'No report');
+  const dueDate = $derived(report?.dueOn ?? '');
+  const history = $derived(report?.history ?? []);
+  const reportId = $derived(report?.reportId ?? '');
+  const researchCount = $derived(report?.researchCount ?? 0);
+  const dutiesCount = $derived(report?.dutiesCount ?? 0);
+  const outreachCount = $derived(report?.outreachCount ?? 0);
+  const filesCount = $derived(report?.filesCount ?? 0);
   const deadline = $derived(dueDate ? new Date(dueDate).toLocaleString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
   const deliveryRate = $derived(scheduled ? Math.round((conducted / scheduled) * 100) : null);
   const deadlineMs = $derived(dueDate ? new Date(dueDate).getTime() - Date.now() : 0);
@@ -102,10 +53,11 @@
   );
   const ringC = 163.36;
   const ringOff = $derived(ringC * (1 - Math.min(100, Math.max(0, completion)) / 100));
-  const teachingDone = $derived(teaching.some((t) => (t.course_code ?? '').trim() || (t.course_name ?? '').trim()));
+  const teachingDone = $derived(report?.hasTeaching ?? false);
 
+  // Weeks arrive with the page; selecting one still fetches its detail.
+  const initialWeeks = (): Week[] => data.weeks;
   let weeks = $state<Week[]>([]);
-  let weeksLoading = $state(true);
   let selectedPeriod = $state<string | null>(null);
   let weekDetail = $state<WeekDetail | null>(null);
   let detailLoading = $state(false);
@@ -120,15 +72,6 @@
     return base;
   }
 
-  async function loadWeeks() {
-    try {
-      const res = await fetch('/api/dashboard/weeks');
-      const d = await res.json();
-      weeks = d.weeks ?? [];
-      if (currentPeriodId) selectWeek(currentPeriodId);
-    } finally { weeksLoading = false; }
-  }
-
   async function selectWeek(id: string) {
     selectedPeriod = id || null;
     detailLoading = false;
@@ -141,24 +84,16 @@
     } finally { detailLoading = false; }
   }
 
-  onMount(() => {
-    loadWeeks();
+  $effect.pre(() => {
+    if (weeks.length) return;
+    weeks = initialWeeks();
+    if (currentPeriodId) selectWeek(currentPeriodId);
   });
 </script>
 
 <svelte:head><title>Dashboard · Faculty Reporting System</title></svelte:head>
 <main class="shell app-shell">
-  {#if loading}
-    <AsyncState kind="loading" message="Loading dashboard…" />
-  {:else if noPeriod}
-    <div class="no-period-card">
-      <h1>Reporting is paused</h1>
-      <p>There is no open reporting period right now, so there is nothing to fill in. Ask your HOD or admin to open the next period.</p>
-      <a href="/reports" class="dash-cta">View past reports →</a>
-    </div>
-  {:else if error}
-    <AsyncState kind="error" message={error} />
-  {:else if isFaculty}
+  {#if isFaculty}
       <section class="hero">
         <div class="hero-main">
           <span class="hero-eyebrow">{periodLabel || 'Current reporting period'}</span>
@@ -216,7 +151,7 @@
         </a>
       </section>
 
-      {#if !weeksLoading && weeks.length}
+      {#if weeks.length}
         <section class="graph-card" aria-label="Report progress">
           <div class="panel-head">
             <h2>Progress</h2>
@@ -266,7 +201,7 @@
             {/each}
           </div>
         </section>
-      {:else if !weeksLoading}
+      {:else}
         <section class="graph-card">
           <div class="graph-empty">No reporting weeks yet. Ask your HOD or admin to open a reporting period.</div>
         </section>
@@ -292,7 +227,7 @@
     <ReviewerDashboard
       name={greetingName(user?.name)}
       {weeks}
-      loading={weeksLoading}
+      loading={false}
       {selectedPeriod}
       {weekDetail}
       {detailLoading}
@@ -311,9 +246,6 @@
   .graph-card .week-cell.c-changes { background: var(--red-soft); border-color: var(--red-border); color: var(--red-dark); }
   .graph-card .week-cell { width: 20px; height: 20px; border: 1px solid var(--line); border-radius: 6px; padding: 0; font-size: 0; display: grid; place-items: center; box-shadow: var(--shadow-xs); transition: transform 0.12s ease, border-color 0.12s ease; }
   .graph-card .week-cell:hover { transform: scale(1.15); z-index: 2; border-color: var(--blue-border); }
-  .no-period-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 44px 40px; box-shadow: var(--shadow-sm); text-align: center; max-width: 560px; margin: 40px auto; }
-  .no-period-card h1 { font-size: 1.5rem; letter-spacing: -0.02em; margin: 0 0 10px; font-weight: 750; color: var(--text-1); }
-  .no-period-card p { margin: 0 0 22px; color: var(--text-3); font-size: 0.88rem; line-height: 1.55; }
   .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 11px 20px; border-radius: 8px; background: var(--navy); color: var(--paper); text-decoration: none; font-size: 0.82rem; font-weight: 750; white-space: nowrap; box-shadow: var(--shadow-sm); transition: background 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease; }
   .dash-cta:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .reports-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow-sm); }

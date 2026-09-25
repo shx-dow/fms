@@ -6,7 +6,7 @@ export interface Week {
   is_open: number;
   week_label: string;
   status?: string | null;
-  completion?: number;
+  completion?: number | null;
   total?: number;
   submitted?: number;
   approved?: number;
