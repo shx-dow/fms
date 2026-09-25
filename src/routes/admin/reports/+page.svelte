@@ -13,13 +13,20 @@
   type OutreachRow = { activity: string; audience: string; date: string };
   type AttachRow = { id: string; filename: string; size: number };
   type ReviewHistoryRow = { decision: string; remarks: string; created_at: string; reviewer_name: string };
-  let reports: ReviewRow[] = $state([]);
-  let selected: ReviewRow | null = $state(null);
+  let { data } = $props();
+  // Seeded once, then owned by the page so a review decision can update the row.
+  const initialQueue = (): ReviewRow[] => data.reports;
+  let reports = $state<ReviewRow[]>([]);
+  let selected = $state<ReviewRow | null>(null);
+  $effect.pre(() => {
+    if (reports.length) return;
+    reports = initialQueue();
+    selected = reports[0] ?? null;
+  });
   let comment = $state('');
   let error = $state('');
   let reason = $state('');
   let allowedUntil = $state('');
-  let loading = $state(true);
   let reviewBusy: 'APPROVED' | 'CHANGES_REQUIRED' | null = $state(null);
   let reportContent: {
     teaching: TeachingRow[];
@@ -36,15 +43,9 @@
   const visibleReports = $derived(
     search.trim() ? reports.filter((r) => (r.faculty_name + ' ' + r.period_label).toLowerCase().includes(search.trim().toLowerCase())) : reports,
   );
-  onMount(async () => {
-    try {
-      const res = await fetch('/api/reviews');
-      const d = await res.json();
-      reports = d.reports ?? [];
-      selected = reports[0] ?? null;
-      if (selected) loadContent(selected.id);
-    } catch { error = 'Unable to load reviews.'; }
-    finally { loading = false; }
+  // The queue arrives with the page; the selected report's content stays client-side.
+  onMount(() => {
+    if (selected) loadContent(selected.id);
   });
   async function loadContent(reportId: string) {
     contentLoading = true; reportContent = null;
@@ -106,9 +107,6 @@
     {/snippet}
   </PageHeader>
   {#if error}<AsyncState kind="banner" message={error} />{/if}
-  {#if loading}
-    <AsyncState kind="loading" message="Loading…" />
-  {:else}
     <div class="review-layout">
       <section class="queue-panel">
         <div class="queue-head">Reports requiring attention</div>
@@ -216,7 +214,6 @@
         </section>
       {/if}
     </div>
-  {/if}
 </main>
 
 <style>
