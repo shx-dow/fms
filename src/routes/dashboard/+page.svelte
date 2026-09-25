@@ -2,8 +2,21 @@
   import { onMount } from 'svelte';
   import AsyncState from '$lib/components/AsyncState.svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import ReviewerDashboard from '$lib/components/ReviewerDashboard.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
+  import {
+    groupWeeksByMonth,
+    weekCellClass,
+    weekStatusLabel,
+    weekYears,
+    type Week,
+  } from '$lib/weeks';
+
+  interface WeekDetail {
+    report?: { status: string } | null;
+    reports?: { status: string }[];
+  }
+
   let { data } = $props();
   const user = $derived(data.user);
   function greetingName(name: string | undefined) {
@@ -91,70 +104,22 @@
   const ringOff = $derived(ringC * (1 - Math.min(100, Math.max(0, completion)) / 100));
   const teachingDone = $derived(teaching.some((t) => (t.course_code ?? '').trim() || (t.course_name ?? '').trim()));
 
-  type Week = {
-    id: string;
-    starts_on: string;
-    ends_on: string;
-    due_on: string;
-    is_open: number;
-    week_label: string;
-    status?: string | null;
-    completion?: number;
-    total?: number;
-    submitted?: number;
-    approved?: number;
-    level?: number;
-    late?: number;
-  };
   let weeks = $state<Week[]>([]);
   let weeksLoading = $state(true);
   let selectedPeriod = $state<string | null>(null);
-  let weekDetail = $state<any>(null);
+  let weekDetail = $state<WeekDetail | null>(null);
   let detailLoading = $state(false);
-  let timelineEl = $state<HTMLElement | null>(null);
-  let tooltipText = $state('');
-  let tooltipVisible = $state(false);
-  let tooltipX = $state(0);
-  let tooltipY = $state(0);
-  let canScrollLeft = $state(false);
-  let canScrollRight = $state(false);
   const currentPeriodId = $derived(weeks.find((w) => Number(w.is_open) === 1)?.id ?? null);
-  const years = $derived(
-    [...new Set(weeks.map((w) => new Date(w.starts_on + 'T00:00:00').getFullYear()))].sort((a, b) => b - a),
-  );
-  let selectedYear = $state<number | null>(null);
-  const activeYear = $derived(selectedYear ?? years[0] ?? new Date().getFullYear());
-  type WeekGroup = { label: string; weeks: Week[] };
-  const activeWeeks = $derived(
-    weeks
-      .filter((w) => new Date(w.starts_on + 'T00:00:00').getFullYear() === activeYear)
-      .sort((a, b) => a.starts_on.localeCompare(b.starts_on)),
-  );
-  const weekGroups = $derived.by((): WeekGroup[] => {
-    const yearWeeks = weeks
-      .filter((w) => new Date(w.starts_on + 'T00:00:00').getFullYear() === activeYear)
-      .sort((a, b) => a.starts_on.localeCompare(b.starts_on));
-    const groups = new Map<string, WeekGroup>();
-    for (const week of yearWeeks) {
-      const date = new Date(week.starts_on + 'T00:00:00');
-      const key = `${date.getFullYear()}-${date.getMonth()}`;
-      const group = groups.get(key) ?? {
-        label: date.toLocaleDateString('en-US', { month: 'short' }),
-        weeks: [],
-      };
-      group.weeks.push(week);
-      groups.set(key, group);
-    }
-    return [...groups.values()];
-  });
-  const activeWeekCount = $derived(activeWeeks.length);
-  const graphStatus = (s: string | null | undefined) =>
-    s === 'APPROVED' ? 'Approved' : s === 'SUBMITTED' ? 'Submitted' : s === 'CHANGES_REQUIRED' ? 'Changes requested' : s === 'DRAFT' ? 'Draft' : 'Not started';
+
+  const graphYear = $derived(weekYears(weeks)[0] ?? new Date().getFullYear());
+  const weekGroups = $derived(groupWeeksByMonth(weeks, graphYear));
+
   function graphTip(w: Week) {
-    const base = `${w.week_label} · ${graphStatus(w.status)}`;
+    const base = `${w.week_label} · ${weekStatusLabel(w.status)}`;
     if (w.status === 'DRAFT' && Number(w.completion)) return `${base} · ${w.completion}%`;
     return base;
   }
+
   async function loadWeeks() {
     try {
       const res = await fetch('/api/dashboard/weeks');
@@ -163,91 +128,22 @@
       if (currentPeriodId) selectWeek(currentPeriodId);
     } finally { weeksLoading = false; }
   }
+
   async function selectWeek(id: string) {
-    selectedPeriod = id;
-    detailLoading = true;
+    selectedPeriod = id || null;
+    detailLoading = false;
     weekDetail = null;
+    if (!id) return;
+    detailLoading = true;
     try {
       const res = await fetch(`/api/dashboard/weeks?period=${id}`);
-      const d = await res.json();
-      weekDetail = d;
+      weekDetail = await res.json();
     } finally { detailLoading = false; }
   }
-  function pickYear(y: number) {
-    selectedYear = y;
-    selectedPeriod = null;
-    weekDetail = null;
-    const openPeriod = weeks.find(
-      (w) => Number(w.is_open) === 1 && new Date(w.starts_on + 'T00:00:00').getFullYear() === y,
-    );
-    if (openPeriod) selectWeek(openPeriod.id);
-  }
+
   onMount(() => {
     loadWeeks();
-    const onScroll = () => {
-      if (!timelineEl) return;
-      const maxScroll = timelineEl.scrollWidth - timelineEl.clientWidth;
-      if (timelineEl.scrollLeft > maxScroll) timelineEl.scrollLeft = maxScroll;
-      updateArrows();
-    };
-    timelineEl?.addEventListener('scroll', onScroll);
-    return () => timelineEl?.removeEventListener('scroll', onScroll);
   });
-  $effect(() => {
-    if (weeks.length && timelineEl) {
-      queueMicrotask(() => {
-        if (!timelineEl) return;
-        const currentCell = timelineEl.querySelector('.week-cell.current');
-        if (currentCell) {
-          const rect = currentCell.getBoundingClientRect();
-          const tlRect = timelineEl.getBoundingClientRect();
-          timelineEl.scrollLeft = timelineEl.scrollLeft + (rect.right - tlRect.right) + 24;
-        }
-        updateArrows();
-      });
-    }
-  });
-  function updateArrows() {
-    if (!timelineEl) return;
-    const maxScroll = timelineEl.scrollWidth - timelineEl.clientWidth;
-    canScrollLeft = timelineEl.scrollLeft > 4;
-    canScrollRight = maxScroll > 4 && timelineEl.scrollLeft < maxScroll - 4;
-  }
-  function scrollWeeks(direction: number) {
-    timelineEl?.scrollBy({ left: direction * 320, behavior: 'smooth' });
-  }
-  const statusLabel = (s: string | null | undefined) =>
-    s === 'APPROVED' ? 'Approved' : s === 'SUBMITTED' ? 'Submitted' : s === 'CHANGES_REQUIRED' ? 'Changes' : 'Not started';
-  function weekCellClass(w: Week) {
-    if (isFaculty) {
-      if (w.status === 'APPROVED') return 'c-approved';
-      if (w.status === 'SUBMITTED') return 'c-submitted';
-      if (w.status === 'CHANGES_REQUIRED') return 'c-changes';
-      return 'c-none';
-    }
-    if (Number(w.level) === 4) return 'c-approved';
-    if (Number(w.level) === 3) return 'c-submitted';
-    if (Number(w.level) === 2) return 'c-draft';
-    return 'c-none';
-  }
-  function weekTip(w: Week) {
-    if (isFaculty) return `${w.week_label}${w.status ? ` · ${statusLabel(w.status)}` : ''}`;
-    const done = Number(w.submitted) + Number(w.approved);
-    const parts = [`${w.week_label}`, `${done}/${w.total} submitted`];
-    if (Number(w.approved)) parts.push(`${w.approved} approved`);
-    if (Number(w.late)) parts.push('overdue');
-    return parts.join(' · ');
-  }
-  function showTip(e: MouseEvent, w: Week) {
-    tooltipText = weekTip(w);
-    tooltipVisible = true;
-    positionTip(e);
-  }
-  function positionTip(e: MouseEvent) {
-    tooltipX = e.clientX;
-    tooltipY = e.clientY - 10;
-  }
-  function hideTip() { tooltipVisible = false; }
 </script>
 
 <svelte:head><title>Dashboard · Faculty Reporting System</title></svelte:head>
@@ -262,8 +158,7 @@
     </div>
   {:else if error}
     <AsyncState kind="error" message={error} />
-  {:else}
-    {#if isFaculty}
+  {:else if isFaculty}
       <section class="hero">
         <div class="hero-main">
           <span class="hero-eyebrow">{periodLabel || 'Current reporting period'}</span>
@@ -340,7 +235,7 @@
                 <div class="graph-cells">
                   {#each group.weeks as week}
                     {@const rid = history.find((h) => h.period_id === week.id)?.id}
-                    {@const gcls = weekCellClass(week)}
+                    {@const gcls = weekCellClass('faculty', week)}
                     {@const shade = gcls === 'c-draft' ? 0.55 + (0.45 * Number(week.completion ?? 0)) / 100 : 1}
                     {#if week.id === currentPeriodId}
                       <a
@@ -376,149 +271,34 @@
           <div class="graph-empty">No reporting weeks yet. Ask your HOD or admin to open a reporting period.</div>
         </section>
       {/if}
-    {:else}
-      <PageHeader
-        title={user?.name ? `Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, ${greetingName(user.name)}` : 'Dashboard'}
-        sub={periodLabel}
-      >
-        {#snippet actions()}
-          <NotificationBell />
-          <a href="/admin/reports" class="btn btn-primary">Review queue →</a>
-        {/snippet}
-      </PageHeader>
 
-    <div class="dash-row">
-      <section class="weeks-card">
-        <div class="panel-head weeks-head">
-          <div class="weeks-title">
-            <h2>Reporting weeks</h2>
-            {#if !weeksLoading && weeks.length}
-              <span class="weeks-count">{activeWeekCount} week{activeWeekCount === 1 ? '' : 's'} · {activeYear}</span>
-            {/if}
-          </div>
-          {#if years.length > 1}
-            <div class="weeks-years">
-              {#each years as y}
-                <button class="year-pill" class:active={y === activeYear} onclick={() => pickYear(y)}>{y}</button>
-              {/each}
-            </div>
-          {/if}
-          <div class="weeks-legend">
-            <span class="legend-dot" style="background:var(--line-light)"></span><span>No report</span>
-            <span class="legend-dot" style="background:var(--warn-soft)"></span><span>Draft</span>
-            <span class="legend-dot" style="background:var(--blue-soft)"></span><span>Submitted</span>
-            <span class="legend-dot" style="background:var(--green-soft)"></span><span>Approved</span>
-            <span class="legend-dot" style="background:var(--red-soft)"></span><span>Changes</span>
-          </div>
-        </div>
-        {#if weeksLoading}
-          <div class="weeks-loading"><span class="spinner"></span></div>
-        {:else if !weeks.length}
-          <div class="weeks-empty">No reporting weeks yet. Ask your HOD or admin to open a reporting period.</div>
-        {:else}
-          <div class="weeks-body">
-            <div class="weeks-timeline-row">
-              <button class="scroll-arrow scroll-left" class:hidden={!canScrollLeft} onclick={() => scrollWeeks(-1)} aria-label="Scroll earlier">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
-              <div class="weeks-timeline" bind:this={timelineEl} aria-label={`Reporting weeks for ${activeYear}`}>
-                {#if activeWeekCount > 1}<span class="weeks-empty-label">New Semester Begins</span>{/if}
-                {#each weekGroups as group}
-                  <div class="week-month">
-                    <span class="week-month-label">{group.label}</span>
-                    <div class="week-strip">
-                      {#each group.weeks as week}
-                        <button
-                          class="week-cell {weekCellClass(week)}"
-                          class:current={week.id === currentPeriodId}
-                          class:sel={week.id === selectedPeriod}
-                          class:late={Number(week.late) === 1}
-                          aria-label={weekTip(week)}
-                          onclick={() => selectWeek(week.id)}
-                          onmouseenter={(e) => showTip(e, week)}
-                          onmousemove={positionTip}
-                          onmouseleave={hideTip}
-                        >
-                          <span>{new Date(week.starts_on + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric' })}</span>
-                        </button>
-                      {/each}
-                    </div>
-                  </div>
-                {/each}
-              </div>
-              <button class="scroll-arrow scroll-right" class:hidden={!canScrollRight} onclick={() => scrollWeeks(1)} aria-label="Scroll forward">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
-            </div>
-            {#if detailLoading}
-              <span class="spinner"></span>
-            {:else if weekDetail}
-              <div class="selected-status">
-                {#if weekDetail.report}
-                  <StatusPill status={weekDetail.report.status} />
-                {:else}
-                  <span class="wp-none">Not started</span>
-                {/if}
-              </div>
-            {/if}
-          </div>
-          {#if !isFaculty && weekDetail?.reports?.length}
-            {@const submitted = weekDetail.reports.filter((r: any) => r.status === 'SUBMITTED').length}
-            {@const approved = weekDetail.reports.filter((r: any) => r.status === 'APPROVED').length}
-            {@const total = weekDetail.reports.length}
-            <div class="weeks-reports-summary">
-              <span>{approved}/{total} approved · {submitted} pending review</span>
-              <a href="/admin/reports">View all →</a>
-            </div>
-          {/if}
-        {/if}
-      </section>
-
-      <div class="attention-card">
-        <div class="panel-head">
-          <h2>Review</h2>
-        </div>
-        <div class="attn-row">
-          <span class="attn-icon info">i</span>
-          <div>
-            <strong>Reports awaiting review</strong>
-            <p>Review submitted reports from your department and approve or request changes.</p>
-          </div>
-        </div>
-        <a href="/admin/reports" class="attn-action">Open review queue →</a>
-      </div>
-    </div>
-    {/if}
-
-    {#if isFaculty}
-      <section class="reports-panel">
-        <div class="panel-head">
-          <h2>Recent reports</h2>
-        </div>
-        {#if history.length}
-          {#each history.slice(0, 3) as r}
-            <a class="hist-row" href="/reports/{r.id}">
-              <strong>{r.period_label}</strong>
-              <StatusPill status={r.status} />
-            </a>
-          {/each}
-        {:else}
-          <div class="hist-empty">Nothing here yet — your submitted reports will appear in this list.</div>
-        {/if}
-        <a href="/reports" class="reports-viewall">View all reports →</a>
-      </section>
-    {:else}
     <section class="reports-panel">
       <div class="panel-head">
-        <h2>Review queue</h2>
+        <h2>Recent reports</h2>
       </div>
-      <div class="hist-empty">Submitted reports from your department appear in the review queue.</div>
-      <a href="/admin/reports" class="reports-viewall">Open review queue →</a>
+      {#if history.length}
+        {#each history.slice(0, 3) as r}
+          <a class="hist-row" href="/reports/{r.id}">
+            <strong>{r.period_label}</strong>
+            <StatusPill status={r.status} />
+          </a>
+        {/each}
+      {:else}
+        <div class="hist-empty">Nothing here yet — your submitted reports will appear in this list.</div>
+      {/if}
+      <a href="/reports" class="reports-viewall">View all reports →</a>
     </section>
-    {/if}
-  {/if}
-  {#if tooltipVisible}
-    <div class="week-tooltip" style="left:{tooltipX}px;top:{tooltipY}px">{tooltipText}</div>
+  {:else}
+    <ReviewerDashboard
+      name={greetingName(user?.name)}
+      {weeks}
+      loading={weeksLoading}
+      {selectedPeriod}
+      {weekDetail}
+      {detailLoading}
+      {currentPeriodId}
+      onselect={selectWeek}
+    />
   {/if}
 </main>
 
@@ -528,78 +308,14 @@
   .no-period-card p { margin: 0 0 22px; color: var(--text-3); font-size: 0.88rem; line-height: 1.55; }
   .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 11px 20px; border-radius: 8px; background: var(--navy); color: var(--paper); text-decoration: none; font-size: 0.82rem; font-weight: 750; white-space: nowrap; box-shadow: var(--shadow-sm); transition: background 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease; }
   .dash-cta:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
-  .dash-row { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; margin-bottom: 24px; }
-  .attention-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; align-self: stretch; display: flex; flex-direction: column; box-shadow: var(--shadow-sm); border-top: 3px solid var(--accent); }
-  .attention-card .attn-row { flex: 1; }
   .reports-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
   .reports-viewall { display: block; text-align: center; padding: 14px 20px; border-top: 1px solid var(--line); color: var(--blue); text-decoration: none; font-size: 0.78rem; font-weight: 700; transition: background 0.12s ease; }
   .reports-viewall:hover { background: var(--paper); }
-  .attn-row { display: flex; gap: 13px; padding: 16px 18px; align-items: start; }
-  .attn-icon { width: 23px; height: 23px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.72rem; flex: none; margin-top: 1px; }
-  .attn-icon.warn { background: var(--warn-soft); color: var(--warn-dark); }
-  .attn-icon.info { background: var(--blue-soft); color: var(--blue-dark); }
-  .attn-icon.ok { background: var(--green-soft); color: var(--green); }
-  .attn-row strong { display: block; font-size: 0.8rem; margin-bottom: 2px; }
-  .attn-row p { margin: 0 0 5px; color: var(--muted); font-size: 0.74rem; line-height: 1.4; }
-  .attn-action { display: block; text-align: center; padding: 14px 20px; border-top: 1px solid var(--line); color: var(--blue); text-decoration: none; font-size: 0.78rem; font-weight: 700; transition: background 0.12s ease; }
-  .attn-action:hover { background: var(--paper); }
   .hist-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 20px; text-decoration: none; border-bottom: 1px solid var(--line-2); transition: background 0.1s ease; }
   .hist-row:last-child { border-bottom: 0; }
   .hist-row:hover { background: #f6f9fc; }
   .hist-row strong { font-size: 0.82rem; color: var(--ink-2); font-weight: 700; }
   .hist-empty { padding: 24px 18px; text-align: center; color: var(--muted-2); font-size: 0.8rem; }
-  .weeks-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); min-width: 0; overflow: hidden; box-shadow: var(--shadow-sm); }
-  .weeks-head { gap: 14px; flex-wrap: wrap; overflow: hidden; border-radius: 8px 8px 0 0; }
-  .weeks-title { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
-  .weeks-title h2 { white-space: nowrap; }
-  .weeks-count { font-size: 0.68rem; font-weight: 600; color: var(--muted-2); white-space: nowrap; }
-  .weeks-years { display: flex; align-items: center; gap: 2px; padding: 2px; background: #eef1f2; border: 1px solid var(--line); border-radius: 7px; flex: none; }
-  .year-pill { border: 0; background: transparent; font: inherit; font-size: 0.7rem; font-weight: 700; color: var(--muted); cursor: pointer; padding: 3px 11px; border-radius: 5px; transition: background 0.12s ease, color 0.12s ease; }
-  .year-pill:hover { color: var(--navy); }
-  .year-pill.active { background: var(--navy); color: var(--paper); }
-  .weeks-legend { display: flex; align-items: center; gap: 4px 10px; font-size: 0.62rem; color: var(--muted-2); margin-left: auto; white-space: nowrap; }
-  .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; border: 1px solid var(--line); }
-  .weeks-loading, .weeks-empty { padding: 28px 20px; display: flex; align-items: center; gap: 12px; color: var(--muted-2); font-size: 0.8rem; justify-content: center; }
-  .weeks-body { padding: 18px 24px 22px; background: #fbfcfb; min-width: 0; display: flex; flex-direction: column; }
-  .weeks-timeline-row { display: flex; align-items: center; gap: 6px; position: relative; }
-  .scroll-arrow { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 50%; background: var(--panel); color: var(--muted); cursor: pointer; flex: none; transition: opacity 0.15s ease, background 0.12s ease, color 0.12s ease, border-color 0.12s ease; }
-  .scroll-arrow.hidden { opacity: 0; pointer-events: none; }
-  .scroll-arrow:hover { background: var(--navy); color: var(--paper); border-color: var(--navy); }
-  .weeks-timeline { display: flex; align-items: flex-end; gap: 32px; flex: 1; min-width: 0; overflow-x: auto; padding: 6px 4px 8px; scrollbar-width: thin; scroll-behavior: auto; justify-content: flex-end; }
-  .weeks-empty-label { color: var(--muted-3); font-size: 0.95rem; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; align-self: flex-end; margin-bottom: 8px; margin-right: 32px; }
-  .week-month { display: grid; gap: 10px; flex: none; }
-  .week-month-label { color: var(--muted-2); font-size: 0.64rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
-  .week-strip { display: flex; gap: 10px; }
-  .week-cell { width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 10px; padding: 0; cursor: pointer; position: relative; color: var(--muted); font: inherit; font-size: 0.78rem; font-weight: 800; box-shadow: var(--shadow-xs); transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease; }
-  .week-cell:hover { transform: translateY(-2px); border-color: var(--blue-border); box-shadow: var(--shadow-sm); z-index: 2; }
-  .week-cell.c-none { background: #eef2f6; color: var(--gray); }
-  .week-cell.c-draft { background: var(--draft-bg); border-color: var(--draft-border); color: var(--warn-dark); }
-  .week-cell.c-submitted { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue-dark); }
-  .week-cell.c-approved { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
-  .week-cell.c-changes { background: var(--red-soft); border-color: var(--red-border); color: var(--red-dark); }
-  .week-cell.late { border-color: var(--red); }
-  .week-cell.current { box-shadow: 0 0 0 2px var(--blue); }
-  .week-cell.sel { border-color: var(--navy); box-shadow: 0 0 0 2px var(--navy); }
-  .week-cell.sel.current { box-shadow: 0 0 0 2px var(--navy); }
-  .selected-status { display: flex; align-items: center; gap: 8px; padding-top: 12px; margin-left: auto; }
-  .weeks-reports-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid #eef2f3; font-size: 0.74rem; color: var(--muted); }
-  .weeks-reports-summary a { color: var(--blue); text-decoration: none; font-weight: 700; font-size: 0.73rem; }
-  .week-tooltip {
-    position: fixed;
-    transform: translate(-50%, -100%);
-    background: var(--navy);
-    color: var(--paper);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-    font-size: 0.7rem;
-    font-weight: 600;
-    white-space: nowrap;
-    padding: 6px 10px;
-    border-radius: 6px;
-    pointer-events: none;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-  .wp-none { background: var(--line-light); color: var(--gray); font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; }
   .hero { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 20px; background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 60%, #28354d 100%); border: 1px solid var(--navy); border-radius: var(--radius-lg); padding: 28px 30px; box-shadow: var(--shadow-md); color: var(--paper); }
   .hero-main { min-width: 0; }
   .hero-eyebrow { display: block; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue-soft); margin-bottom: 8px; }
@@ -644,9 +360,5 @@
   @media (max-width: 800px) {
     .hero { flex-direction: column; align-items: start; padding: 24px; }
     .hero-side { width: 100%; justify-content: space-between; }
-  }
-  @media (max-width: 600px) {
-    .weeks-timeline-row { flex-direction: column; align-items: stretch; gap: 10px; }
-    .selected-status { justify-content: flex-end; }
   }
 </style>
