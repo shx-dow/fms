@@ -265,6 +265,7 @@ import { onDestroy, onMount } from 'svelte';
 {/if}
 
 <style>
+  .modal-acts { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
   @media (max-width: 680px) {
     .sidebar-collapsed .app-sidebar {
       display: none;

@@ -235,6 +235,7 @@
   .week-cell.sel { border-color: var(--navy); box-shadow: 0 0 0 2px var(--navy); }
   .week-cell.sel.current { box-shadow: 0 0 0 2px var(--navy); }
   .selected-status { display: flex; align-items: center; gap: 8px; padding-top: 12px; margin-left: auto; }
+  .wp-none { background: var(--line-light); color: var(--gray); font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; }
   .weeks-reports-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid #eef2f3; font-size: 0.74rem; color: var(--muted); }
   .weeks-reports-summary a { color: var(--blue); text-decoration: none; font-weight: 700; font-size: 0.73rem; }
   .week-tooltip {

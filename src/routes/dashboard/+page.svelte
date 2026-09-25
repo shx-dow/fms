@@ -303,6 +303,14 @@
 </main>
 
 <style>
+  .graph-legend .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; border: 1px solid var(--line); display: inline-block; }
+  .graph-card .week-cell.c-none { background: #eef2f6; color: var(--gray); }
+  .graph-card .week-cell.c-draft { background: var(--draft-bg); border-color: var(--draft-border); color: var(--warn-dark); }
+  .graph-card .week-cell.c-submitted { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue-dark); }
+  .graph-card .week-cell.c-approved { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
+  .graph-card .week-cell.c-changes { background: var(--red-soft); border-color: var(--red-border); color: var(--red-dark); }
+  .graph-card .week-cell { width: 20px; height: 20px; border: 1px solid var(--line); border-radius: 6px; padding: 0; font-size: 0; display: grid; place-items: center; box-shadow: var(--shadow-xs); transition: transform 0.12s ease, border-color 0.12s ease; }
+  .graph-card .week-cell:hover { transform: scale(1.15); z-index: 2; border-color: var(--blue-border); }
   .no-period-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 44px 40px; box-shadow: var(--shadow-sm); text-align: center; max-width: 560px; margin: 40px auto; }
   .no-period-card h1 { font-size: 1.5rem; letter-spacing: -0.02em; margin: 0 0 10px; font-weight: 750; color: var(--text-1); }
   .no-period-card p { margin: 0 0 22px; color: var(--text-3); font-size: 0.88rem; line-height: 1.55; }

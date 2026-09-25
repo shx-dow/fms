@@ -1,22 +1,38 @@
 <script lang="ts">
   import type { TeachingRecord } from '$lib/domain';
+  import {
+    autoSummary as buildAutoSummary,
+    computeCompletion,
+    countActive,
+    isNotApplicable,
+    reviewNotes as buildReviewNotes,
+    STEPS,
+    STEP_LABELS,
+    stepDone as isStepDone,
+    summariseTeaching,
+    validStep,
+    type Step,
+  } from '$lib/report-progress';
   import { onDestroy, onMount } from 'svelte';
   import { page } from '$app/state';
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import ReportPreview from '$lib/components/ReportPreview.svelte';
+  import StepFiles from '$lib/components/StepFiles.svelte';
+  import StepRecords from '$lib/components/StepRecords.svelte';
+  import StepTeaching from '$lib/components/StepTeaching.svelte';
+  import {
+    BLANK_DUTY,
+    BLANK_OUTREACH,
+    BLANK_RESEARCH,
+    type DutyRecord,
+    type OutreachRecord,
+    type ResearchRecord,
+  } from '$lib/report-records';
   import Modal from '$lib/components/Modal.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
   let { data } = $props();
 
-  const STEPS = ['teaching', 'research', 'duties', 'outreach', 'files', 'review'] as const;
-  type Step = (typeof STEPS)[number];
-  function validStep(s: string | null): Step | null {
-    // SAFETY: STEPS is a fixed readonly tuple; membership test narrows s to a valid Step.
-    if (!(STEPS as readonly string[]).includes(s ?? '')) return null;
-    // SAFETY: Returned only after the membership test above confirmed s is a member of STEPS.
-    return s as Step;
-  }
   let activeSection: Step = $state(validStep(page.url.searchParams.get('step')) ?? 'teaching');
   let submitted = $state(false);
   let savedAt = $state('');
@@ -46,48 +62,39 @@
   let hasTemplate = $state(false);
   let canSubmit = $derived(Boolean(deadlineDate && new Date(deadlineDate) > new Date()));
 
-  let scheduled = $derived(teaching.reduce((s, i) => s + Number(i.scheduled || 0), 0));
-  let conducted = $derived(teaching.reduce((s, i) => s + Number(i.conducted || 0), 0));
-  let deliveryRate = $derived(scheduled ? Math.round((conducted / scheduled) * 100) : 0);
-  let syllabusLecture = $derived(Math.max(0, ...teaching.map((t) => Number(t.syllabusLecture || 0))));
-  let hasValidTeaching = $derived(teaching.some(i => i.courseCode?.trim() && i.courseName?.trim()));
-  let teachingValid = $derived(teaching.every(i => {
-    if (!i.courseCode?.trim() && !i.courseName?.trim()) return true;
-    return Number(i.conducted ?? 0) <= Number(i.scheduled ?? 0);
-  }));
-  let researchNA = $derived(researchEmpty || researchRecords.some(r => r.title === 'N/A'));
-  let dutiesNA = $derived(dutiesEmpty || dutiesRecords.some(d => d.name === 'N/A'));
-  let outreachNA = $derived(outreachEmpty || outreachRecords.some(r => r.activity === 'N/A'));
-  let researchActive = $derived(researchRecords.filter(r => r.title?.trim() && r.title !== 'N/A').length);
-  let dutiesCount = $derived(dutiesRecords.filter(d => d.name?.trim() && d.name !== 'N/A').length);
-  let outreachCount = $derived(outreachRecords.filter(r => r.activity?.trim() && r.activity !== 'N/A').length);
+  const teachingSummary = $derived(summariseTeaching(teaching));
+  let scheduled = $derived(teachingSummary.scheduled);
+  let conducted = $derived(teachingSummary.conducted);
+  let deliveryRate = $derived(teachingSummary.deliveryRate);
+  let syllabusLecture = $derived(teachingSummary.syllabusLecture);
+  let hasValidTeaching = $derived(teachingSummary.hasValidTeaching);
+  let teachingValid = $derived(teachingSummary.teachingValid);
+  let researchNA = $derived(isNotApplicable(researchRecords, (r) => r.title, researchEmpty));
+  let dutiesNA = $derived(isNotApplicable(dutiesRecords, (d) => d.name, dutiesEmpty));
+  let outreachNA = $derived(isNotApplicable(outreachRecords, (r) => r.activity, outreachEmpty));
+  let researchActive = $derived(countActive(researchRecords, (r) => r.title));
+  let dutiesCount = $derived(countActive(dutiesRecords, (d) => d.name));
+  let outreachCount = $derived(countActive(outreachRecords, (r) => r.activity));
   let hasResearch = $derived(researchActive > 0);
   let hasDuties = $derived(dutiesCount > 0);
-  let deliveryOk = $derived(deliveryRate >= 90);
-  let completion = $derived(Math.min(100, Math.round(
-    (hasValidTeaching ? 30 : 0) +
-    (hasValidTeaching && scheduled > 0 ? 15 : 0) +
-    (teachingValid ? 10 : 0) +
-    (hasResearch ? 15 : 0) +
-    (hasDuties ? 10 : 0) +
-    (deliveryOk ? 10 : 0) +
-    (hasValidTeaching && hasResearch && hasDuties ? 10 : 0)
-  )));
+  const progressInput = $derived({
+    teaching: teachingSummary,
+    researchActive,
+    dutiesCount,
+    outreachCount,
+    attachmentCount: attachments.length,
+    researchNA,
+    dutiesNA,
+    outreachNA,
+  });
+  let completion = $derived(computeCompletion(progressInput));
   let autoSummary = $derived(
-    `This week you conducted ${conducted} of ${scheduled} scheduled classes (${deliveryRate}% delivery rate) across ${teaching.filter(t => t.courseCode?.trim()).length} course(s). ${researchActive > 0 ? `${researchActive} research record(s) active. ` : ''}${dutiesCount > 0 ? `${dutiesCount} institutional dut${dutiesCount === 1 ? 'y' : 'ies'}. ` : ''}${attachments.length > 0 ? `${attachments.length} file(s) attached.` : ''}`
+    buildAutoSummary({ ...progressInput, courseCount: teaching.filter((t) => t.courseCode?.trim()).length }),
   );
   let isReadonly = $derived(!canEdit && reportStatus !== 'CHANGES_REQUIRED');
   let prevReport = $derived(history.find(r => r.id !== reportId));
   let prevReportLabel = $derived(prevReport?.period_label ?? '');
   let latestReview = $derived(reviews.find(r => r.decision === 'CHANGES_REQUIRED'));
-  const STEP_LABELS = {
-    teaching: 'Teaching',
-    research: 'Research',
-    duties: 'Duties',
-    outreach: 'Outreach',
-    files: 'Files',
-    review: 'Review',
-  } satisfies Record<Step, string>;
   const stepIndex = $derived(STEPS.indexOf(activeSection));
   function goStep(s: Step) {
     activeSection = s;
@@ -99,33 +106,10 @@
   function prevStep() {
     if (stepIndex > 0) goStep(STEPS[stepIndex - 1]);
   }
+  const reviewNotes = $derived(buildReviewNotes(progressInput));
   function stepDone(s: Step): boolean {
-    if (s === 'teaching') return hasValidTeaching;
-    if (s === 'research') return researchActive > 0 || researchNA;
-    if (s === 'duties') return dutiesCount > 0 || dutiesNA;
-    if (s === 'outreach') return outreachCount > 0 || outreachNA;
-    if (s === 'files') return attachments.length > 0;
-    return reviewNotes.length === 0;
+    return isStepDone(s, progressInput);
   }
-  const teachOver = $derived(
-    teaching
-      .map((t, i) => ({
-        i,
-        over: Boolean((t.courseCode?.trim() || t.courseName?.trim()) && Number(t.conducted ?? 0) > Number(t.scheduled ?? 0)),
-      }))
-      .filter((x) => x.over),
-  );
-  const reviewNotes = $derived.by(() => {
-    const notes: { level: 'error' | 'warn'; text: string; step: Step }[] = [];
-    for (const o of teachOver) notes.push({ level: 'error', text: `Course ${o.i + 1}: conducted classes exceed scheduled — fix the numbers.`, step: 'teaching' });
-    if (!hasValidTeaching) notes.push({ level: 'warn', text: 'No teaching entries yet.', step: 'teaching' });
-    if (!researchActive && !researchNA) notes.push({ level: 'warn', text: 'No research records.', step: 'research' });
-    if (!dutiesCount && !dutiesNA) notes.push({ level: 'warn', text: 'No institutional duties.', step: 'duties' });
-    if (!outreachCount && !outreachNA) notes.push({ level: 'warn', text: 'No outreach activity.', step: 'outreach' });
-    if (!attachments.length) notes.push({ level: 'warn', text: 'No supporting files attached.', step: 'files' });
-    return notes;
-  });
-
   onMount(async () => {
     const res = await fetch('/api/reports');
     const d = await res.json();
@@ -226,6 +210,7 @@
     if (kind === 'outreach') outreachRecords = [];
     await saveActivity(kind, [], !current);
   }
+
   function addTeaching() { teaching = [...teaching, { courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }]; scheduleTeachingSave(); }
   const UNDO_MS = 8000;
   let removalTimers: Record<string, ReturnType<typeof setTimeout>> = {};
@@ -452,149 +437,57 @@
           <div class="preview-text">{autoSummary}</div>
         </div>
       {:else if activeSection === 'teaching'}
-        <div class="section-top">
-          <h2>Teaching & academic delivery</h2>
-          <span class="metric-badge">{deliveryRate}% delivery</span>
-        </div>
-        <p class="section-hint">Course details and scheduled classes come from your recurring profile. Update the weekly delivery values below.</p>
-        {#if !hasValidTeaching && !isReadonly}
-          <div class="start-helper">
-            <div>
-              <strong>Starting from a blank week?</strong>
-              <p>Pre-fill everything, then just update the numbers.</p>
-            </div>
-            <div class="start-acts">
-              {#if hasTemplate}<button class="btn" onclick={() => (confirmTemplate = true)}>Load my template</button>{/if}
-              {#if prevReport}<button class="btn" onclick={() => (confirmCopy = true)}>Copy from {prevReportLabel}</button>{/if}
-            </div>
-          </div>
-        {/if}
-        <div class="course-list">
-          {#each teaching as item, i}
-            <div class="course-card">
-              <div class="course-head">
-                <strong>Course {i + 1}</strong>
-                {#if teaching.length > 1}
-                  <button class="act-remove" onclick={() => removeTeaching(i)}>Remove</button>
-                {/if}
-              </div>
-              <div class="field-grid">
-                <label>Course code<input bind:value={item.courseCode} oninput={() => scheduleTeachingSave()} placeholder="CSE-301" /></label>
-                <label>Course name<input bind:value={item.courseName} oninput={() => scheduleTeachingSave()} placeholder="Database Management Systems" /></label>
-                <label>Program / level<input bind:value={item.programLevel} oninput={() => scheduleTeachingSave()} placeholder="B.Tech · III Year" /></label>
-                <label>Class type<select bind:value={item.classType} onchange={() => scheduleTeachingSave()}><option>Lecture</option><option>Lab</option><option>Tutorial</option><option>Seminar</option></select></label>
-              </div>
-              <div class="number-grid">
-                <label>Scheduled<input type="number" min="0" bind:value={item.scheduled} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
-                <label>Conducted this week<input type="number" min="0" bind:value={item.conducted} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
-                <label>Missed this week<input type="number" min="0" bind:value={item.missed} oninput={() => scheduleTeachingSave()} placeholder="0" /></label>
-                <label>Syllabus covered up to lecture no.<input type="number" min="0" bind:value={item.syllabusLecture} oninput={() => scheduleTeachingSave()} placeholder="e.g. 18" /></label>
-              </div>
-              <label class="missed-label">Weekly action for missed classes<input bind:value={item.missedAction} oninput={() => scheduleTeachingSave()} placeholder="e.g. Makeup class scheduled" /></label>
-            </div>
-          {/each}
-          <button class="act-add" onclick={addTeaching}>+ Add course</button>
-        </div>
+        <StepTeaching
+          bind:teaching
+          {deliveryRate}
+          {hasValidTeaching}
+          {isReadonly}
+          {hasTemplate}
+          {prevReportLabel}
+          onchange={scheduleTeachingSave}
+          onadd={addTeaching}
+          onremove={removeTeaching}
+          onloadtemplate={() => (confirmTemplate = true)}
+          oncopy={() => (confirmCopy = true)}
+        />
       {:else if activeSection === 'research'}
-        <div class="section-top"><h2>Research & publications</h2><button class="na-toggle" class:active={researchNA} onclick={() => setNotApplicable('research')}>{researchNA ? 'Undo' : 'Nothing this week'}</button></div>
-        {#if researchNA}<p class="na-note">No research activity this week.</p>{/if}
-        {#each researchRecords.filter(r => r.title !== 'N/A') as item, i}
-          <div class="record-card">
-            <div class="course-head">
-              <strong>Record {i + 1}</strong>
-              {#if researchRecords.length > 1}
-                <button class="act-remove" onclick={() => removeResearch(i)}>Remove</button>
-              {/if}
-            </div>
-            <div class="field-grid">
-              <label>Category<select bind:value={item.category} onchange={() => scheduleSave('research')}><option>Journal Paper</option><option>Patent</option><option>Research Grant</option><option>Conference / FDP</option></select></label>
-              <label>Title<input bind:value={item.title} oninput={() => scheduleSave('research')} placeholder="Title of paper, patent or project" /></label>
-              <label>Venue / agency<input bind:value={item.venueOrAgency} oninput={() => scheduleSave('research')} placeholder="Journal name, conference, or funding body" /></label>
-              <label>Indexing / quality<input bind:value={item.indexingOrQuality} oninput={() => scheduleSave('research')} placeholder="SCI, Scopus, UGC, etc." /></label>
-              <label>Role<input bind:value={item.role} oninput={() => scheduleSave('research')} placeholder="Lead author, Co-author, PI" /></label>
-              <label>Status<input bind:value={item.status} oninput={() => scheduleSave('research')} placeholder="In progress, submitted, published" /></label>
-            </div>
-          </div>
-        {:else}
-          <p class="empty-hint">No research records yet. Add papers, patents, grants, or conferences you worked on this week.</p>
-        {/each}
-        <div class="record-acts">
-          {#if !researchNA}<button class="act-add" onclick={() => (researchRecords = [...researchRecords, { category: 'Journal Paper', title: '', venueOrAgency: '', indexingOrQuality: '', role: '', status: '' }])}>+ Add record</button>{/if}
-          <button class="btn" onclick={() => saveActivity('research')}>{additionalSaving ? 'Saving…' : 'Save research'}</button>
-        </div>
+        <StepRecords
+          section="research"
+          bind:records={researchRecords}
+          notApplicable={researchNA}
+          saving={additionalSaving}
+          ontoggleNA={() => setNotApplicable('research')}
+          onadd={() => (researchRecords = [...researchRecords, { ...BLANK_RESEARCH }])}
+          onremove={removeResearch}
+          onchange={() => scheduleSave('research')}
+          onsave={() => saveActivity('research')}
+        />
       {:else if activeSection === 'duties'}
-        <div class="section-top"><h2>Institutional duties</h2><button class="na-toggle" class:active={dutiesNA} onclick={() => setNotApplicable('duties')}>{dutiesNA ? 'Undo' : 'Nothing this week'}</button></div>
-        {#if dutiesNA}<p class="na-note">No institutional duties this week.</p>{/if}
-        {#each dutiesRecords.filter(d => d.name !== 'N/A') as item, i}
-          <div class="record-card">
-            <div class="course-head">
-              <strong>Duty {i + 1}</strong>
-              {#if dutiesRecords.length > 1}
-                <button class="act-remove" onclick={() => removeDuty(i)}>Remove</button>
-              {/if}
-            </div>
-            <div class="field-grid">
-              <label>Committee / body<input bind:value={item.name} oninput={() => scheduleSave('duties')} placeholder="e.g. Exam Cell, NAAC, IQAC" /></label>
-              <label>Role<input bind:value={item.role} oninput={() => scheduleSave('duties')} placeholder="e.g. Member, Convenor, Coordinator" /></label>
-              <label>Activity<input bind:value={item.activity} oninput={() => scheduleSave('duties')} placeholder="e.g. Invigilation, event coordination" /></label>
-              <label>Reach / scope<input bind:value={item.reach} oninput={() => scheduleSave('duties')} placeholder="Institute-wide, department, etc." /></label>
-              <label>Outcome<input bind:value={item.outcome} oninput={() => scheduleSave('duties')} placeholder="e.g. Completed, report submitted" /></label>
-            </div>
-          </div>
-        {:else}
-          <p class="empty-hint">No institutional duties yet. Add committees, events, or responsibilities you took on this week.</p>
-        {/each}
-        <div class="record-acts">
-          {#if !dutiesNA}<button class="act-add" onclick={() => (dutiesRecords = [...dutiesRecords, { name: '', role: '', activity: '', reach: '', outcome: '' }])}>+ Add duty</button>{/if}
-          <button class="btn" onclick={() => saveActivity('duties')}>{additionalSaving ? 'Saving…' : 'Save duties'}</button>
-        </div>
+        <StepRecords
+          section="duties"
+          bind:records={dutiesRecords}
+          notApplicable={dutiesNA}
+          saving={additionalSaving}
+          ontoggleNA={() => setNotApplicable('duties')}
+          onadd={() => (dutiesRecords = [...dutiesRecords, { ...BLANK_DUTY }])}
+          onremove={removeDuty}
+          onchange={() => scheduleSave('duties')}
+          onsave={() => saveActivity('duties')}
+        />
       {:else if activeSection === 'outreach'}
-        <div class="section-top"><h2>Outreach activity</h2><button class="na-toggle" class:active={outreachNA} onclick={() => setNotApplicable('outreach')}>{outreachNA ? 'Undo' : 'Nothing this week'}</button></div>
-        {#if outreachNA}<p class="na-note">No outreach activity this week.</p>{/if}
-        {#each outreachRecords.filter(r => r.activity !== 'N/A') as item, i}
-          <div class="record-card">
-            <div class="course-head">
-              <strong>Outreach {i + 1}</strong>
-              {#if outreachRecords.length > 1}
-                <button class="act-remove" onclick={() => removeOutreach(i)}>Remove</button>
-              {/if}
-            </div>
-            <div class="field-grid">
-              <label>Activity<input bind:value={item.activity} oninput={() => scheduleSave('outreach')} placeholder="e.g. School visit, counselling drive" /></label>
-              <label>Audience<input bind:value={item.audience} oninput={() => scheduleSave('outreach')} placeholder="e.g. Students, parents, industry" /></label>
-              <label>Date<input type="date" bind:value={item.date} onchange={() => scheduleSave('outreach')} /></label>
-              <label>Outcome<input bind:value={item.outcome} oninput={() => scheduleSave('outreach')} placeholder="e.g. Registrations, queries resolved" /></label>
-            </div>
-          </div>
-        {:else}
-          <p class="empty-hint">No outreach activity yet. Add visits, drives, or events you were part of this week.</p>
-        {/each}
-        <div class="record-acts">
-          {#if !outreachNA}<button class="act-add" onclick={() => (outreachRecords = [...outreachRecords, { activity: '', audience: '', outcome: '', date: '' }])}>+ Add outreach</button>{/if}
-          <button class="btn" onclick={() => saveActivity('outreach')}>{additionalSaving ? 'Saving…' : 'Save outreach'}</button>
-        </div>
+        <StepRecords
+          section="outreach"
+          bind:records={outreachRecords}
+          notApplicable={outreachNA}
+          saving={additionalSaving}
+          ontoggleNA={() => setNotApplicable('outreach')}
+          onadd={() => (outreachRecords = [...outreachRecords, { ...BLANK_OUTREACH }])}
+          onremove={removeOutreach}
+          onchange={() => scheduleSave('outreach')}
+          onsave={() => saveActivity('outreach')}
+        />
       {:else if activeSection === 'files'}
-        <div class="section-top"><h2>Supporting files</h2></div>
-        <p class="section-hint">Attach timetables, event photos, certificates, or any evidence for this week.</p>
-        <div class="attach-list">
-          {#each attachments as a}
-            <div class="attach-row">
-              <div class="attach-info">
-                <strong>{fileName(a.filename)}</strong>
-                <small>{formatSize(a.size)} · {new Date(a.created_at).toLocaleDateString()}</small>
-              </div>
-              <div class="attach-acts">
-                <a href="/api/attachments/{a.id}" download>Download</a>
-                {#if canEdit}<button class="act-remove" onclick={() => deleteAttachment(a.id)}>Delete</button>{/if}
-              </div>
-            </div>
-          {:else}
-            <p class="empty">No files uploaded yet.</p>
-          {/each}
-        </div>
-        {#if canEdit}
-          <label class="upload-btn">+ Upload file<input disabled={!canEdit} type="file" accept="application/pdf,image/png,image/jpeg" onchange={uploadEvidence} /></label>
-        {/if}
+        <StepFiles {attachments} {canEdit} onupload={uploadEvidence} ondelete={deleteAttachment} />
       {:else if activeSection === 'review'}
         <div class="section-top"><h2>Review & submit</h2></div>
         <p class="section-hint">Check everything below, then submit. A submitted report locks until your HOD reopens it.</p>
@@ -681,6 +574,7 @@
 </main>
 
 <style>
+  .empty { color: var(--muted-2); font-size: 0.84rem; padding: 10px 0; }
   .shell { max-width: 1200px; }
   .editor-head { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 14px; position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--paper) 88%, white); backdrop-filter: blur(10px); padding: 14px 18px; margin-inline: -18px; border-bottom: 1px solid var(--line); }
   .editor-head-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -691,10 +585,6 @@
   .act-submit { border: 1px solid var(--navy); border-radius: 7px; padding: 9px 17px; background: var(--navy); color: var(--paper); font: inherit; font-size: 0.78rem; font-weight: 750; cursor: pointer; white-space: nowrap; box-shadow: var(--shadow-sm); transition: all 0.12s; }
   .act-submit:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .act-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-  .act-remove { border: 1px solid var(--red-border); border-radius: 5px; padding: 5px 9px; background: var(--panel); color: var(--red); font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; }
-  .act-remove:hover { background: var(--red-bg-alt); }
-  .act-add { border: 1px solid var(--line); border-radius: 6px; padding: 9px 14px; background: var(--bg-hover); color: var(--blue); font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; transition: all 0.12s; }
-  .act-add:hover { background: var(--bg-hover); }
   .progress-track { height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; margin-bottom: 26px; box-shadow: inset 0 1px 2px rgba(15,23,42,0.06); }
   .progress-track i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--blue-dark)); border-radius: 999px; transition: width 0.3s ease; }
   .success-banner, .state-banner { display: flex; align-items: center; gap: 10px; padding: 13px 16px; border-radius: var(--radius-md); font-size: 0.84rem; margin-bottom: 16px; flex-wrap: wrap; box-shadow: var(--shadow-xs); border: 1px solid; }
@@ -739,37 +629,6 @@
   .section-top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
   .section-top h2 { font-size: 1.18rem; margin: 0; letter-spacing: -0.02em; font-weight: 750; color: var(--text-1); }
   .section-hint { margin: -10px 0 18px; color: var(--muted-2); font-size: 0.82rem; line-height: 1.5; }
-  .start-helper { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px 18px; margin-bottom: 18px; border-radius: var(--radius-md); border: 1px dashed var(--blue-border); background: #f4f8fd; }
-  .start-helper strong { display: block; font-size: 0.84rem; color: var(--text-1); margin-bottom: 3px; }
-  .start-helper p { margin: 0; font-size: 0.78rem; color: var(--text-3); }
-  .start-acts { display: flex; gap: 8px; flex-wrap: wrap; }
-  .metric-badge { font-size: 0.7rem; font-weight: 800; padding: 5px 10px; border-radius: 999px; background: var(--success-bg); border: 1px solid var(--success-border); color: var(--green); }
-  .course-list { display: grid; gap: 16px; }
-  .course-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 22px; box-shadow: var(--shadow-sm); }
-  .course-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line-2); }
-  .course-head strong { font-size: 0.84rem; color: var(--blue-dark); font-weight: 800; letter-spacing: 0.01em; }
-  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-  .number-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
-  .course-card label, .record-card label { display: block; color: var(--text-3); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.005em; }
-  .course-card input, .course-card select, .record-card input, .record-card select { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg-input); color: var(--text-1); font: inherit; font-size: 0.86rem; box-shadow: var(--shadow-xs); transition: border-color 0.13s ease, box-shadow 0.13s ease; }
-  .course-card input:focus, .course-card select:focus, .record-card input:focus, .record-card select:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
-  .course-card input::placeholder, .record-card input::placeholder { color: var(--muted-3); }
-  .missed-label { display: block; color: var(--muted); font-size: 0.72rem; font-weight: 700; }
-  .attach-list { display: grid; gap: 6px; margin-bottom: 14px; }
-  .attach-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; }
-  .attach-info { flex: 1; min-width: 0; }
-  .attach-info strong { display: block; font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .attach-info small { color: var(--muted-2); font-size: 0.66rem; }
-  .attach-acts { display: flex; gap: 8px; flex: none; }
-  .attach-acts a { color: var(--blue); text-decoration: none; font-size: 0.72rem; font-weight: 700; }
-  .upload-btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border: 1px dashed var(--blue-border); border-radius: 6px; color: var(--muted); font-size: 0.76rem; font-weight: 700; cursor: pointer; transition: background 0.1s; }
-  .upload-btn:hover { background: var(--bg-hover); }
-  .upload-btn input { display: none; }
-  .record-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
-  .record-card .field-grid { margin-bottom: 0; }
-  .record-acts { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 16px; }
-  .empty { color: var(--muted-2); font-size: 0.84rem; padding: 10px 0; }
-  .empty-hint { color: var(--muted-2); font-size: 0.84rem; background: var(--panel); border: 1px dashed var(--blue-border); border-radius: var(--radius-md); padding: 18px 20px; margin: 0 0 14px; box-shadow: var(--shadow-xs); }
   .preview-paper { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 34px 36px; box-shadow: var(--shadow-sm); }
   .preview-kicker { font-size: 0.7rem; font-weight: 800; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid var(--line-2); }
   .preview-paper h2 { font-size: 1.02rem; margin: 22px 0 10px; letter-spacing: -0.01em; font-weight: 750; color: var(--text-1); }
@@ -789,9 +648,6 @@
   .summary-metric strong small { font-size: 0.78rem; font-weight: 700; letter-spacing: 0; }
   .summary-metric em { color: var(--muted-2); font-size: 0.7rem; font-style: normal; }
   .summary-metric.primary em { color: var(--blue-soft); }
-  .na-toggle { margin-left: auto; border: 1px solid var(--line); border-radius: 5px; padding: 7px 10px; background: var(--panel); color: var(--muted); font: inherit; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
-  .na-toggle:hover, .na-toggle.active { border-color: var(--blue-border); background: var(--bg-hover); color: var(--blue); }
-  .na-note { margin: -8px 0 16px; padding: 13px 15px; border: 1px dashed var(--line); border-radius: 7px; background: var(--paper); color: var(--muted); font-size: 0.78rem; }
   @media (max-width: 900px) {
     .steps { padding: 10px 12px; }
     .step-label { display: none; }
@@ -800,12 +656,9 @@
   @media (max-width: 700px) {
     .editor-head { flex-direction: column; align-items: start; }
     .editor-actions { flex-wrap: wrap; }
-    .field-grid { grid-template-columns: 1fr; }
-    .number-grid { grid-template-columns: repeat(2, 1fr); }
     .summary-grid { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 500px) {
-    .number-grid { grid-template-columns: 1fr; }
     .preview-row { display: block; padding: 8px 0; }
     .summary-grid { grid-template-columns: 1fr; }
   }
