@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import Modal from '$lib/components/Modal.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
   type Period = { id: string; label: string; kind: string; starts_on: string; ends_on: string; due_on: string; is_open: number };
   let periods: Period[] = $state([]);
@@ -148,34 +149,28 @@
   {/if}
 
   {#if deleteTarget}
-    <div class="overlay" role="presentation" onclick={() => (deleteTarget = null)} onkeydown={(e) => { if (e.key === 'Escape') deleteTarget = null; }}>
-      <div class="modal modal-narrow" role="dialog" aria-modal="true" aria-labelledby="del-title" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
-        <h3 id="del-title">Delete {deleteTarget.label || deleteTarget.id}?</h3>
-        <p class="modal-note">Only periods without reports can be deleted. This cannot be undone.</p>
-        <div class="modal-acts">
-          <button class="btn" onclick={() => (deleteTarget = null)}>Cancel</button>
-          <button class="btn-del-solid" onclick={deletePeriodConfirm} disabled={deleting}>{deleting ? 'Deleting…' : 'Delete period'}</button>
-        </div>
+    <Modal title="Delete {deleteTarget.label || deleteTarget.id}?" size="sm" onclose={() => (deleteTarget = null)}>
+      <p class="modal-note">Only periods without reports can be deleted. This cannot be undone.</p>
+      <div class="modal-acts">
+        <button class="btn" onclick={() => (deleteTarget = null)}>Cancel</button>
+        <button class="btn-del-solid" onclick={deletePeriodConfirm} disabled={deleting}>{deleting ? 'Deleting…' : 'Delete period'}</button>
       </div>
-    </div>
+    </Modal>
   {/if}
 
   {#if showCreate}
-    <div class="overlay" role="presentation" onclick={() => (showCreate = false)} onkeydown={(e) => { if (e.key === 'Escape') showCreate = false; }}>
-      <div class="modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
-        <h3>Create reporting period</h3>
-        <div class="modal-fields">
-          <label>Period starts<input type="date" bind:value={newStarts} /></label>
-          <label>Period ends<input type="date" bind:value={newEnds} /></label>
-          <label>Submission deadline<input type="datetime-local" bind:value={newDue} /></label>
-          <label class="check-row"><input type="checkbox" bind:checked={newOpen} /> Open for submissions</label>
-        </div>
-        <div class="modal-acts">
-          <button class="btn" onclick={() => (showCreate = false)}>Cancel</button>
-          <button class="btn btn-primary" onclick={createPeriod} disabled={saving}>Create period</button>
-        </div>
+    <Modal title="Create reporting period" onclose={() => (showCreate = false)}>
+      <div class="modal-fields">
+        <label>Period starts<input type="date" bind:value={newStarts} /></label>
+        <label>Period ends<input type="date" bind:value={newEnds} /></label>
+        <label>Submission deadline<input type="datetime-local" bind:value={newDue} /></label>
+        <label class="check-row"><input type="checkbox" bind:checked={newOpen} /> Open for submissions</label>
       </div>
-    </div>
+      <div class="modal-acts">
+        <button class="btn" onclick={() => (showCreate = false)}>Cancel</button>
+        <button class="btn btn-primary" onclick={createPeriod} disabled={saving}>Create period</button>
+      </div>
+    </Modal>
   {/if}
 </main>
 
@@ -200,9 +195,6 @@
   .td-acts { text-align: right; white-space: nowrap; }
   .btn-del { color: var(--red); }
   .empty-state { padding: 24px; color: var(--muted-2); font-size: 0.82rem; }
-  .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.35); display: grid; place-items: center; z-index: 100; }
-  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 28px; max-width: 440px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
-  .modal h3 { margin: 0 0 18px; font-size: 1.1rem; color: var(--ink-2); }
   .modal-fields { display: grid; gap: 14px; }
   .modal-fields label { display: grid; gap: 5px; font-size: 0.74rem; font-weight: 700; color: var(--muted); }
   .modal-fields input[type="date"], .modal-fields input[type="datetime-local"] { border: 1px solid var(--line); border-radius: 5px; padding: 9px 10px; font: inherit; background: var(--bg-input); color: var(--ink-2); }
@@ -210,7 +202,6 @@
   .check-row input { width: 16px; height: 16px; }
   .modal-acts { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
   .modal-note { margin: 0 0 4px; color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
-  .modal-narrow { max-width: 400px; }
   .btn-del-solid { border: 1px solid var(--red); border-radius: 7px; padding: 9px 16px; background: var(--red); color: #fff; font: inherit; font-size: 0.78rem; font-weight: 750; cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.12s; }
   .btn-del-solid:hover { background: var(--red-dark); border-color: var(--red-dark); }
   .btn-del-solid:disabled { opacity: 0.55; cursor: not-allowed; }

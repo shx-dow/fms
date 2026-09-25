@@ -5,6 +5,7 @@
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import ReportPreview from '$lib/components/ReportPreview.svelte';
+  import Modal from '$lib/components/Modal.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
   let { data } = $props();
 
@@ -337,42 +338,33 @@
   <div class="progress-track"><i style="width:{completion}%"></i></div>
 
   {#if confirmSubmit}
-    <div class="overlay" role="presentation" onclick={() => (confirmSubmit = false)} onkeydown={(e) => { if (e.key === 'Escape') confirmSubmit = false; }}>
-      <div class="confirm-dialog" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
-        <h3>Submit this report?</h3>
-        <p>Once submitted you will not be able to edit it unless an HOD or Admin reopens it.</p>
-        <div class="confirm-actions">
-          <button class="btn" onclick={() => (confirmSubmit = false)}>Cancel</button>
-          <button class="act-submit" disabled={!canSubmit} onclick={handleSubmit}>Confirm →</button>
-        </div>
+    <Modal title="Submit this report?" size="sm" onclose={() => (confirmSubmit = false)}>
+      <p class="modal-note">Once submitted you will not be able to edit it unless an HOD or Admin reopens it.</p>
+      <div class="modal-acts">
+        <button class="btn" onclick={() => (confirmSubmit = false)}>Cancel</button>
+        <button class="btn btn-primary" disabled={!canSubmit} onclick={handleSubmit}>Confirm →</button>
       </div>
-    </div>
+    </Modal>
   {/if}
 
   {#if confirmCopy}
-    <div class="overlay" role="presentation" onclick={() => (confirmCopy = false)} onkeydown={(e) => { if (e.key === 'Escape') confirmCopy = false; }}>
-      <div class="confirm-dialog" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
-        <h3>Copy from last week?</h3>
-        <p>This will replace all the data you currently have across all sections (Teaching, Research, Duties, Outreach) with the report from {prevReportLabel}. Do you still want to copy?</p>
-        <div class="confirm-actions">
-          <button class="btn" onclick={() => (confirmCopy = false)}>Cancel</button>
-          <button class="act-submit" onclick={copyFromLastWeek}>Copy →</button>
-        </div>
+    <Modal title="Copy from last week?" size="sm" onclose={() => (confirmCopy = false)}>
+      <p class="modal-note">This will replace all the data you currently have across all sections (Teaching, Research, Duties, Outreach) with the report from {prevReportLabel}. Do you still want to copy?</p>
+      <div class="modal-acts">
+        <button class="btn" onclick={() => (confirmCopy = false)}>Cancel</button>
+        <button class="btn btn-primary" onclick={copyFromLastWeek}>Copy →</button>
       </div>
-    </div>
+    </Modal>
   {/if}
 
   {#if confirmTemplate}
-    <div class="overlay" role="presentation" onclick={() => (confirmTemplate = false)} onkeydown={(e) => { if (e.key === 'Escape') confirmTemplate = false; }}>
-      <div class="confirm-dialog" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
-        <h3>Load recurring template?</h3>
-        <p>This will replace all currently filled report data across Teaching, Research, Duties, and Outreach. Any weekly changes you have entered will be removed.</p>
-        <div class="confirm-actions">
-          <button class="btn" onclick={() => (confirmTemplate = false)}>Cancel</button>
-          <button class="act-submit" onclick={loadRecurringTemplate}>Replace with template</button>
-        </div>
+    <Modal title="Load recurring template?" size="sm" onclose={() => (confirmTemplate = false)}>
+      <p class="modal-note">This will replace all currently filled report data across Teaching, Research, Duties, and Outreach. Any weekly changes you have entered will be removed.</p>
+      <div class="modal-acts">
+        <button class="btn" onclick={() => (confirmTemplate = false)}>Cancel</button>
+        <button class="btn btn-primary" onclick={loadRecurringTemplate}>Replace with template</button>
       </div>
-    </div>
+    </Modal>
   {/if}
 
   {#if reviews.length > 0}
@@ -710,11 +702,8 @@
   .state-banner.locked { background: #fdf8e7; border-color: var(--draft-border); color: var(--warn-dark); }
   .state-banner.changes { background: var(--red-bg-alt); border-color: var(--red-border); color: var(--red-dark); }
   .success-banner a, .state-banner a { color: var(--blue); text-decoration: none; font-weight: 700; }
-  .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.35); display: grid; place-items: center; z-index: 100; }
-  .confirm-dialog { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 28px; max-width: 400px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
-  .confirm-dialog h3 { margin: 0 0 8px; font-size: 1.1rem; color: var(--ink-2); }
-  .confirm-dialog p { margin: 0 0 20px; color: var(--muted-3); font-size: 0.84rem; line-height: 1.5; }
-  .confirm-actions { display: flex; justify-content: flex-end; gap: 10px; }
+  .modal-note { margin: 0 0 20px; color: var(--muted-3); font-size: 0.84rem; line-height: 1.5; }
+  .modal-acts { display: flex; justify-content: flex-end; gap: 10px; }
   .review-box { margin-bottom: 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; }
   .review-box summary { cursor: pointer; font-size: 0.78rem; font-weight: 700; color: var(--muted); }
   .review-row { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-2); font-size: 0.8rem; }

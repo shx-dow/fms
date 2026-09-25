@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import Modal from '$lib/components/Modal.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
   let { data } = $props();
   type User = { id: string; name: string; email: string; employee_code?: string | null; specialization?: string | null; role: string; is_active: number };
@@ -83,18 +84,15 @@
     </section>
   {/if}
   {#if showForm}
-    <div class="overlay" role="presentation" onclick={() => (showForm = false)} onkeydown={(e) => { if (e.key === 'Escape') showForm = false; }}>
-      <div class="modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
-        <h3>{editUser ? 'Edit user' : 'Add user'}</h3>
-        <div class="modal-fields">
-          <label>Full name<input bind:value={formName} placeholder="e.g. Jane Smith" /></label>
-          <label>Email<input bind:value={formEmail} type="email" placeholder="jane@example.edu" /></label>
-          <label>Role<select bind:value={formRole}><option value="FACULTY">Faculty</option><option value="HOD">HOD</option><option value="ADMIN">Admin</option></select></label>
-          <label>Password{editUser ? ' (leave blank to keep current)' : ''}<input bind:value={formPass} type="password" placeholder="Password" /></label>
-        </div>
-        <div class="modal-acts"><button class="btn" onclick={() => (showForm = false)}>Cancel</button><button class="btn btn-primary" onclick={saveUser}>{editUser ? 'Save changes' : 'Create user'}</button></div>
+    <Modal title={editUser ? 'Edit user' : 'Add user'} onclose={() => (showForm = false)}>
+      <div class="modal-fields">
+        <label>Full name<input bind:value={formName} placeholder="e.g. Jane Smith" /></label>
+        <label>Email<input bind:value={formEmail} type="email" placeholder="jane@example.edu" /></label>
+        <label>Role<select bind:value={formRole}><option value="FACULTY">Faculty</option><option value="HOD">HOD</option><option value="ADMIN">Admin</option></select></label>
+        <label>Password{editUser ? ' (leave blank to keep current)' : ''}<input bind:value={formPass} type="password" placeholder="Password" /></label>
       </div>
-    </div>
+      <div class="modal-acts"><button class="btn" onclick={() => (showForm = false)}>Cancel</button><button class="btn btn-primary" onclick={saveUser}>{editUser ? 'Save changes' : 'Create user'}</button></div>
+    </Modal>
   {/if}
 </main>
 
@@ -114,9 +112,6 @@
   .btn-cancel { border: 1px solid var(--line); border-radius: 6px; padding: 6px 11px; font: inherit; font-size: 0.7rem; font-weight: 800; cursor: pointer; background: var(--panel); color: var(--muted); }
   .btn-cancel:hover { background: var(--bg-hover); }
   .empty-row { text-align: center; padding: 28px; color: var(--muted-2); font-size: 0.82rem; }
-  .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px); display: grid; place-items: center; z-index: 100; }
-  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 30px; max-width: 460px; width: 90%; box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; }
-  .modal h3 { margin: 0 0 18px; font-size: 1.15rem; font-weight: 750; letter-spacing: -0.01em; color: var(--text-1); }
   .modal-fields { display: grid; gap: 14px; }
   .modal-fields label { display: grid; gap: 6px; font-size: 0.76rem; font-weight: 700; color: var(--text-3); }
   .modal-fields input, .modal-fields select { border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; font: inherit; font-size: 0.86rem; background: var(--bg-input); color: var(--text-1); box-shadow: var(--shadow-xs); transition: border-color 0.13s ease, box-shadow 0.13s ease; }
