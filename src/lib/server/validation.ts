@@ -46,19 +46,33 @@ export const departmentSchema = z.object({
   name: z.string().min(1, 'Department name is required'),
 });
 
-export const periodSchema = z.object({
-  id: z.string().min(1),
-  label: z.string().optional().default(''),
-  startsOn: z.string().min(1),
-  endsOn: z.string().min(1),
-  dueOn: z.string().min(1),
-  isOpen: z.boolean(),
-});
+const dateString = (label: string) =>
+  z
+    .string()
+    .min(1, `${label} is required`)
+    .refine((value) => !Number.isNaN(new Date(value).getTime()), { message: `${label} must be a valid date` });
+
+export const periodSchema = z
+  .object({
+    id: z.string().min(1),
+    label: z.string().optional().default(''),
+    startsOn: dateString('Start date'),
+    endsOn: dateString('End date'),
+    dueOn: dateString('Submission deadline'),
+    isOpen: z.boolean(),
+  })
+  .refine((p) => new Date(p.endsOn) >= new Date(p.startsOn), {
+    message: 'End date must be on or after the start date',
+    path: ['endsOn'],
+  });
 
 export const reopenSchema = z.object({
   reportId: z.string().min(1),
   reason: z.string().min(1, 'Reason for reopening is required'),
-  allowedUntil: z.string().min(1, 'Expiry date is required'),
+  allowedUntil: dateString('Expiry date').refine(
+    (value) => new Date(value).getTime() > Date.now(),
+    'Expiry date must be in the future',
+  ),
 });
 
 export const researchRecordSchema = z.object({
@@ -92,7 +106,7 @@ export const reportRecordsSchema = z.object({
 });
 
 export const notificationUpdateSchema = z.object({
-  eventId: z.string().optional(),
+  eventId: z.string().min(1).optional(),
   unread: z.coerce.boolean().optional(),
 });
 
@@ -111,9 +125,9 @@ export const setActiveSchema = z.object({
 export const createUserSchema = z.object({
   action: z.literal('CREATE'),
   name: z.string().min(1),
-  email: z.string().min(1),
+  email: z.string().min(1, 'Email is required').email('Enter a valid email address'),
   role: roleSchema,
-  password: z.string().min(1),
+  password: z.string().min(PASSWORD_MIN_LENGTH, passwordTooShortMessage),
   employeeCode: z.string().optional(),
   personalEmail: z.string().optional(),
   mobile: z.string().optional(),
@@ -125,12 +139,12 @@ export const updateUserSchema = z.object({
   action: z.literal('UPDATE'),
   userId: z.string().min(1),
   name: z.string().optional(),
-  email: z.string().optional(),
+  email: z.string().min(1).email('Enter a valid email address').optional(),
   employeeCode: z.string().nullable().optional(),
   personalEmail: z.string().nullable().optional(),
   mobile: z.string().nullable().optional(),
   specialization: z.string().nullable().optional(),
   role: roleSchema.optional(),
   departmentId: z.string().nullable().optional(),
-  password: z.string().optional(),
+  password: z.string().min(PASSWORD_MIN_LENGTH, passwordTooShortMessage).optional(),
 });

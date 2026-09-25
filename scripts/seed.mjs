@@ -7,8 +7,14 @@ import { seedDatabase } from '../src/lib/server/db/seed.ts';
 
 const filename = process.env.SQLITE_PATH || 'data/faculty-reporting.db';
 
-if (process.env.NODE_ENV === 'production') {
-  console.warn('Warning: seeding what looks like a production database. Dev data is not meant for production.');
+// Demo accounts ship with known credentials, so seeding a production database
+// is a hard stop rather than a warning. Opt in explicitly with ALLOW_PRODUCTION_SEED=1.
+if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== '1') {
+  console.error(
+    'Refusing to seed: NODE_ENV=production. This writes demo users with known passwords.\n' +
+      'For a deliberate one-off bootstrap, re-run with ALLOW_PRODUCTION_SEED=1 and remove the demo users afterwards.',
+  );
+  process.exit(1);
 }
 
 fs.mkdirSync(path.dirname(filename), { recursive: true });

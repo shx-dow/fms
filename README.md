@@ -18,7 +18,7 @@ A faculty weekly activity reporting system with three role-scoped workspaces —
 
 ## Prerequisites
 
-- Node.js 18+ (developed against v24)
+- Node.js 20+ (`engines` enforces this; developed against v24)
 - npm
 
 ## Development
@@ -30,7 +30,9 @@ npm run dev          # http://localhost:5173
 
 The development server binds to `0.0.0.0`, so it can be reached by other devices on the same network at `http://<computer-ip>:5173`. Set `HOST` and `PORT` in `.env` to override the defaults. On WSL2, use the Windows host's LAN IPv4 address; the WSL virtual address may not be reachable from phones or other computers without Windows port forwarding.
 
-In development the database is created at `data/faculty-reporting.db` and migrations run automatically. To load demo data set `SEED=true` (see Environment variables).
+In development the database is created at `data/faculty-reporting.db` and migrations run automatically. To load demo data set `SEED=true` (see Environment variables). Copy `.env.example` to `.env` for a starting point.
+
+Seeding is refused when `NODE_ENV=production` unless `ALLOW_PRODUCTION_SEED=1` is set explicitly, because the demo accounts ship with known credentials.
 
 ```bash
 SEED=true npm run dev
@@ -61,8 +63,9 @@ By default the server listens on `PORT` (3000) and binds all interfaces. Set `HO
 A new database has **no users**. To bootstrap the first admin:
 
 ```bash
-# Option A — one-time seed, then delete the demo accounts from the Admin UI
-SEED=true node scripts/seed.mjs
+# Option A — one-time seed, then delete the demo accounts from the Admin UI.
+# With NODE_ENV=production this refuses to run unless ALLOW_PRODUCTION_SEED=1.
+ALLOW_PRODUCTION_SEED=1 node scripts/seed.mjs
 
 # Option B — create a database, then create the first admin via the Admin → Faculty page
 npm run db:migrate    # creates schema at SQLITE_PATH
@@ -85,7 +88,8 @@ After seeding, immediately change the demo passwords or remove the demo users th
 | `BACKUP_DIR`      | `backups`                | Backup output folder.                                              |
 | `BACKUP_RETENTION`| `14`                     | Number of backups to keep.                                         |
 | `NODE_ENV`        | *(dev/production)*       | Set to `production` when deploying.                                |
-| `CSRF_CHECK_ORIGIN` | `true`                 | Set `false` only on trusted intranet/WSL hosts where origin checks break. |
+| `CSRF_TRUSTED_ORIGINS` | *(none)*           | Comma-separated extra origins allowed to POST. Use this instead of disabling the origin check when Windows/WSL forwarding rewrites the Host header. |
+| `ALLOW_PRODUCTION_SEED` | *(unset)*         | Must be `1` to seed a database while `NODE_ENV=production`. Seeding is refused otherwise. |
 
 ### Intranet / plain HTTP note
 
@@ -163,7 +167,8 @@ docs/                           # architecture & status notes (tracked)
 ## Deployment checklist (intranet)
 
 - [ ] `NODE_ENV=production`, `COOKIE_SECURE=false` if no TLS
-- [ ] `SEED` not set (production starts empty)
+- [ ] `SEED` not set (production starts empty); `ALLOW_PRODUCTION_SEED` not left at `1`
+- [ ] `CSRF_TRUSTED_ORIGINS` set if the app is reached by more than one hostname
 - [ ] Bootstrap an admin account, remove demo users, change passwords
 - [ ] Schedule `npm run backup` on a timer
 - [ ] Run behind a reverse proxy (nginx/caddy) if TLS is required

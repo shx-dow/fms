@@ -8,6 +8,12 @@ import { seedDatabase } from './db/seed';
 
 const migrationsFolder = process.env.MIGRATIONS_DIR || path.resolve('drizzle');
 
+/** Demo users carry known credentials; seeding production is opt-in only. */
+export function seedAllowed(): boolean {
+  if (env.NODE_ENV !== 'production') return true;
+  return env.ALLOW_PRODUCTION_SEED === '1';
+}
+
 export function createDatabase(opts: { filename?: string; seed?: boolean } = {}) {
   const { seed = false } = opts;
   const filename = opts.filename || env.SQLITE_PATH || 'data/faculty-reporting.db';
@@ -15,6 +21,14 @@ export function createDatabase(opts: { filename?: string; seed?: boolean } = {})
   const sqlite = new Database(filename);
   sqlite.pragma('journal_mode = WAL');
   migrate(drizzle(sqlite), { migrationsFolder });
-  if (seed) seedDatabase(sqlite);
+  if (seed) {
+    if (!seedAllowed()) {
+      sqlite.close();
+      throw new Error(
+        'Refusing to seed: NODE_ENV=production. Demo users ship with known passwords. Set ALLOW_PRODUCTION_SEED=1 for a deliberate bootstrap, then remove the demo users.',
+      );
+    }
+    seedDatabase(sqlite);
+  }
   return sqlite;
 }

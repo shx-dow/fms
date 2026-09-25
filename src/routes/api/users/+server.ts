@@ -14,7 +14,7 @@ import {
   defaultDepartmentId,
 } from '$lib/server/db/repositories/users';
 import { deleteSessionsForUser } from '$lib/server/db/repositories/sessions';
-import { PASSWORD_MIN_LENGTH, passwordTooShortMessage, setActiveSchema, createUserSchema, updateUserSchema } from '$lib/server/validation';
+import { setActiveSchema, createUserSchema, updateUserSchema } from '$lib/server/validation';
 
 export const GET: RequestHandler = ({ locals }) => {
   requireRole(requireUser(locals), 'ADMIN');
@@ -37,10 +37,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   if (body.action === 'CREATE') {
     const created = createUserSchema.safeParse(body);
     if (!created.success)
-      return json({ ok: false, error: 'Name, email, role and password are required.' }, { status: 400 });
+      return json({ ok: false, error: created.error.issues.map((i) => i.message).join('; ') }, { status: 400 });
     const { password, ...fields } = created.data;
-    if (password.length < PASSWORD_MIN_LENGTH)
-      return json({ ok: false, error: passwordTooShortMessage }, { status: 400 });
     const id = randomUUID();
     const defaultDept = defaultDepartmentId();
     createUser({
@@ -63,7 +61,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   if (body.action === 'UPDATE') {
     const updated = updateUserSchema.safeParse(body);
     if (!updated.success)
-      return json({ ok: false, error: 'User ID required.' }, { status: 400 });
+      return json({ ok: false, error: updated.error.issues.map((i) => i.message).join('; ') }, { status: 400 });
     const { userId, password, ...fields } = updated.data;
     const updates: Parameters<typeof updateUser>[1] = {};
     if (fields.name !== undefined) updates.name = fields.name;
@@ -76,8 +74,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     if (fields.departmentId !== undefined) updates.departmentId = fields.departmentId ?? null;
     updateUser(userId, updates);
     if (password) {
-      if (password.length < PASSWORD_MIN_LENGTH)
-        return json({ ok: false, error: passwordTooShortMessage }, { status: 400 });
       upsertCredentials(userId, hashPassword(password));
       setMustChangePassword(userId, true);
       deleteSessionsForUser(userId);
