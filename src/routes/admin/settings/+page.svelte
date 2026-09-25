@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
   type Period = { id: string; label: string; kind: string; starts_on: string; ends_on: string; due_on: string; is_open: number };
   let periods: Period[] = $state([]);
   let error = $state('');
@@ -89,13 +90,11 @@
 
 <svelte:head><title>Reporting periods · Faculty Reporting System</title></svelte:head>
 <main class="shell">
-  <header class="dash-header">
-    <div>
-      <h1>Reporting periods</h1>
-      <span class="dash-period">Weekly schedule configuration</span>
-    </div>
-    <div class="dash-actions"><NotificationBell /><button class="dash-cta" onclick={() => (showCreate = true)}>+ New period</button></div>
-  </header>
+  <PageHeader title="Reporting periods" sub="Weekly schedule configuration">
+    {#snippet actions()}
+      <NotificationBell /><button class="btn btn-primary" onclick={() => (showCreate = true)}>+ New period</button>
+    {/snippet}
+  </PageHeader>
   {#if error}<div class="msg err">{error}</div>{/if}
   {#if loading}
     <div class="dash-loading"><span class="spinner"></span><span>Loading…</span></div>
@@ -116,7 +115,7 @@
         </div>
         <div class="setting-acts">
           <button class="btn-close" onclick={() => toggleOpen(openPeriod)} disabled={saving}>Close period</button>
-          <button class="dash-cta" onclick={saveOpen} disabled={saving}>Save changes</button>
+          <button class="btn btn-primary" onclick={saveOpen} disabled={saving}>Save changes</button>
         </div>
       </section>
     {/if}
@@ -173,7 +172,7 @@
         </div>
         <div class="modal-acts">
           <button class="btn-ghost" onclick={() => (showCreate = false)}>Cancel</button>
-          <button class="dash-cta" onclick={createPeriod} disabled={saving}>Create period</button>
+          <button class="btn btn-primary" onclick={createPeriod} disabled={saving}>Create period</button>
         </div>
       </div>
     </div>
@@ -184,13 +183,6 @@
   .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
   .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-sm); }
-  .dash-header h1 { font-size: 1.55rem; letter-spacing: -0.03em; margin: 0 0 4px; font-weight: 750; color: var(--text-1); }
-  .dash-period { font-size: 0.84rem; color: var(--text-3); }
-  .dash-actions { display: flex; align-items: center; gap: 14px; }
-  .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; background: var(--navy); color: var(--paper); text-decoration: none; font-size: 0.8rem; font-weight: 750; white-space: nowrap; border: 0; cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.14s ease; }
-  .dash-cta:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
-  .dash-cta:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
   .msg.err { padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px; font-size: 0.8rem; background: var(--red-bg-alt); border: 1px solid var(--red-border); color: var(--red-dark); box-shadow: var(--shadow-xs); }
   .settings-card { max-width: 760px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow-sm); border-top: 3px solid var(--success-border); }
   .setting-head { display: flex; justify-content: space-between; gap: 20px; padding: 22px 24px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); }
@@ -237,7 +229,6 @@
   .btn-del-solid:disabled { opacity: 0.55; cursor: not-allowed; }
   .modal-acts .btn-ghost { border: 0; background: transparent; font: inherit; font-size: 0.8rem; color: var(--muted); cursor: pointer; padding: 8px 12px; }
   @media (max-width: 700px) {
-    .dash-header { flex-direction: column; align-items: start; }
     .setting-form { grid-template-columns: 1fr; }
   }
 </style>

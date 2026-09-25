@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
   let currentPeriod = $state('');
   let currentStatus = $state('');
@@ -74,18 +75,14 @@
       <a href="/reports" onclick={(e) => { e.preventDefault(); location.reload(); }}>Try again</a>
     </div>
   {:else}
-    <header class="dash-header">
-      <div>
-        <h1>My reports</h1>
-        <span class="dash-period">{currentPeriod || 'All periods'}</span>
-      </div>
-      <div class="dash-actions">
+    <PageHeader title="My reports" sub={currentPeriod || 'All periods'}>
+      {#snippet actions()}
         <NotificationBell />
-        <a href="/reports/current" class="dash-cta"
-          >{['Approved', 'Submitted'].includes(currentStatus) ? 'View current report →' : 'Open current report →'}
-        </a>
-      </div>
-    </header>
+        <a href="/reports/current" class="btn btn-primary"
+          >{['Approved', 'Submitted'].includes(currentStatus) ? 'View current report →' : 'Open current report →'}</a
+        >
+      {/snippet}
+    </PageHeader>
 
     <div class="stat-strip" aria-label="Report totals">
       <span><strong>{total}</strong> report{total === 1 ? '' : 's'}</span>
@@ -154,12 +151,6 @@
   .load-error a { margin-left: auto; color: var(--red); font-weight: 800; text-decoration: none; }
   .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-sm); }
-  .dash-header h1 { font-size: 1.55rem; letter-spacing: -0.03em; margin: 0 0 4px; font-weight: 750; color: var(--text-1); }
-  .dash-period { font-size: 0.84rem; color: var(--text-3); }
-  .dash-actions { display: flex; align-items: center; gap: 14px; }
-  .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 11px 20px; border-radius: 8px; background: var(--navy); color: var(--paper); text-decoration: none; font-size: 0.82rem; font-weight: 750; white-space: nowrap; box-shadow: var(--shadow-sm); transition: background 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease; }
-  .dash-cta:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .stat-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; font-size: 0.82rem; color: var(--text-3); margin-bottom: 20px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px 20px; box-shadow: var(--shadow-xs); }
   .stat-strip strong { color: var(--text-1); font-weight: 800; }
   .stat-sep { color: var(--muted-3); }
@@ -186,7 +177,6 @@
   .link-btn { border: 0; background: transparent; padding: 0; font: inherit; font-size: 0.8rem; font-weight: 700; color: var(--accent); cursor: pointer; }
   .link-btn:hover { text-decoration: underline; }
   @media (max-width: 800px) {
-    .dash-header { flex-direction: column; align-items: start; }
     .hist-search { width: 100%; }
   }
 </style>

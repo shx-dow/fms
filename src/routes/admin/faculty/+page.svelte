@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
   let { data } = $props();
   type User = { id: string; name: string; email: string; employee_code?: string | null; specialization?: string | null; role: string; is_active: number };
   let users: User[] = $state([]);
@@ -42,13 +43,11 @@
 
 <svelte:head><title>Faculty directory · Faculty Reporting System</title></svelte:head>
 <main class="shell">
-  <header class="dash-header">
-    <div>
-      <h1>Faculty directory</h1>
-      <span class="dash-period">{users.length} account{users.length === 1 ? '' : 's'}</span>
-    </div>
-    <div class="dash-actions"><NotificationBell /><button class="dash-cta" onclick={openCreate}>+ Add user</button></div>
-  </header>
+  <PageHeader title="Faculty directory" sub="{users.length} account{users.length === 1 ? '' : 's'}">
+    {#snippet actions()}
+      <NotificationBell /><button class="btn btn-primary" onclick={openCreate}>+ Add user</button>
+    {/snippet}
+  </PageHeader>
   {#if loading}
     <div class="dash-loading"><span class="spinner"></span><span>Loading…</span></div>
   {:else}
@@ -93,7 +92,7 @@
           <label>Role<select bind:value={formRole}><option value="FACULTY">Faculty</option><option value="HOD">HOD</option><option value="ADMIN">Admin</option></select></label>
           <label>Password{editUser ? ' (leave blank to keep current)' : ''}<input bind:value={formPass} type="password" placeholder="Password" /></label>
         </div>
-        <div class="modal-acts"><button class="btn-ghost" onclick={() => (showForm = false)}>Cancel</button><button class="dash-cta" onclick={saveUser}>{editUser ? 'Save changes' : 'Create user'}</button></div>
+        <div class="modal-acts"><button class="btn-ghost" onclick={() => (showForm = false)}>Cancel</button><button class="btn btn-primary" onclick={saveUser}>{editUser ? 'Save changes' : 'Create user'}</button></div>
       </div>
     </div>
   {/if}
@@ -103,12 +102,6 @@
   .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
   .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-sm); }
-  .dash-header h1 { font-size: 1.55rem; letter-spacing: -0.03em; margin: 0 0 4px; font-weight: 750; color: var(--text-1); }
-  .dash-period { font-size: 0.84rem; color: var(--text-3); }
-  .dash-actions { display: flex; align-items: center; gap: 14px; }
-  .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; background: var(--navy); color: var(--paper); text-decoration: none; font-size: 0.8rem; font-weight: 750; white-space: nowrap; border: 0; cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.14s ease; }
-  .dash-cta:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .search-bar { margin-bottom: 16px; }
   .search-bar input { width: 100%; max-width: 400px; padding: 11px 14px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 0.84rem; background: var(--panel); color: var(--text-1); box-shadow: var(--shadow-xs); transition: border-color 0.13s ease, box-shadow 0.13s ease; }
   .search-bar input:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
@@ -141,5 +134,4 @@
   .modal-fields input:focus, .modal-fields select:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
   .modal-acts { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
   .modal-acts .btn-ghost { border: 0; background: transparent; font: inherit; font-size: 0.8rem; color: var(--muted); cursor: pointer; padding: 8px 12px; }
-  @media (max-width: 800px) { .dash-header { flex-direction: column; align-items: start; } }
 </style>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
   const PAGE_SIZE = 50;
   type Event = { action: string; entity_type: string; entity_id: string; created_at: string; actor_name?: string };
   const ACTIONS = [
@@ -69,15 +70,11 @@
 
 <svelte:head><title>Audit history · Faculty Reporting System</title></svelte:head>
 <main class="shell">
-  <header class="dash-header">
-    <div>
-      <h1>Audit history</h1>
-      <span class="dash-period">{total} event{total === 1 ? '' : 's'}</span>
-    </div>
-    <div class="dash-actions">
+  <PageHeader title="Audit history" sub="{total} event{total === 1 ? '' : 's'}">
+    {#snippet actions()}
       <NotificationBell />
-    </div>
-  </header>
+    {/snippet}
+  </PageHeader>
   <section class="filter-bar">
     <input class="filter-search" type="search" placeholder="Search actor…" bind:value={search} oninput={onSearchInput} />
     <select class="filter-select" bind:value={action} onchange={applyFilters}>
@@ -132,10 +129,6 @@
   .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .dash-error { padding: 16px 20px; background: var(--red-bg); color: var(--red); border-radius: 7px; font-size: 0.88rem; }
-  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-sm); }
-  .dash-header h1 { font-size: 1.55rem; letter-spacing: -0.03em; margin: 0 0 4px; font-weight: 750; color: var(--text-1); }
-  .dash-actions { display: flex; align-items: center; gap: 14px; }
-  .dash-period { font-size: 0.84rem; color: var(--text-3); }
   .filter-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px 14px; box-shadow: var(--shadow-xs); }
   .filter-search, .filter-select, .filter-date input {
     border: 1px solid var(--line); border-radius: 7px; background: var(--bg-input); color: var(--text-1);
@@ -168,5 +161,4 @@
   .empty-row { text-align: center; padding: 28px; color: var(--muted-2); font-size: 0.82rem; }
   .pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 18px; }
   .pager-info { font-size: 0.78rem; color: var(--muted); }
-  @media (max-width: 800px) { .dash-header { flex-direction: column; align-items: start; } }
 </style>

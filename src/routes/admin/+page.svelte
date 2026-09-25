@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
   type ReviewItem = { id: string; status: string; updated_at: string; faculty_name: string; period_label: string; completion: number };
   type FacultyStatus = { id: string; name: string; email: string; status: string | null; completion: number | null; submitted_at: string | null };
@@ -83,16 +84,12 @@
     {:else if error}
       <div class="dash-error">{error}</div>
     {:else}
-      <header class="dash-header">
-        <div>
-          <h1>Administration</h1>
-          <span class="dash-period">{missingPeriod || 'Current reporting period'}</span>
-        </div>
-        <div class="dash-actions">
+      <PageHeader title="Administration" sub={missingPeriod || 'Current reporting period'}>
+        {#snippet actions()}
           <NotificationBell />
-          <a class="btn-quick" href="/admin/settings">Manage periods</a>
-        </div>
-      </header>
+          <a class="btn" href="/admin/settings">Manage periods</a>
+        {/snippet}
+      </PageHeader>
       <div class="dash-metrics wide">
         <div><span>Faculty</span><strong>{facultyCount}</strong><small>in the department</small></div>
         <div><span>Submitted</span><strong>{submittedCount}</strong><small>for the open period</small>{#if rateDelta !== null}<em class="metric-delta" class:up={rateDelta >= 0} class:down={rateDelta < 0}>{rateDelta >= 0 ? '↑' : '↓'} {Math.abs(rateDelta)}% vs last period</em>{/if}</div>
@@ -219,15 +216,11 @@
     {:else if error}
       <div class="dash-error">{error}</div>
     {:else}
-      <header class="dash-header">
-        <div>
-          <h1>Department overview</h1>
-          <span class="dash-period">Current reporting period</span>
-        </div>
-        <div class="dash-actions">
+      <PageHeader title="Department overview" sub="Current reporting period">
+        {#snippet actions()}
           <NotificationBell />
-        </div>
-      </header>
+        {/snippet}
+      </PageHeader>
       <div class="dash-metrics">
         <div><span>Faculty</span><strong>{facultyCount}</strong><small>in department</small></div>
         <div><span>Submitted</span><strong>{submittedCount}</strong><small>{facultyCount ? Math.round((submittedCount / facultyCount) * 100) : 0}% rate</small>{#if rateDelta !== null}<em class="metric-delta" class:up={rateDelta >= 0} class:down={rateDelta < 0}>{rateDelta >= 0 ? '↑' : '↓'} {Math.abs(rateDelta)}% vs last period</em>{/if}</div>
@@ -302,12 +295,6 @@
   .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .dash-error { padding: 16px 20px; background: var(--red-bg); color: var(--red); border-radius: 7px; font-size: 0.88rem; }
-  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-sm); }
-  .dash-header h1 { font-size: 1.55rem; letter-spacing: -0.03em; margin: 0 0 4px; font-weight: 750; color: var(--text-1); }
-  .dash-actions { display: flex; align-items: center; gap: 14px; }
-  .dash-period { font-size: 0.84rem; color: var(--text-3); }
-  .btn-quick { flex: none; text-decoration: none; font-size: 0.78rem; font-weight: 750; color: #fff; background: var(--navy); padding: 10px 17px; border-radius: 8px; box-shadow: var(--shadow-sm); transition: background 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease; }
-  .btn-quick:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .dash-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
   .dash-metrics.wide { grid-template-columns: repeat(4, 1fr); }
   .dash-metrics > div { background: var(--panel); padding: 20px 22px; border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
@@ -359,7 +346,6 @@
     .dash-metrics.wide { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 800px) {
-    .dash-header { flex-direction: column; align-items: start; }
     .admin-grid { grid-template-columns: 1fr; }
   }
   @media (max-width: 600px) {

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
   import ReportPreview from '$lib/components/ReportPreview.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
   type ReviewRow = { id: string; status: string; updated_at: string; completion: number; faculty_name: string; period_label: string };
@@ -96,17 +97,13 @@
 
 <svelte:head><title>Review queue · Faculty Reporting System</title></svelte:head>
 <main class="shell">
-  <header class="dash-header">
-    <div>
-      <h1>Review queue</h1>
-      <span class="dash-period">{reports.length} report{reports.length === 1 ? '' : 's'}</span>
-    </div>
-    <div class="dash-actions">
+  <PageHeader title="Review queue" sub="{reports.length} report{reports.length === 1 ? '' : 's'}">
+    {#snippet actions()}
       <NotificationBell />
-      <a class="act-link" href="/api/reviews?format=csv" target="_blank">CSV</a>
-      {#if selected}<a class="act-link" href="/api/reports/{selected.id}/pdf" target="_blank">PDF</a>{/if}
-    </div>
-  </header>
+      <a class="btn" href="/api/reviews?format=csv" target="_blank">CSV</a>
+      {#if selected}<a class="btn" href="/api/reports/{selected.id}/pdf" target="_blank">PDF</a>{/if}
+    {/snippet}
+  </PageHeader>
   {#if error}<div class="msg err">{error}</div>{/if}
   {#if loading}
     <div class="dash-loading"><span class="spinner"></span><span>Loading…</span></div>
@@ -225,10 +222,6 @@
   .dash-loading { display: flex; align-items: center; gap: 12px; padding: 24px; color: var(--muted-3); font-size: 0.88rem; }
   .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-sm); }
-  .dash-header h1 { font-size: 1.55rem; letter-spacing: -0.03em; margin: 0 0 4px; font-weight: 750; color: var(--text-1); }
-  .dash-period { font-size: 0.84rem; color: var(--text-3); }
-  .dash-actions { display: flex; align-items: center; gap: 8px; }
   .act-link { border: 1px solid var(--line); border-radius: 7px; padding: 8px 13px; background: var(--panel); color: var(--accent-strong); font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; text-decoration: none; white-space: nowrap; box-shadow: var(--shadow-xs); transition: all 0.12s; }
   .act-link:hover { background: var(--bg-hover); border-color: var(--blue-border); box-shadow: var(--shadow-sm); }
   .msg.err { padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px; font-size: 0.8rem; background: var(--red-bg-alt); border: 1px solid var(--red-border); color: var(--red-dark); box-shadow: var(--shadow-xs); }

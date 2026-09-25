@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
   let { data } = $props();
   const user = $derived(data.user);
@@ -375,16 +376,15 @@
         </section>
       {/if}
     {:else}
-      <header class="dash-header">
-      <div>
-        <h1>{user?.name ? `Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, ${greetingName(user.name)}` : 'Dashboard'}</h1>
-        <span class="dash-period">{periodLabel}</span>
-      </div>
-      <div class="dash-actions">
-        <NotificationBell />
-        <a href="/admin/reports" class="dash-cta">Review queue →</a>
-      </div>
-    </header>
+      <PageHeader
+        title={user?.name ? `Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, ${greetingName(user.name)}` : 'Dashboard'}
+        sub={periodLabel}
+      >
+        {#snippet actions()}
+          <NotificationBell />
+          <a href="/admin/reports" class="btn btn-primary">Review queue →</a>
+        {/snippet}
+      </PageHeader>
 
     <div class="dash-row">
       <section class="weeks-card">
@@ -529,10 +529,6 @@
   .no-period-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 44px 40px; box-shadow: var(--shadow-sm); text-align: center; max-width: 560px; margin: 40px auto; }
   .no-period-card h1 { font-size: 1.5rem; letter-spacing: -0.02em; margin: 0 0 10px; font-weight: 750; color: var(--text-1); }
   .no-period-card p { margin: 0 0 22px; color: var(--text-3); font-size: 0.88rem; line-height: 1.55; }
-  .dash-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-sm); }
-  .dash-header h1 { font-size: 1.55rem; letter-spacing: -0.03em; margin: 0 0 4px; font-weight: 750; color: var(--text-1); }
-  .dash-period { font-size: 0.84rem; color: var(--text-3); }
-  .dash-actions { display: flex; align-items: center; gap: 14px; }
   .dash-cta { display: inline-flex; align-items: center; gap: 6px; padding: 11px 20px; border-radius: 8px; background: var(--navy); color: var(--paper); text-decoration: none; font-size: 0.82rem; font-weight: 750; white-space: nowrap; box-shadow: var(--shadow-sm); transition: background 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease; }
   .dash-cta:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .dash-row { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; margin-bottom: 24px; }
@@ -651,15 +647,11 @@
   .graph-cell.current { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
   .graph-empty { padding: 26px 22px; color: var(--muted-2); font-size: 0.82rem; text-align: center; }
   @media (max-width: 800px) {
-    .dash-header { flex-direction: column; align-items: start; }
     .hero { flex-direction: column; align-items: start; padding: 24px; }
     .hero-side { width: 100%; justify-content: space-between; }
   }
   @media (max-width: 600px) {
     .weeks-timeline-row { flex-direction: column; align-items: stretch; gap: 10px; }
     .selected-status { justify-content: flex-end; }
-  }
-  @media (max-width: 500px) {
-    .dash-actions { flex-wrap: wrap; }
   }
 </style>
