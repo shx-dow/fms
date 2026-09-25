@@ -38,28 +38,34 @@
   let savedAt = $state('');
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let teachingSaveTimer: ReturnType<typeof setTimeout> | undefined;
-  let canEdit = $state(true);
-  let periodLabel = $state('');
-  let reportId = $state('');
-  let reportStatus = $state('DRAFT');
-  let teaching: TeachingRecord[] = $state([{ courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }]);
+  // Seeded from the server load; the page then owns these as the teacher edits.
+  const seed = () => data;
+  let canEdit = $state(seed().canEdit);
+  let periodLabel = $state(seed().periodLabel);
+  let reportId = $state(seed().reportId);
+  let reportStatus = $state(seed().reportStatus);
+  let teaching: TeachingRecord[] = $state(
+    seed().teaching.length
+      ? seed().teaching
+      : [{ courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }],
+  );
   let saving = $state(false);
   let confirmSubmit = $state(false);
   let confirmCopy = $state(false);
   let confirmTemplate = $state(false);
-  let history: any[] = $state([]);
-  let reviews: { decision: string; remarks: string; created_at: string; reviewer_name: string }[] = $state([]);
-  let attachments: { id: string; filename: string; mime_type: string; size: number; created_at: string }[] = $state([]);
-  let researchRecords: any[] = $state([]);
-  let dutiesRecords: any[] = $state([]);
-  let outreachRecords: any[] = $state([]);
-  let researchEmpty = $state(false);
-  let dutiesEmpty = $state(false);
-  let outreachEmpty = $state(false);
+  let history: (typeof data.history)[number][] = $state(seed().history);
+  let reviews: { decision: string; remarks: string | null; created_at: string; reviewer_name: string }[] = $state(seed().reviews);
+  let attachments: (typeof data.attachments)[number][] = $state(seed().attachments);
+  let researchRecords: ResearchRecord[] = $state(seed().research);
+  let dutiesRecords: DutyRecord[] = $state(seed().duties);
+  let outreachRecords: OutreachRecord[] = $state(seed().outreach);
+  let researchEmpty = $state(seed().researchEmpty);
+  let dutiesEmpty = $state(seed().dutiesEmpty);
+  let outreachEmpty = $state(seed().outreachEmpty);
   let additionalSaving = $state(false);
   let saveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
-  let deadlineDate = $state('');
-  let hasTemplate = $state(false);
+  let deadlineDate = $state(seed().deadline);
+  let hasTemplate = $state(seed().hasTemplate);
   let canSubmit = $derived(Boolean(deadlineDate && new Date(deadlineDate) > new Date()));
 
   const teachingSummary = $derived(summariseTeaching(teaching));
@@ -110,41 +116,9 @@
   function stepDone(s: Step): boolean {
     return isStepDone(s, progressInput);
   }
-  onMount(async () => {
-    const res = await fetch('/api/reports');
-    const d = await res.json();
-    let recurringProfile: any = null;
-    try { recurringProfile = (await (await fetch('/api/me/profile')).json()).profile; } catch {}
-    hasTemplate = Boolean(
-      recurringProfile?.subjects?.length ||
-      recurringProfile?.research?.length ||
-      recurringProfile?.duties?.length ||
-      recurringProfile?.outreach?.length,
-    );
-    reportId = d.report.id;
-    reportStatus = d.report.status;
-    history = d.reports ?? [];
-    periodLabel = d.report?.period_label ?? d.policy?.period?.label ?? periodLabel;
-    if (d.teaching?.length)
-      teaching = d.teaching.map((t: any) => ({ courseCode: t.course_code, courseName: t.course_name, programLevel: t.program_level, classType: t.class_type, scheduled: t.scheduled, conducted: t.conducted, missed: t.missed, missedAction: t.missed_action ?? '', syllabusCompletion: t.syllabus_completion ?? 0, syllabusLecture: t.syllabus_lecture ?? 0 }));
-    else if (recurringProfile?.subjects?.length)
-      teaching = recurringProfile.subjects.map((t: any) => ({ courseCode: t.courseCode ?? '', courseName: t.courseName ?? '', programLevel: t.programLevel ?? '', classType: t.classType ?? 'Lecture', scheduled: Number(t.scheduled ?? 0), conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }));
-    researchRecords = (d.research ?? []).map((r: any) => ({ category: r.category, title: r.title, venueOrAgency: r.venue_or_agency ?? '', indexingOrQuality: r.indexing_or_quality ?? '', role: r.role ?? '', status: r.status ?? '' }));
-    if (!researchRecords.length && recurringProfile?.research?.length) researchRecords = recurringProfile.research.map((r: any) => ({ category: r.category ?? 'Journal Paper', title: r.title ?? '', venueOrAgency: r.venueOrAgency ?? '', indexingOrQuality: '', role: r.role ?? '', status: '' }));
-    dutiesRecords = (d.duties ?? []).map((r: any) => ({ name: r.name, role: r.role, activity: r.activity ?? '', reach: r.reach ?? '', outcome: r.outcome ?? '' }));
-    if (!dutiesRecords.length && recurringProfile?.duties?.length) dutiesRecords = recurringProfile.duties.map((r: any) => ({ name: r.name ?? '', role: r.role ?? '', activity: r.activity ?? '', reach: '', outcome: '' }));
-    outreachRecords = (d.outreach ?? []).map((r: any) => ({ activity: r.activity, audience: r.audience ?? '', outcome: r.outcome ?? '', date: r.date ?? '' }));
-    if (!outreachRecords.length && recurringProfile?.outreach?.length) outreachRecords = recurringProfile.outreach.map((r: any) => ({ activity: r.activity ?? '', audience: r.audience ?? '', outcome: '', date: '' }));
-    canEdit = d.policy?.canEdit ?? true;
-    deadlineDate = d.policy?.deadline ?? '';
-    researchEmpty = Number(d.report?.research_empty ?? 0) === 1;
-    dutiesEmpty = Number(d.report?.duties_empty ?? 0) === 1;
-    outreachEmpty = Number(d.report?.outreach_empty ?? 0) === 1;
-    if (reportId) {
-      try { const r = await fetch(`/api/reports/${reportId}`); const rd = await r.json(); reviews = rd.reviews ?? []; }
-      catch { show('Could not load review history.', 'err'); }
-      loadAttachments();
-    }
+  onMount(() => {
+    // The report, its records, reviews, attachments, and template all arrive
+    // with the page; nothing is fetched on mount.
     savedAt = '';
   });
   onDestroy(() => { clearTimeout(saveTimer); clearTimeout(teachingSaveTimer); Object.values(saveTimers).forEach(clearTimeout); Object.values(removalTimers).forEach(clearTimeout); });
@@ -262,21 +236,29 @@
   }
   async function loadRecurringTemplate() {
     confirmTemplate = false;
-    try {
-      const res = await fetch('/api/me/profile');
-      const d = await res.json();
-      const profile = d.profile ?? {};
-      teaching = (profile.subjects ?? []).map((t: any) => ({ courseCode: t.courseCode ?? '', courseName: t.courseName ?? '', programLevel: t.programLevel ?? '', classType: t.classType ?? 'Lecture', scheduled: Number(t.scheduled ?? 0), conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }));
-      researchRecords = (profile.research ?? []).map((r: any) => ({ category: r.category ?? 'Journal Paper', title: r.title ?? '', venueOrAgency: r.venueOrAgency ?? '', indexingOrQuality: '', role: r.role ?? '', status: '' }));
-      dutiesRecords = (profile.duties ?? []).map((r: any) => ({ name: r.name ?? '', role: r.role ?? '', activity: r.activity ?? '', reach: '', outcome: '' }));
-      outreachRecords = (profile.outreach ?? []).map((r: any) => ({ activity: r.activity ?? '', audience: r.audience ?? '', outcome: '', date: '' }));
-      if (!teaching.length) teaching = [{ courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }];
-      await saveDraft();
-      await saveActivity('research');
-      await saveActivity('duties');
-      await saveActivity('outreach');
-      show('Recurring template loaded.');
-    } catch { show('Could not load the recurring template.', 'err'); }
+    // The template already arrived with the page; no fetch needed.
+    const t = data.template;
+    teaching = t.subjects.map((subject) => ({
+      courseCode: String(subject['courseCode'] ?? ''),
+      courseName: String(subject['courseName'] ?? ''),
+      programLevel: String(subject['programLevel'] ?? ''),
+      classType: String(subject['classType'] ?? 'Lecture'),
+      scheduled: Number(subject['scheduled'] ?? 0),
+      conducted: 0,
+      missed: 0,
+      missedAction: '',
+      syllabusCompletion: 0,
+      syllabusLecture: 0,
+    }));
+    researchRecords = t.research.map((r) => ({ ...BLANK_RESEARCH, ...r }));
+    dutiesRecords = t.duties.map((d) => ({ ...BLANK_DUTY, ...d }));
+    outreachRecords = t.outreach.map((o) => ({ ...BLANK_OUTREACH, ...o }));
+    if (!teaching.length) teaching = [{ courseCode: '', courseName: '', programLevel: '', classType: 'Lecture', scheduled: 0, conducted: 0, missed: 0, missedAction: '', syllabusCompletion: 0, syllabusLecture: 0 }];
+    await saveDraft();
+    await saveActivity('research');
+    await saveActivity('duties');
+    await saveActivity('outreach');
+    show('Recurring template loaded.');
   }
   function handleKeydown(e: KeyboardEvent) { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveDraft(); } }
   onMount(() => {

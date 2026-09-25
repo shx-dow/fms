@@ -21,7 +21,6 @@ export const GET: RequestHandler = ({ locals }) => {
   const user = requireRole(requireUser(locals), 'FACULTY');
   const userId = user.id;
   const period = ensureCurrentPeriod();
-  if (!period) return json({ error: 'No open reporting period.' }, { status: 409 });
   let report = getReportForPeriod(userId, period.id);
   if (!report) {
     const now = new Date().toISOString();
@@ -65,7 +64,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   const user = requireRole(requireUser(locals), 'FACULTY');
   const userId = user.id;
   const period = ensureCurrentPeriod();
-  if (!period) return json({ ok: false, error: 'No open reporting period.' }, { status: 409 });
 
   const parsed = reportSaveSchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) {
