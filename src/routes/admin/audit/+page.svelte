@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
+  import AsyncState from '$lib/components/AsyncState.svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
   const PAGE_SIZE = 50;
@@ -88,9 +89,9 @@
     <button class="btn-link" onclick={resetFilters} disabled={!search && !action && !from && !to}>Reset</button>
   </section>
   {#if loading}
-    <div class="dash-loading"><span class="spinner"></span><span>Loading…</span></div>
+    <AsyncState kind="loading" message="Loading…" />
   {:else if error}
-    <div class="dash-error">{error}</div>
+    <AsyncState kind="error" message={error} />
   {:else}
     <section class="table-card">
       <table>
@@ -125,8 +126,6 @@
 </main>
 
 <style>
-  .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
-  .dash-error { padding: 16px 20px; background: var(--red-bg); color: var(--red); border-radius: 7px; font-size: 0.88rem; }
   .filter-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px 14px; box-shadow: var(--shadow-xs); }
   .filter-search, .filter-select, .filter-date input {
     border: 1px solid var(--line); border-radius: 7px; background: var(--bg-input); color: var(--text-1);

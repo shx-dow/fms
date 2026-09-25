@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
+  import AsyncState from '$lib/components/AsyncState.svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
   import ReportPreview from '$lib/components/ReportPreview.svelte';
@@ -104,9 +105,9 @@
       {#if selected}<a class="btn" href="/api/reports/{selected.id}/pdf" target="_blank">PDF</a>{/if}
     {/snippet}
   </PageHeader>
-  {#if error}<div class="msg err">{error}</div>{/if}
+  {#if error}<AsyncState kind="banner" message={error} />{/if}
   {#if loading}
-    <div class="dash-loading"><span class="spinner"></span><span>Loading…</span></div>
+    <AsyncState kind="loading" message="Loading…" />
   {:else}
     <div class="review-layout">
       <section class="queue-panel">
@@ -172,7 +173,7 @@
           {:else}
             <div class="rp-body">
               {#if contentLoading}
-                <div class="dash-loading"><span class="spinner"></span></div>
+                <AsyncState kind="loading" message="" />
               {:else if !reportContent}
                 <div class="empty-state">Could not load report content.</div>
               {:else}
@@ -219,8 +220,6 @@
 </main>
 
 <style>
-  .dash-loading { display: flex; align-items: center; gap: 12px; padding: 24px; color: var(--muted-3); font-size: 0.88rem; }
-  .msg.err { padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px; font-size: 0.8rem; background: var(--red-bg-alt); border: 1px solid var(--red-border); color: var(--red-dark); box-shadow: var(--shadow-xs); }
   .review-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
   .queue-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }
   .queue-head { padding: 15px 18px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); color: var(--text-3); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }

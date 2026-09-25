@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/state';
+  import AsyncState from '$lib/components/AsyncState.svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
@@ -80,9 +81,9 @@
 {#if isAdmin}
   <main class="shell">
     {#if loading}
-      <div class="dash-loading"><span class="spinner"></span><span>Loading administration…</span></div>
+      <AsyncState kind="loading" message="Loading administration…" />
     {:else if error}
-      <div class="dash-error">{error}</div>
+      <AsyncState kind="error" message={error} />
     {:else}
       <PageHeader title="Administration" sub={missingPeriod || 'Current reporting period'}>
         {#snippet actions()}
@@ -212,9 +213,9 @@
 {:else}
   <main class="shell">
     {#if loading}
-      <div class="dash-loading"><span class="spinner"></span><span>Loading overview…</span></div>
+      <AsyncState kind="loading" message="Loading overview…" />
     {:else if error}
-      <div class="dash-error">{error}</div>
+      <AsyncState kind="error" message={error} />
     {:else}
       <PageHeader title="Department overview" sub="Current reporting period">
         {#snippet actions()}
@@ -291,8 +292,6 @@
 {/if}
 
 <style>
-  .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
-  .dash-error { padding: 16px 20px; background: var(--red-bg); color: var(--red); border-radius: 7px; font-size: 0.88rem; }
   .dash-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
   .dash-metrics.wide { grid-template-columns: repeat(4, 1fr); }
   .dash-metrics > div { background: var(--panel); padding: 20px 22px; border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }

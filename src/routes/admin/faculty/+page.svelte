@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
+  import AsyncState from '$lib/components/AsyncState.svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
@@ -50,7 +51,7 @@
     {/snippet}
   </PageHeader>
   {#if loading}
-    <div class="dash-loading"><span class="spinner"></span><span>Loading…</span></div>
+    <AsyncState kind="loading" message="Loading…" />
   {:else}
     <div class="search-bar"><input type="search" placeholder="Search by name or email…" bind:value={search} /></div>
     <section class="table-card">
@@ -97,7 +98,6 @@
 </main>
 
 <style>
-  .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
   .search-bar { margin-bottom: 16px; }
   .search-bar input { width: 100%; max-width: 400px; padding: 11px 14px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 0.84rem; background: var(--panel); color: var(--text-1); box-shadow: var(--shadow-xs); transition: border-color 0.13s ease, box-shadow 0.13s ease; }
   .search-bar input:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }

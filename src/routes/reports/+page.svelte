@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
+  import AsyncState from '$lib/components/AsyncState.svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
@@ -67,13 +68,13 @@
 <svelte:head><title>My reports · Faculty Reporting System</title></svelte:head>
 <main class="shell app-shell">
   {#if loading}
-    <div class="loading-panel"><span class="spinner"></span><span>Loading reports…</span></div>
+    <AsyncState kind="loading" message="Loading reports…" />
   {:else if loadError}
-    <div class="load-error" role="alert">
-      <strong>Could not load reports.</strong>
-      <span>{loadError}</span>
-      <a href="/reports" onclick={(e) => { e.preventDefault(); location.reload(); }}>Try again</a>
-    </div>
+    <AsyncState kind="banner" message={loadError}>
+      {#snippet action()}
+        <a href="/reports" onclick={(e) => { e.preventDefault(); location.reload(); }}>Try again</a>
+      {/snippet}
+    </AsyncState>
   {:else}
     <PageHeader title="My reports" sub={currentPeriod || 'All periods'}>
       {#snippet actions()}
@@ -145,10 +146,6 @@
 </main>
 
 <style>
-  .loading-panel { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
-  .load-error { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border: 1px solid var(--red-border); border-radius: 8px; background: var(--red-bg-alt); color: var(--red); font-size: 0.82rem; flex-wrap: wrap; }
-  .load-error strong { font-weight: 800; }
-  .load-error a { margin-left: auto; color: var(--red); font-weight: 800; text-decoration: none; }
   .stat-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; font-size: 0.82rem; color: var(--text-3); margin-bottom: 20px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px 20px; box-shadow: var(--shadow-xs); }
   .stat-strip strong { color: var(--text-1); font-weight: 800; }
   .stat-sep { color: var(--muted-3); }

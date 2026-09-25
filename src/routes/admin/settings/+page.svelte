@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { show } from '$lib/stores/toast.svelte.ts';
+  import AsyncState from '$lib/components/AsyncState.svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
@@ -96,9 +97,9 @@
       <NotificationBell /><button class="btn btn-primary" onclick={() => (showCreate = true)}>+ New period</button>
     {/snippet}
   </PageHeader>
-  {#if error}<div class="msg err">{error}</div>{/if}
+  {#if error}<AsyncState kind="banner" message={error} />{/if}
   {#if loading}
-    <div class="dash-loading"><span class="spinner"></span><span>Loading…</span></div>
+    <AsyncState kind="loading" message="Loading…" />
   {:else}
     {#if openPeriod}
       <section class="settings-card">
@@ -175,8 +176,6 @@
 </main>
 
 <style>
-  .dash-loading { display: flex; align-items: center; gap: 12px; padding: 32px 20px; color: var(--muted-3); font-size: 0.88rem; }
-  .msg.err { padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px; font-size: 0.8rem; background: var(--red-bg-alt); border: 1px solid var(--red-border); color: var(--red-dark); box-shadow: var(--shadow-xs); }
   .settings-card { max-width: 760px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow-sm); border-top: 3px solid var(--success-border); }
   .setting-head { display: flex; justify-content: space-between; gap: 20px; padding: 22px 24px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); }
   .settings-card h2 { margin: 0; font-size: 1.15rem; font-weight: 750; letter-spacing: -0.01em; color: var(--text-1); }
