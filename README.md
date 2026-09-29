@@ -1,12 +1,36 @@
 # Faculty Reporting System
 
-A faculty weekly activity reporting system with three role-scoped workspaces — Faculty, HOD, and Admin. SvelteKit 5 frontend, SQLite (better-sqlite3 + Drizzle ORM) backend, designed to run on a university intranet.
+A faculty weekly activity reporting system with three role-scoped workspaces — Faculty, HOD, and Admin (director or dean). SvelteKit 5 frontend, SQLite (better-sqlite3 + Drizzle ORM) backend, designed to run on a university intranet.
 
 ## Features
 
 - **Faculty** — submit weekly reports (teaching, research, duties, outreach), track status across weeks, view submission history.
-- **HOD** — review queue with approve / request-changes / reopen-with-deadline, department dashboard and trends, calendar of submissions.
-- **Admin** — department & period management, faculty directory and user administration, audit log, review queue.
+- **HOD** — the same report view as faculty, because a department head teaches too, plus a review queue with approve / request-changes / reopen-with-deadline, department dashboard and trends, calendar of submissions.
+- **Admin** — department & period management, faculty directory and user administration, audit log, and read-only oversight of submissions. Does not review reports.
+
+### Who files, who reviews
+
+Everyone who teaches files a report. Only Admin (director or dean) does not.
+
+| Role    | Files a report | Reviews                                        |
+| ------- | -------------- | ---------------------------------------------- |
+| Faculty | yes            | nothing                                        |
+| HOD     | yes            | every report, including their own              |
+| Admin   | no             | nothing — keeps the system running             |
+
+Two rules, both stated once in `src/lib/domain.ts`:
+
+- `REPORTER_ROLES` — who files a report. Everyone who teaches, so an HOD files
+  one too. Only Admin does not.
+- `REVIEWER_ROLES` — who reviews. Reviewing is a teaching-side job, so it belongs
+  to the HOD alone. An HOD may review any report, including their own.
+
+Admin stays out of the reporting flow: no review queue, no approve or reopen
+anywhere, and no listing in anyone's queue. Admin reads a report only to
+diagnose a problem, and otherwise manages periods, accounts and the audit log.
+
+An HOD may read only reports in their own department, but the review queue is
+institute-wide. Chasing missing forms stays a department job.
 
 ## Tech stack
 
@@ -40,13 +64,29 @@ SEED=true npm run dev
 
 ### Demo accounts (dev seed only)
 
-| Role    | Email                 | Notes                                    |
-| ------- | --------------------- | ---------------------------------------- |
-| Admin   | `admin@example.edu`   | Dev-only account, credential in `seed.ts` |
-| HOD     | `hod.cse@example.edu` | Dev-only account, credential in `seed.ts` |
-| Faculty | `faculty1@example.edu` | Shared faculty password, in `seed.ts`   |
+| Role    | Email                  | Notes                        |
+| ------- | ---------------------- | ---------------------------- |
+| Admin   | `admin@example.edu`    | Dev-only account             |
+| HOD     | `hod.cse@example.edu`  | Dev-only account             |
+| Faculty | `faculty1@example.edu` | Dev-only account             |
+| Faculty | `faculty2@example.edu` | Dev-only account             |
+| Faculty | `faculty3@example.edu` | Dev-only account             |
 
-> These accounts are created with hardcoded credential hashes in `src/lib/server/db/seed.ts` and must **never** be used in production. Production databases start empty; see *Fresh production database* below.
+> These accounts must **never** be used in production. Production databases start empty; see *Fresh production database* below.
+
+The seed stores fixed scrypt hashes, and their plaintext is not published, so a
+freshly seeded database has nobody who can log in. Set `DEMO_PASSWORD` to choose
+a password for all five demo accounts, then seed:
+
+```bash
+DEMO_PASSWORD='choose-a-dev-password' npm run seed
+```
+
+Without `DEMO_PASSWORD` the seed falls back to the checked-in hashes, so nobody
+can sign in as a demo account. The value is never written to the repository.
+
+The seed dates its periods from the current week (previous, current, next) and
+leaves the current week open, so the demo data is always in date.
 
 ## Production build
 
@@ -90,6 +130,41 @@ After seeding, immediately change the demo passwords or remove the demo users th
 | `NODE_ENV`        | *(dev/production)*       | Set to `production` when deploying.                                |
 | `CSRF_TRUSTED_ORIGINS` | *(none)*           | Comma-separated extra origins allowed to POST. Use this instead of disabling the origin check when Windows/WSL forwarding rewrites the Host header. |
 | `ALLOW_PRODUCTION_SEED` | *(unset)*         | Must be `1` to seed a database while `NODE_ENV=production`. Seeding is refused otherwise. |
+| `DEMO_PASSWORD`   | *(unset)*                | Password for the five demo accounts when seeding. Dev only. |
+
+### Reporting weeks
+
+Exactly one period is open at a time. The app opens the current week
+automatically: when the open period has passed its `ends_on` date, the next
+request closes it and opens the current week (Monday to Friday, due Friday
+18:00 IST). A period that has not ended is left alone, so an admin can still
+move a period's dates or pre-open a coming week from **Admin → Periods** and
+have that stand. Without this the first week would stay open forever and
+nobody could submit again.
+
+### Review queue exports
+
+The review queue filters in the URL, so a filtered view can be bookmarked or
+shared, and the **Download CSV** button always carries the filters on screen.
+The table and the download are produced by the same query, so they cannot
+disagree.
+
+| Query string        | Effect                                        |
+| ------------------- | --------------------------------------------- |
+| `?q=`               | match name or email                           |
+| `?status=`          | `SUBMITTED`, `CHANGES_REQUIRED` or `APPROVED`  |
+| `?period=`          | one reporting week                            |
+| `?format=csv`       | download the filtered rows                    |
+
+The **Not submitted** list under the queue shows who has not filed for a week and
+downloads the same way:
+
+```
+/api/reports/missing?period=<week-id>&format=csv
+```
+
+Omitting `period` uses the open week. Columns are name, email, role, department
+and week.
 
 ### Intranet / plain HTTP note
 

@@ -28,7 +28,7 @@ export function createDatabase(opts: { filename?: string; seed?: boolean } = {})
         'Refusing to seed: NODE_ENV=production. Demo users ship with known passwords. Set ALLOW_PRODUCTION_SEED=1 for a deliberate bootstrap, then remove the demo users.',
       );
     }
-    seedDatabase(sqlite);
+    seedDatabase(sqlite, env.DEMO_PASSWORD || undefined);
   }
   return sqlite;
 }

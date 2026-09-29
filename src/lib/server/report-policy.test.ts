@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { createDatabase } from './local-db';
+import { seededOpenPeriod } from '../../test/seeded-periods';
 import { ensureCurrentPeriod } from './db/repositories/periods';
 import { canAccessReport, canWriteReport, policyFor } from './report-policy';
 
@@ -9,8 +10,14 @@ function makeDb(): BetterSQLite3Database {
   return drizzle(createDatabase({ filename: ':memory:', seed: true }));
 }
 
-const withinDeadline = new Date('2026-07-30T10:00:00Z');
-const afterDeadline = new Date('2026-08-01T10:00:00Z');
+// The seed dates its periods from the current week, so the test clock is read
+// off the open period instead of being pinned to a date that goes stale.
+const openPeriod = seededOpenPeriod();
+const withinDeadline = new Date(`${openPeriod.starts_on}T12:00:00Z`);
+const afterDeadline = new Date(`${openPeriod.ends_on}T23:00:00Z`);
+const pastDueOn = '2020-01-10T18:00:00+05:30';
+const reopenUntil = new Date(`${openPeriod.ends_on}T23:30:00Z`).toISOString();
+const expiredReopen = '2020-01-01T00:00:00Z';
 
 describe('currentPeriod', () => {
   it('returns the single open reporting period', () => {
@@ -42,13 +49,13 @@ describe('policyFor', () => {
   });
 
   it('unlocks a SUBMITTED report with an active reopen exception', () => {
-    const p = policyFor({ status: 'SUBMITTED', reopened_until: '2026-08-02T00:00:00Z' }, withinDeadline, makeDb());
+    const p = policyFor({ status: 'SUBMITTED', reopened_until: reopenUntil }, withinDeadline, makeDb());
     expect(p.locked).toBe(false);
     expect(p.canEdit).toBe(true);
   });
 
   it('keeps a SUBMITTED report locked when the reopen has expired', () => {
-    const p = policyFor({ status: 'SUBMITTED', reopened_until: '2026-07-25T00:00:00Z' }, withinDeadline, makeDb());
+    const p = policyFor({ status: 'SUBMITTED', reopened_until: expiredReopen }, withinDeadline, makeDb());
     expect(p.locked).toBe(true);
     expect(p.canEdit).toBe(false);
   });
@@ -66,7 +73,7 @@ describe('policyFor', () => {
   });
 
   it('reopens CHANGES_REQUIRED after the deadline when an exception is active', () => {
-    const p = policyFor({ status: 'CHANGES_REQUIRED', reopened_until: '2026-08-02T00:00:00Z' }, afterDeadline, makeDb());
+    const p = policyFor({ status: 'CHANGES_REQUIRED', reopened_until: reopenUntil }, afterDeadline, makeDb());
     expect(p.canEdit).toBe(true);
   });
 
@@ -77,26 +84,26 @@ describe('policyFor', () => {
   });
 
   it('locks a DRAFT whose own period has closed even while the current period is open', () => {
-    const ownClosedPeriod = { due_on: '2026-07-24T18:00:00+05:30', is_open: 0 };
+    const ownClosedPeriod = { due_on: pastDueOn, is_open: 0 };
     const p = policyFor({ status: 'DRAFT' }, withinDeadline, makeDb(), ownClosedPeriod);
     expect(p.open).toBe(false);
     expect(p.canEdit).toBe(false);
-    expect(p.deadline.toISOString()).toBe('2026-07-24T12:30:00.000Z');
+    expect(p.deadline.toISOString()).toBe('2020-01-10T12:30:00.000Z');
   });
 
   it('edits a DRAFT whose own period is open and reports its own deadline', () => {
-    const ownOpenPeriod = { due_on: '2026-07-31T18:00:00+05:30', is_open: 1 };
+    const ownOpenPeriod = { due_on: openPeriod.due_on, is_open: 1 };
     const p = policyFor({ status: 'DRAFT' }, withinDeadline, makeDb(), ownOpenPeriod);
     expect(p.open).toBe(true);
     expect(p.canEdit).toBe(true);
-    expect(p.deadline.toISOString()).toBe('2026-07-31T12:30:00.000Z');
+    expect(p.deadline.toISOString()).toBe(new Date(openPeriod.due_on).toISOString());
   });
 
   it('still falls back to the current period when no report period is supplied', () => {
     const p = policyFor({ status: 'DRAFT' }, withinDeadline, makeDb());
     expect(p.open).toBe(true);
     expect(p.canEdit).toBe(true);
-    expect(p.deadline.toISOString()).toBe('2026-07-31T12:30:00.000Z');
+    expect(p.deadline.toISOString()).toBe(new Date(openPeriod.due_on).toISOString());
   });
 });
 
@@ -108,9 +115,9 @@ describe('canAccessReport', () => {
     raw
       .prepare(
         `INSERT INTO reports (id, faculty_id, period_id, status, created_at, updated_at)
-         VALUES (?, 'dev-faculty-1', 'week-2026-07-27', 'DRAFT', '2026-07-28T00:00:00Z', '2026-07-28T00:00:00Z')`,
+         VALUES (?, 'dev-faculty-1', ?, 'DRAFT', '2026-07-28T00:00:00Z', '2026-07-28T00:00:00Z')`,
       )
-      .run(reportId);
+      .run(reportId, openPeriod.id);
     return drizzle(raw);
   }
 
@@ -147,9 +154,9 @@ describe('canWriteReport', () => {
     raw
       .prepare(
         `INSERT INTO reports (id, faculty_id, period_id, status, created_at, updated_at, reopened_until)
-         VALUES (?, 'dev-faculty-1', 'week-2026-07-27', ?, '2026-07-28T00:00:00Z', '2026-07-28T00:00:00Z', ?)`,
+         VALUES (?, 'dev-faculty-1', ?, ?, '2026-07-28T00:00:00Z', '2026-07-28T00:00:00Z', ?)`,
       )
-      .run(reportId, status, reopenedUntil);
+      .run(reportId, openPeriod.id, status, reopenedUntil);
     return drizzle(raw);
   }
 
@@ -172,7 +179,7 @@ describe('canWriteReport', () => {
   });
 
   it('allows editing a SUBMITTED report with an active reopen', () => {
-    expect(canWriteReport(faculty, reportId, dbWithReport('SUBMITTED', '2026-08-02T00:00:00Z'), afterDeadline)).toBe(true);
+    expect(canWriteReport(faculty, reportId, dbWithReport('SUBMITTED', reopenUntil), afterDeadline)).toBe(true);
   });
 
   it('denies HOD and Admin write access', () => {

@@ -5,18 +5,22 @@ import { createDatabase } from '../../local-db';
 import type { Db } from '../client';
 import { insertReport, insertReportOrIgnore, saveReport, setSectionEmpty, getReportForPeriod, listWeeksForFaculty, listWeeksAggregate, listReportsForPeriod, getReportForExport, listExportTeaching, countExportTeaching, MAX_EXPORT_TEACHING_ROWS } from './reports';
 import { replaceResearch, listResearch, listTeaching, cloneTeachingIntoReport } from './activity';
+import { seededPeriods } from '../../../../test/seeded-periods';
 
 function makeDb(): Db {
   return drizzle(createDatabase({ filename: ':memory:', seed: true }));
 }
 
+const periods = seededPeriods();
+
 const reportId = 'test-report-1';
 const facultyId = 'dev-faculty-1';
+
 const now = '2026-07-28T12:00:00Z';
 
 function setup(db: Db) {
   insertReportOrIgnore(
-    { id: reportId, facultyId, periodId: 'week-2026-07-27', createdAt: now, updatedAt: now },
+    { id: reportId, facultyId, periodId: periods.current, createdAt: now, updatedAt: now },
     db,
   );
 }
@@ -142,28 +146,29 @@ describe('weekly grid', () => {
   it('lists every period with the faculty member own report status', () => {
     const db = makeDb();
     const weeks = listWeeksForFaculty('dev-faculty-1', db);
-    expect(weeks.map((w) => w.id).sort()).toEqual(['week-2026-07-20', 'week-2026-07-27', 'week-2026-08-03']);
-    const past = weeks.find((w) => w.id === 'week-2026-07-20');
+    expect(weeks.map((w) => w.id).sort()).toEqual([periods.previous, periods.current, periods.next]);
+    const past = weeks.find((w) => w.id === periods.previous);
     expect(past).toMatchObject({ status: 'SUBMITTED', completion: 82 });
-    const open = weeks.find((w) => w.id === 'week-2026-07-27');
+    const open = weeks.find((w) => w.id === periods.current);
     expect(open?.status).toBeNull();
   });
 
   it('aggregates submitted and approved counts per period, scoped by department', () => {
     const db = makeDb();
     const weeks = listWeeksAggregate({}, db);
-    const week = weeks.find((w) => w.id === 'week-2026-07-20');
-    expect(week).toMatchObject({ total: 3, submitted: 1, approved: 1 });
+    // Everyone who teaches is counted, so the department head is in the totals.
+    const week = weeks.find((w) => w.id === periods.previous);
+    expect(week).toMatchObject({ total: 4, submitted: 1, approved: 2 });
 
     const cse = listWeeksAggregate({ departmentId: 'cse' }, db);
-    expect(cse.find((w) => w.id === 'week-2026-07-20')?.total).toBe(3);
+    expect(cse.find((w) => w.id === periods.previous)?.total).toBe(4);
   });
 
-  it('lists faculty reports for a given period with names', () => {
+  it('lists reports for a given period with names, the HOD included', () => {
     const db = makeDb();
-    const rows = listReportsForPeriod('week-2026-07-20', {}, db);
-    expect(rows).toHaveLength(2);
-    expect(rows.map((r) => r.faculty_name).sort()).toEqual(['Faculty User 1', 'Faculty User 2']);
+    const rows = listReportsForPeriod(periods.previous, {}, db);
+    expect(rows).toHaveLength(3);
+    expect(rows.map((r) => r.faculty_name).sort()).toEqual(['Department HOD', 'Faculty User 1', 'Faculty User 2']);
   });
 });
 
@@ -175,7 +180,7 @@ describe('cloneTeachingIntoReport', () => {
       { courseCode: 'CSE-301', courseName: 'DBMS', programLevel: 'III', classType: 'Lecture', scheduled: 4, conducted: 3, missed: 1, missedAction: 'Makeup', syllabusCompletion: 75, syllabusLecture: 18 },
     ] }, db);
     const nextId = 'test-report-next';
-    insertReportOrIgnore({ id: nextId, facultyId, periodId: 'week-2026-08-03', createdAt: now, updatedAt: now }, db);
+    insertReportOrIgnore({ id: nextId, facultyId, periodId: periods.next, createdAt: now, updatedAt: now }, db);
     cloneTeachingIntoReport(nextId, listTeaching(reportId, db), db);
     const cloned = listTeaching(nextId, db);
     expect(cloned).toHaveLength(1);
@@ -192,8 +197,8 @@ describe('getReportForExport', () => {
       scheduled: 2, conducted: 1, missed: 0, missedAction: null, syllabusCompletion: 50, syllabusLecture: i,
     }));
     saveReport({ reportId, userId: facultyId, now, summary: 'Week', challenges: null, nextGoals: null, completion: 70, status: 'SUBMITTED', teaching }, db);
-    expect(getReportForExport(facultyId, { periodId: 'week-2026-07-27' }, db)?.id).toBe(reportId);
-    expect(getReportForExport(facultyId, { periodId: 'week-2026-07-27', status: 'DRAFT' }, db)).toBeUndefined();
+    expect(getReportForExport(facultyId, { periodId: periods.current }, db)?.id).toBe(reportId);
+    expect(getReportForExport(facultyId, { periodId: periods.current, status: 'DRAFT' }, db)).toBeUndefined();
     expect(getReportForExport(facultyId, { reportId, submitted: true }, db)?.id).toBe(reportId);
     expect(getReportForExport(facultyId, { reportId, submitted: false }, db)).toBeUndefined();
     expect(listExportTeaching(reportId, db)).toHaveLength(MAX_EXPORT_TEACHING_ROWS);
@@ -206,17 +211,17 @@ describe('section empty flags and faculty-period uniqueness', () => {
     const db = makeDb();
     setup(db);
     setSectionEmpty(reportId, 'research', true, db);
-    expect(getReportForPeriod(facultyId, 'week-2026-07-27', db)).toMatchObject({ research_empty: 1, duties_empty: 0 });
+    expect(getReportForPeriod(facultyId, periods.current, db)).toMatchObject({ research_empty: 1, duties_empty: 0 });
     setSectionEmpty(reportId, 'research', false, db);
     setSectionEmpty(reportId, 'outreach', true, db);
-    expect(getReportForPeriod(facultyId, 'week-2026-07-27', db)).toMatchObject({ research_empty: 0, outreach_empty: 1 });
+    expect(getReportForPeriod(facultyId, periods.current, db)).toMatchObject({ research_empty: 0, outreach_empty: 1 });
   });
 
   it('rejects a second report for the same faculty and period', () => {
     const db = makeDb();
     setup(db);
     expect(() =>
-      insertReport({ id: 'test-report-dupe', facultyId, periodId: 'week-2026-07-27', createdAt: now, updatedAt: now }, db),
+      insertReport({ id: 'test-report-dupe', facultyId, periodId: periods.current, createdAt: now, updatedAt: now }, db),
     ).toThrow();
   });
 });
