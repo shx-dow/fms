@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
 import type { PageServerLoad } from './$types';
 import type { TeachingRecord } from '$lib/domain';
+import { isReporter } from '$lib/domain';
 import type { ActivityRecord, DutyRecord, OutreachRecord, ResearchRecord } from '$lib/report-records';
 import { computeWeekLabel } from '$lib/week-label';
 import { policyFor } from '$lib/server/report-policy';
@@ -95,7 +96,7 @@ function readProfile(userId: string) {
 export const load = (({ locals }: Parameters<PageServerLoad>[0]): EditorData => {
   const user = locals.user;
   if (!user) throw error(401, 'Sign in required');
-  if (user.role !== 'FACULTY') throw error(403, 'Only faculty can edit a report.');
+  if (!isReporter(user.role)) throw error(403, 'Only teaching staff can edit a report.');
 
   const period = ensureCurrentPeriod();
   const now = new Date();

@@ -34,7 +34,7 @@ export function listDashboardFaculty(periodId: string | null, db: Db = defaultDb
   return db.all(sql`
     SELECT u.id, u.name, u.email, r.status, r.completion, r.submitted_at
     FROM users u LEFT JOIN reports r ON r.faculty_id = u.id AND r.period_id = ${periodId}
-    WHERE u.role = 'FACULTY' AND u.is_active = 1 ORDER BY u.name
+    WHERE u.role IN ('FACULTY','HOD') AND u.is_active = 1 ORDER BY u.name
   `) as DashboardFacultyRow[];
 }
 
@@ -62,7 +62,7 @@ export function getCurrentPeriodStats(opts: { departmentId?: string }, db: Db = 
   // SAFETY: The SELECT list matches PeriodStatsRow (period columns plus the subquery counts).
   return db.all(sql`
     SELECT p.starts_on, p.due_on,
-      (SELECT COUNT(*) FROM users WHERE role = 'FACULTY' AND is_active = 1${facultySub}) AS faculty_count,
+      (SELECT COUNT(*) FROM users WHERE role IN ('FACULTY','HOD') AND is_active = 1${facultySub}) AS faculty_count,
       (SELECT COUNT(*) FROM reports r JOIN users u ON u.id = r.faculty_id
         WHERE r.period_id = p.id AND r.status IN ('SUBMITTED','APPROVED')${reportSub}) AS submitted_count
     FROM reporting_periods p WHERE p.is_open = 1 LIMIT 1

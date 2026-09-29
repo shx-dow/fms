@@ -15,6 +15,7 @@ const NOW = '2099-03-06T10:00:00Z';
 const faculty: User = { id: 'load-fac', name: 'Load Faculty', email: 'load-fac@example.edu', role: 'FACULTY', departmentId: 'load-cse' };
 const faculty2: User = { id: 'load-fac-2', name: 'Load Faculty Two', email: 'load-fac-2@example.edu', role: 'FACULTY', departmentId: 'load-cse' };
 const hod: User = { id: 'load-hod', name: 'Load HOD', email: 'load-hod@example.edu', role: 'HOD', departmentId: 'load-cse' };
+const admin: User = { id: 'load-admin', name: 'Load Admin', email: 'load-admin@example.edu', role: 'ADMIN' };
 
 // SAFETY: the load reads only locals.user; the rest of the event surface is unused by it.
 const event = (user: User | null) => ({ locals: { user } }) as Parameters<typeof load>[0];
@@ -25,7 +26,7 @@ function run(user: User | null): ReportHistoryData {
 
 function seed() {
   upsertDepartment('load-cse', 'L-CSE', 'Load CSE');
-  for (const u of [faculty, hod]) {
+  for (const u of [faculty, hod, admin]) {
     try {
       createUser({ id: u.id, name: u.name, email: u.email, role: u.role, departmentId: u.departmentId ?? null });
     } catch {
@@ -66,8 +67,10 @@ describe('report history load', () => {
     expect(theirs).not.toContain('load-report-1');
   });
 
-  it('rejects anonymous and non-faculty callers', () => {
+  it('rejects anonymous callers and anyone who does not teach', () => {
     expect(() => load(event(null))).toThrow();
-    expect(() => load(event(hod))).toThrow();
+    // A department head teaches, so they get their own history like anyone else.
+    expect(() => load(event(hod))).not.toThrow();
+    expect(() => load(event(admin))).toThrow();
   });
 });

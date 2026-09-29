@@ -39,12 +39,12 @@
       <div class="dash-metrics wide">
         <div><span>Faculty</span><strong>{facultyCount}</strong><small>in the department</small></div>
         <div><span>Submitted</span><strong>{submittedCount}</strong><small>for the open period</small>{#if data.rateDelta !== null}<em class="metric-delta" class:up={data.rateDelta >= 0} class:down={data.rateDelta < 0}>{data.rateDelta >= 0 ? '↑' : '↓'} {Math.abs(data.rateDelta)}% vs last period</em>{/if}</div>
-        <div><span>Review needed</span><strong>{reviewNeeded}</strong><small>awaiting attention</small></div>
         <div><span>Missing</span><strong>{missingReports.length}</strong><small>not yet submitted</small></div>
+        <div><span>Awaiting review</span><strong>{reviewNeeded}</strong><small>with the HOD</small></div>
       </div>
       <div class="quick-actions">
-        <a href="/admin/reports">Review queue</a>
         <a href="/admin/faculty">Faculty directory</a>
+        <a href="/admin/settings">Reporting periods</a>
         <a href="/admin/audit">Audit history</a>
       </div>
       <section class="admin-card">
@@ -80,36 +80,19 @@
           </tbody>
         </table>
       </section>
-      <div class="admin-grid">
-        <section class="admin-card">
-          <div class="panel-head"><h2>Needs attention</h2><a href="/admin/reports">Open queue →</a></div>
-          {#if !items.length}
-            <div class="empty-state">No reports requiring attention.</div>
-          {:else}
-            {#each items.slice(0, 5) as item}
-              <a class="admin-row" href="/admin/reports">
-                <span class="row-name">{item.faculty_name}</span>
-                <StatusPill status={item.status} />
-                <span class="row-date">{new Date(item.updated_at).toLocaleDateString()}</span>
-                <span class="row-act">Review →</span>
-              </a>
-            {/each}
-          {/if}
-        </section>
-        <section class="admin-card">
-          <div class="panel-head"><h2>Missing reports</h2><span class="head-tag">{data.periodLabel}</span></div>
-          {#if !missingReports.length}
-            <div class="empty-state">All faculty have submitted for this period.</div>
-          {:else}
-            {#each missingReports as m}
-              <div class="admin-row static">
-                <div class="row-name"><strong>{m.name}</strong><span class="row-email">{m.email}</span></div>
-              </div>
-            {/each}
-            <p class="missing-note">{missingReports.length} faculty {missingReports.length === 1 ? 'has' : 'have'} not yet submitted for {data.periodLabel}.</p>
-          {/if}
-        </section>
-      </div>
+      <section class="admin-card">
+        <div class="panel-head"><h2>Missing reports</h2><span class="head-tag">{data.periodLabel}</span></div>
+        {#if !missingReports.length}
+          <div class="empty-state">Everyone who teaches has submitted for this period.</div>
+        {:else}
+          {#each missingReports as m}
+            <div class="admin-row static">
+              <div class="row-name"><strong>{m.name}</strong><span class="row-email">{m.email}</span></div>
+            </div>
+          {/each}
+          <p class="missing-note">{missingReports.length} {missingReports.length === 1 ? 'person has' : 'people have'} not yet submitted for {data.periodLabel}.</p>
+        {/if}
+      </section>
       {#if trends.length > 0}
         <section class="trends-section">
           <div class="panel-head"><h2>Submission trends (last {trends.length} periods)</h2></div>

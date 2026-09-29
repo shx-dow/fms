@@ -20,8 +20,13 @@ export function computeRouteRedirect(path: string, user: GuardUser | null): stri
     return '/change-password';
   }
   if (user.role === 'FACULTY' && path.startsWith('/admin')) return '/dashboard';
-  if (user.role !== 'FACULTY' && path.startsWith('/reports')) return user.role === 'ADMIN' ? '/admin' : '/dashboard';
+  // A department head teaches too, so HOD gets the report pages. Only ADMIN
+  // (director or dean) does not file a report, so it is the only role kept out.
+  if (user.role === 'ADMIN' && path.startsWith('/reports')) return '/admin';
   if (user.role === 'HOD' && isAdminOnlyPath(path)) return '/admin';
+  // Reviewing belongs to the HOD. ADMIN looks after the system, so it is kept
+  // out of the reporting flow rather than appearing in a review queue.
+  if (user.role === 'ADMIN' && (path === '/admin/reports' || path.startsWith('/admin/reports/'))) return '/admin';
   if (path === '/login') return user.role === 'ADMIN' ? '/admin' : '/dashboard';
   return null;
 }

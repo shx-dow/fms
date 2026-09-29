@@ -12,13 +12,14 @@ const NOW = '2099-09-06T10:00:00Z';
 
 const faculty: User = { id: 'e-fac', name: 'E Fac', email: 'e-fac@example.edu', role: 'FACULTY', departmentId: 'e-cse' };
 const hod: User = { id: 'e-hod', name: 'E HOD', email: 'e-hod@example.edu', role: 'HOD', departmentId: 'e-cse' };
+const admin: User = { id: 'e-admin', name: 'E Admin', email: 'e-admin@example.edu', role: 'ADMIN' };
 
 // SAFETY: the load reads only locals.user; nothing else on the event is used.
 const event = (user: User | null) => ({ locals: { user } }) as Parameters<typeof load>[0];
 
 function seed() {
   upsertDepartment('e-cse', 'E-CSE', 'Editor CSE');
-  for (const u of [faculty, hod]) {
+  for (const u of [faculty, hod, admin]) {
     try {
       createUser({ id: u.id, name: u.name, email: u.email, role: u.role, departmentId: u.departmentId ?? null });
     } catch {
@@ -92,9 +93,11 @@ describe('report editor load', () => {
     expect(data.template.subjects).toEqual([]);
   });
 
-  it('refuses anonymous and non-faculty callers', () => {
+  it('refuses anonymous callers and anyone who does not teach', () => {
     expect(() => load(event(null))).toThrow();
-    expect(() => load(event(hod))).toThrow();
+    // A department head teaches too, so they open their own report.
+    expect(() => load(event(hod))).not.toThrow();
+    expect(() => load(event(admin))).toThrow();
   });
 
   it('always has an open period to report into', () => {
