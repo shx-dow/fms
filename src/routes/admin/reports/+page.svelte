@@ -6,6 +6,7 @@
   import PageHeader from '$lib/components/PageHeader.svelte';
   import ReportPreview from '$lib/components/ReportPreview.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
+  import { queueQuery, missingQuery, QUEUE_STATUSES } from '$lib/queue-filter';
   type ReviewRow = { id: string; status: string; updated_at: string; completion: number; faculty_name: string; period_label: string };
   type TeachingRow = { course_code: string; course_name: string; program_level: string; class_type: string; scheduled: number; conducted: number; missed: number; missed_action: string; syllabus_completion: number };
   type ResearchRow = { category: string; title: string; venue_or_agency: string; status: string };
@@ -14,15 +15,39 @@
   type AttachRow = { id: string; filename: string; size: number };
   type ReviewHistoryRow = { decision: string; remarks: string; created_at: string; reviewer_name: string };
   let { data } = $props();
-  // Seeded once, then owned by the page so a review decision can update the row.
-  const initialQueue = (): ReviewRow[] => data.reports;
-  let reports = $state<ReviewRow[]>([]);
+  // The list derives from the load, so it is in the server-rendered HTML. Seeding
+  // it in $effect.pre left the queue empty until the page hydrated, which read as
+  // "no reports match these filters" even when rows existed.
+  // A decision is recorded per report so the row updates without refetching.
+  const decided = $state<Record<string, string>>({});
+  const reports = $derived(data.reports.map((r) => (decided[r.id] ? { ...r, status: decided[r.id] } : r)));
   let selected = $state<ReviewRow | null>(null);
-  $effect.pre(() => {
-    if (reports.length) return;
-    reports = initialQueue();
-    selected = reports[0] ?? null;
+  $effect(() => {
+    if (!selected && reports.length) selected = reports[0];
   });
+  const filters = $derived(data.filters);
+  // The download carries the filters currently on screen, so the CSV and the
+  // table can never show different sets of reports.
+  const downloadHref = $derived(`/api/reviews?format=csv&${queueQuery(filters)}`.replace(/\?format=csv&$/, '?format=csv'));
+  const notSubmittedHref = $derived(
+    `/api/reports/missing?${missingQuery(filters.period)}&format=csv`.replace('?&', '?'),
+  );
+  let missing = $state<{ name: string; email: string; role: string }[]>([]);
+  let missingLabel = $state('');
+  let missingLoading = $state(false);
+  async function loadMissing() {
+    missingLoading = true;
+    try {
+      const res = await fetch(`/api/reports/missing?${missingQuery(filters.period)}`);
+      const d = await res.json().catch(() => ({}));
+      missing = d.missing ?? [];
+      missingLabel = d.periodLabel ?? '';
+    } catch {
+      missing = [];
+    } finally {
+      missingLoading = false;
+    }
+  }
   let comment = $state('');
   let error = $state('');
   let reason = $state('');
@@ -39,13 +64,11 @@
   } | null = $state(null);
   let contentLoading = $state(false);
   let showReport = $state(false);
-  let search = $state('');
-  const visibleReports = $derived(
-    search.trim() ? reports.filter((r) => (r.faculty_name + ' ' + r.period_label).toLowerCase().includes(search.trim().toLowerCase())) : reports,
-  );
-  // The queue arrives with the page; the selected report's content stays client-side.
+  // The queue arrives filtered with the page; the selected report's content
+  // stays client-side.
   onMount(() => {
     if (selected) loadContent(selected.id);
+    loadMissing();
   });
   async function loadContent(reportId: string) {
     contentLoading = true; reportContent = null;
@@ -82,8 +105,8 @@
       const d = await res.json().catch(() => ({}));
       if (!res.ok) { error = d.error ?? 'Unable to save review.'; return; }
       show('Review saved.');
+      decided[selected.id] = next;
       selected = { ...selected, status: next };
-      reports = reports.map(r => r.id === selected?.id ? { ...r, status: next } : r);
       loadContent(selected.id);
     } finally { reviewBusy = null; }
   }
@@ -102,7 +125,7 @@
   <PageHeader title="Review queue" sub="{reports.length} report{reports.length === 1 ? '' : 's'}">
     {#snippet actions()}
       <NotificationBell />
-      <a class="btn" href="/api/reviews?format=csv" target="_blank">CSV</a>
+      <a class="btn" href={downloadHref} target="_blank" rel="noopener">Download CSV</a>
       {#if selected}<a class="btn" href="/api/reports/{selected.id}/pdf" target="_blank">PDF</a>{/if}
     {/snippet}
   </PageHeader>
@@ -110,13 +133,29 @@
     <div class="review-layout">
       <section class="queue-panel">
         <div class="queue-head">Reports requiring attention</div>
-        {#if reports.length}
-          <input class="q-search" type="search" placeholder="Search faculty or period…" aria-label="Filter reports by faculty or period" bind:value={search} />
-        {/if}
-        {#if !visibleReports.length}
-          <div class="q-empty">{reports.length ? 'No reports match your search.' : 'No submitted reports available yet.'}</div>
+        <form class="filter-bar" method="GET" action="/admin/reports">
+          <input class="filter-search" type="search" name="q" placeholder="Search name or email…" aria-label="Filter reports by name or email" value={filters.q} />
+          <select class="filter-select" name="status" aria-label="Filter by status" value={filters.status}>
+            <option value="">All statuses</option>
+            {#each QUEUE_STATUSES as s}
+              <option value={s}>{s === 'CHANGES_REQUIRED' ? 'Changes requested' : s.charAt(0) + s.slice(1).toLowerCase()}</option>
+            {/each}
+          </select>
+          <select class="filter-select" name="period" aria-label="Filter by week" value={filters.period}>
+            <option value="">All weeks</option>
+            {#each data.periods as p}
+              <option value={p.id}>{p.label}{p.isOpen ? ' (open)' : ''}</option>
+            {/each}
+          </select>
+          <button class="btn" type="submit">Apply</button>
+          {#if filters.q || filters.status || filters.period}
+            <a class="btn-link" href="/admin/reports">Reset</a>
+          {/if}
+        </form>
+        {#if !reports.length}
+          <div class="q-empty">No reports match these filters.</div>
         {:else}
-          {#each visibleReports as r}
+          {#each reports as r}
             <button class="q-row" class:chosen={selected?.id === r.id} onclick={() => selectReport(r)}>
               <div class="q-info">
                 <strong>{r.faculty_name}</strong>
@@ -214,6 +253,29 @@
         </section>
       {/if}
     </div>
+
+    <!-- Who has not filed. Kept apart from the queue, because chasing a missing
+         report is a different job from deciding on one that arrived. -->
+    <section class="missing-panel">
+      <div class="panel-head">
+        <h2>Not submitted{missingLabel ? ` — ${missingLabel}` : ''}</h2>
+        <a class="btn" href={notSubmittedHref} target="_blank" rel="noopener">Download CSV</a>
+      </div>
+      {#if missingLoading}
+        <div class="missing-empty">Checking…</div>
+      {:else if !missing.length}
+        <div class="missing-empty">Everyone who teaches has filed for this week.</div>
+      {:else}
+        {#each missing as m}
+          <div class="missing-row">
+            <div>
+              <strong>{m.name}</strong>
+              <span>{m.email} · {m.role === 'HOD' ? 'Department head' : 'Faculty'}</span>
+            </div>
+          </div>
+        {/each}
+      {/if}
+    </section>
 </main>
 
 <style>
@@ -228,9 +290,6 @@
   .q-info strong { font-size: 0.82rem; }
   .q-info small { color: var(--muted-2); margin-top: 3px; font-size: 0.72rem; }
   .q-empty { padding: 24px 16px; color: var(--muted-2); font-size: 0.8rem; }
-  .q-search { width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid var(--line); padding: 11px 16px; font: inherit; font-size: 0.78rem; background: var(--bg-input); color: var(--ink-2); outline: none; }
-  .q-search:focus { box-shadow: inset 0 -2px 0 var(--blue); }
-  .q-search::placeholder { color: var(--muted-3); }
   .review-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }
   .rp-head { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding: 20px 22px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); }
   .rp-head-info h2 { font-size: 1.15rem; letter-spacing: -0.02em; margin: 0 0 2px; font-weight: 750; color: var(--text-1); }
@@ -267,4 +326,16 @@
   .empty-state { color: var(--muted-2); font-size: 0.78rem; padding: 10px 0; }
   @media (max-width: 800px) { .review-layout { grid-template-columns: 1fr; } }
   @media (max-width: 520px) { .rp-btns { flex-direction: column; } }
+  .filter-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line-2); background: var(--paper); }
+  .filter-search, .filter-select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg-input); color: var(--text-1); font: inherit; font-size: 0.8rem; }
+  .filter-search { flex: 1; min-width: 160px; }
+  .filter-search:focus, .filter-select:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+  .btn-link { font-size: 0.78rem; color: var(--blue); text-decoration: none; font-weight: 700; }
+  .btn-link:hover { text-decoration: underline; }
+  .missing-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+  .missing-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--line-2); }
+  .missing-row:last-child { border-bottom: 0; }
+  .missing-row strong { display: block; font-size: 0.84rem; color: var(--text-1); }
+  .missing-row span { font-size: 0.76rem; color: var(--text-3); }
+  .missing-empty { padding: 20px; text-align: center; color: var(--muted-2); font-size: 0.8rem; }
 </style>

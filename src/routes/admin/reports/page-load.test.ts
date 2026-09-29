@@ -15,8 +15,9 @@ const hodEee: User = { id: 'q-hod-eee', name: 'Q HOD EEE', email: 'q-hod-eee@exa
 const facultyCse: User = { id: 'q-fac-cse', name: 'Q Fac CSE', email: 'q-fac-cse@example.edu', role: 'FACULTY', departmentId: 'q-cse' };
 const facultyEee: User = { id: 'q-fac-eee', name: 'Q Fac EEE', email: 'q-fac-eee@example.edu', role: 'FACULTY', departmentId: 'q-eee' };
 
-// SAFETY: the load reads only locals.user; nothing else on the event is used.
-const event = (user: User | null) => ({ locals: { user } }) as Parameters<typeof load>[0];
+// SAFETY: the load reads only locals.user and the request URL; nothing else is used.
+const event = (user: User | null, query = '') =>
+  ({ locals: { user }, url: new URL(`http://localhost/admin/reports${query}`) }) as Parameters<typeof load>[0];
 
 function seed() {
   upsertDepartment('q-cse', 'Q-CSE', 'Queue CSE');
@@ -36,18 +37,49 @@ function seed() {
 }
 
 describe('review queue load', () => {
-  it('gives an HOD only their own department reports, labelled', () => {
+  // An HOD reviews across the institute, so the queue is not department-scoped.
+  it('gives an HOD every report, labelled, across departments', () => {
     seed();
     const data = load(event(hodCse));
-    expect(data.reports.map((r) => r.id)).toEqual(['q-report-cse']);
+    expect(data.reports.map((r) => r.id).sort()).toEqual(['q-report-cse', 'q-report-eee']);
     expect(data.reports[0].period_label).toMatch(/^Week \d+ of /);
-    expect(data.reports[0].faculty_name).toBe('Q Fac CSE');
+    expect(data.reports.map((r) => r.faculty_name).sort()).toEqual(['Q Fac CSE', 'Q Fac EEE']);
   });
 
-  it('gives an admin every report', () => {
+  it('offers every reporting week as a filter, marking the open one', () => {
     seed();
-    const ids = load(event(admin)).reports.map((r) => r.id).sort();
-    expect(ids).toEqual(['q-report-cse', 'q-report-eee']);
+    const { periods } = load(event(hodCse));
+    expect(periods.some((p) => p.isOpen === 1)).toBe(true);
+    expect(periods.every((p) => p.label.startsWith('Week '))).toBe(true);
+  });
+
+  it('narrows the queue by name, and echoes the filter back', () => {
+    seed();
+    const data = load(event(hodCse, '?q=EEE'));
+    expect(data.reports.map((r) => r.id)).toEqual(['q-report-eee']);
+    expect(data.filters.q).toBe('EEE');
+  });
+
+  it('ignores a status it does not know rather than showing nothing', () => {
+    seed();
+    const data = load(event(hodCse, '?status=NOT_A_STATUS'));
+    expect(data.filters.status).toBe('');
+    expect(data.reports).toHaveLength(2);
+  });
+
+  it('narrows the queue by status and by week', () => {
+    seed();
+    setReportStatus('q-report-cse', 'APPROVED', NOW);
+    expect(load(event(hodCse, '?status=APPROVED')).reports.map((r) => r.id)).toEqual(['q-report-cse']);
+    expect(load(event(hodCse, '?status=SUBMITTED')).reports.map((r) => r.id)).toEqual(['q-report-eee']);
+    expect(load(event(hodCse, `?period=${PERIOD}`)).reports).toHaveLength(2);
+    expect(load(event(hodCse, '?period=no-such-week')).reports).toHaveLength(0);
+  });
+
+  // ADMIN manages the system and stays out of the reporting flow.
+  it('refuses an admin, because reviewing is a teaching-side job', () => {
+    seed();
+    expect(() => load(event(admin))).toThrow();
   });
 
   it('refuses anonymous and faculty callers', () => {
