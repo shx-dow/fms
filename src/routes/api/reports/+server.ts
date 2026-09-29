@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
-import type { RequestHandler } from './$types';
-import { requireRole, requireUser } from '$lib/server/api';
+import { api, requireRole, requireUser} from '$lib/server/api';
+import { REPORTER_ROLES } from '$lib/domain';
 import { policyFor } from '$lib/server/report-policy';
 import { ensureCurrentPeriod } from '$lib/server/db/repositories/periods';
 import { reportSaveSchema } from '$lib/server/validation';
@@ -17,8 +17,8 @@ import {
 } from '$lib/server/db/repositories/reports';
 import { listTeaching, listResearch, listDuties, listOutreach, cloneTeachingIntoReport } from '$lib/server/db/repositories/activity';
 
-export const GET: RequestHandler = ({ locals }) => {
-  const user = requireRole(requireUser(locals), 'FACULTY');
+export const GET = api(({ locals }) => {
+  const user = requireRole(requireUser(locals), ...REPORTER_ROLES);
   const userId = user.id;
   const period = ensureCurrentPeriod();
   let report = getReportForPeriod(userId, period.id);
@@ -58,10 +58,10 @@ export const GET: RequestHandler = ({ locals }) => {
     duties: listDuties(String(report.id)),
     outreach: listOutreach(String(report.id)),
   });
-};
+});
 
-export const POST: RequestHandler = async ({ request, locals }) => {
-  const user = requireRole(requireUser(locals), 'FACULTY');
+export const POST = api(async ({ request, locals }) => {
+  const user = requireRole(requireUser(locals), ...REPORTER_ROLES);
   const userId = user.id;
   const period = ensureCurrentPeriod();
 
@@ -104,4 +104,4 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     teaching: payload.teaching ?? [],
   });
   return json({ ok: true, reportId });
-};
+});

@@ -1,8 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { randomUUID } from 'node:crypto';
-import { auditEvent, requireRole, requireUser } from '$lib/server/api';
+import { api, auditEvent, requireRole, requireUser} from '$lib/server/api';
 import { hashPassword } from '$lib/server/auth';
-import type { RequestHandler } from './$types';
 import {
   listUsers,
   setUserActive,
@@ -16,12 +15,12 @@ import {
 import { deleteSessionsForUser } from '$lib/server/db/repositories/sessions';
 import { setActiveSchema, createUserSchema, updateUserSchema } from '$lib/server/validation';
 
-export const GET: RequestHandler = ({ locals }) => {
+export const GET = api(({ locals }) => {
   requireRole(requireUser(locals), 'ADMIN');
   return json({ users: listUsers() });
-};
+});
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST = api(async ({ request, locals }) => {
   const user = requireRole(requireUser(locals), 'ADMIN');
   const body = await request.json().catch(() => ({}));
 
@@ -83,4 +82,4 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   }
 
   return json({ ok: false, error: 'Invalid action' }, { status: 400 });
-};
+});

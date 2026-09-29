@@ -1,13 +1,12 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { requireUser } from '$lib/server/api';
+import { api, requireUser} from '$lib/server/api';
 import { canAccessReport } from '$lib/server/report-policy';
 import { computeWeekLabel } from '$lib/week-label';
 import { getReportByIdWithFaculty } from '$lib/server/db/repositories/reports';
 import { listTeaching, listResearch, listDuties, listOutreach } from '$lib/server/db/repositories/activity';
 import { listReviewsForReport } from '$lib/server/db/repositories/reviews';
 
-export const GET: RequestHandler = ({ locals, params }) => {
+export const GET = api(({ locals, params }) => {
   const user = requireUser(locals);
   const reportId = params.id;
   const report = getReportByIdWithFaculty(reportId);
@@ -23,4 +22,4 @@ export const GET: RequestHandler = ({ locals, params }) => {
     outreach: listOutreach(reportId),
     reviews: listReviewsForReport(reportId),
   });
-};
+});

@@ -1,12 +1,11 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { auditEvent, requireUser } from '$lib/server/api';
+import { api, auditEvent, requireUser} from '$lib/server/api';
 import { hashPassword, verifyPassword } from '$lib/server/auth';
 import { getPasswordHash, upsertCredentials, setMustChangePassword } from '$lib/server/db/repositories/users';
 import { deleteSessionsForUserExcept } from '$lib/server/db/repositories/sessions';
 import { passwordChangeSchema } from '$lib/server/validation';
 
-export const POST: RequestHandler = async ({ request, locals, cookies }) => {
+export const POST = api(async ({ request, locals, cookies }) => {
   const user = requireUser(locals);
   let body: unknown;
   try {
@@ -27,4 +26,4 @@ export const POST: RequestHandler = async ({ request, locals, cookies }) => {
   deleteSessionsForUserExcept(user.id, cookies.get('session') ?? '');
   auditEvent(user.id, 'PASSWORD_CHANGED', 'USER', user.id);
   return json({ ok: true });
-};
+});
