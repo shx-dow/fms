@@ -5,19 +5,15 @@
   let {
     mode,
     weeks,
-    loading,
     selectedPeriod,
     weekDetail,
-    detailLoading,
     currentPeriodId,
     onselect,
   }: {
     mode: WeeksMode;
     weeks: Week[];
-    loading: boolean;
     selectedPeriod: string | null;
     weekDetail: PeriodDetail | null;
-    detailLoading: boolean;
     currentPeriodId: string | null;
     onselect: (periodId: string) => void;
   } = $props();
@@ -117,7 +113,7 @@
   <div class="panel-head weeks-head">
     <div class="weeks-title">
       <h2>Reporting weeks</h2>
-      {#if !loading && weeks.length}
+      {#if weeks.length}
         <span class="weeks-count">{weekCount} week{weekCount === 1 ? '' : 's'} · {activeYear}</span>
       {/if}
     </div>
@@ -136,9 +132,7 @@
       <span class="legend-dot" style="background:var(--red-soft)"></span><span>Changes</span>
     </div>
   </div>
-  {#if loading}
-    <div class="weeks-loading"><span class="spinner"></span></div>
-  {:else if !weeks.length}
+  {#if !weeks.length}
     <div class="weeks-empty">No reporting weeks yet. Ask your HOD or admin to open a reporting period.</div>
   {:else}
     <div class="weeks-body">
@@ -175,9 +169,7 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
-      {#if detailLoading}
-        <span class="spinner"></span>
-      {:else if weekDetail}
+      {#if weekDetail}
         <div class="selected-status">
           {#if weekDetail.report}
             <StatusPill status={weekDetail.report.status} />
@@ -212,7 +204,7 @@
   .year-pill.active { background: var(--navy); color: var(--paper); }
   .weeks-legend { display: flex; align-items: center; gap: 4px 10px; font-size: 0.62rem; color: var(--muted-2); margin-left: auto; white-space: nowrap; }
   .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; border: 1px solid var(--line); }
-  .weeks-loading, .weeks-empty { padding: 28px 20px; display: flex; align-items: center; gap: 12px; color: var(--muted-2); font-size: 0.8rem; justify-content: center; }
+  .weeks-empty { padding: 28px 20px; display: flex; align-items: center; gap: 12px; color: var(--muted-2); font-size: 0.8rem; justify-content: center; }
   .weeks-body { padding: 18px 24px 22px; background: #fbfcfb; min-width: 0; display: flex; flex-direction: column; }
   .weeks-timeline-row { display: flex; align-items: center; gap: 6px; position: relative; }
   .scroll-arrow { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 50%; background: var(--panel); color: var(--muted); cursor: pointer; flex: none; transition: opacity 0.15s ease, background 0.12s ease, color 0.12s ease, border-color 0.12s ease; }

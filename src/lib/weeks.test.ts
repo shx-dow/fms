@@ -64,6 +64,15 @@ describe('weekCellClass', () => {
     expect(weekCellClass('faculty', week({ status: null }))).toBe('c-none');
   });
 
+  it('shows a part-finished week as a draft, not as no report', () => {
+    // Folding DRAFT into c-none made a half-filled report indistinguishable from
+    // a week with no report, while the hover and the legend both said "Draft".
+    expect(weekCellClass('faculty', week({ status: 'DRAFT' }))).toBe('c-draft');
+    expect(weekCellClass('faculty', week({ status: 'DRAFT' }))).not.toBe(
+      weekCellClass('faculty', week({ status: null })),
+    );
+  });
+
   it('uses the aggregate level in reviewer mode', () => {
     expect(weekCellClass('reviewer', week({ level: 4 }))).toBe('c-approved');
     expect(weekCellClass('reviewer', week({ level: 3 }))).toBe('c-submitted');

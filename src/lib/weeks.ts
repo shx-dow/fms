@@ -29,10 +29,6 @@ export function weekYears(weeks: Week[]): number[] {
   return [...new Set(weeks.map(weekYear))].sort((a, b) => b - a);
 }
 
-export function activeWeekCount(weeks: Week[], year: number): number {
-  return weeks.filter((w) => weekYear(w) === year).length;
-}
-
 export function groupWeeksByMonth(weeks: Week[], year: number): WeekGroup[] {
   const yearWeeks = weeks
     .filter((w) => weekYear(w) === year)
@@ -61,6 +57,9 @@ export function weekCellClass(mode: WeeksMode, week: Week): string {
     if (week.status === 'APPROVED') return 'c-approved';
     if (week.status === 'SUBMITTED') return 'c-submitted';
     if (week.status === 'CHANGES_REQUIRED') return 'c-changes';
+    // A week part-way through is a draft, not a gap. Folding it into c-none made
+    // a half-filled report look identical to a week with no report at all.
+    if (week.status === 'DRAFT') return 'c-draft';
     return 'c-none';
   }
   if (Number(week.level) === 4) return 'c-approved';
