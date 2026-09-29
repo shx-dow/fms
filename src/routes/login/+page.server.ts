@@ -3,12 +3,13 @@ import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { createSession, verifyPassword } from '$lib/server/auth';
 import { createRateLimiter } from '$lib/server/rate-limit';
+import { LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS } from '$lib/constants';
 import { findByEmailWithCredentials } from '$lib/server/db/repositories/users';
 import type { Actions } from './$types';
 
 const cookieSecure = env.COOKIE_SECURE === 'true' ? true : env.COOKIE_SECURE === 'false' ? false : !dev;
 
-const loginLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
+const loginLimiter = createRateLimiter({ windowMs: LOGIN_WINDOW_MS, max: LOGIN_MAX_ATTEMPTS });
 
 function clientIp(request: Request, fallback: string): string {
   const fwd = request.headers.get('x-forwarded-for');

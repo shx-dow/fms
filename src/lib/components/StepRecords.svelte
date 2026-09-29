@@ -96,10 +96,6 @@
   const spec: SectionSpec = $derived(SECTIONS[section]);
   const primaryKey = $derived(spec.fields[0].key);
   const visible = $derived(records.filter((row) => fieldValue(row, primaryKey) !== 'N/A'));
-
-  export function blankRecord(): ActivityRecord {
-    return { ...spec.blank };
-  }
 </script>
 
 <div class="section-top">

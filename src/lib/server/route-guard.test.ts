@@ -18,10 +18,12 @@ describe('computeRouteRedirect', () => {
     expect(computeRouteRedirect('/dashboard', { role: 'FACULTY' })).toBeNull();
   });
 
-  it('keeps /reports faculty-only', () => {
+  it('lets every teaching role reach /reports, and keeps ADMIN out', () => {
     for (const path of ['/reports', '/reports/current', '/reports/current/print', '/reports/abc']) {
       expect(computeRouteRedirect(path, { role: 'FACULTY' })).toBeNull();
-      expect(computeRouteRedirect(path, { role: 'HOD' })).toBe('/dashboard');
+      // A department head teaches too, so they get the report pages as well.
+      expect(computeRouteRedirect(path, { role: 'HOD' })).toBeNull();
+      // ADMIN is the director or dean: they review, and do not file a report.
       expect(computeRouteRedirect(path, { role: 'ADMIN' })).toBe('/admin');
     }
   });
