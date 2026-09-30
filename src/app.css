@@ -5,13 +5,9 @@
     system-ui,
     -apple-system,
     sans-serif;
-  color: var(--navy);
+  color: var(--ink);
   background: var(--paper);
   font-synthesis: none;
-}
-* {
-  box-sizing: border-box;
-}
-body {
-  margin: 0;
+  /* Numbers line up in tables and metric tiles, which is most of this app. */
+  font-variant-numeric: tabular-nums;
 }
