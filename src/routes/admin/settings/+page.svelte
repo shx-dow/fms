@@ -175,12 +175,13 @@
 
 <style>
   .settings-card { max-width: 760px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow-sm); border-top: 3px solid var(--success-border); }
-  .setting-head { display: flex; justify-content: space-between; gap: 20px; padding: 22px 24px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); }
+  .setting-head { display: flex; justify-content: space-between; gap: 20px; padding: 22px 24px; border-bottom: 1px solid var(--line); background: var(--head); }
   .settings-card h2 { margin: 0; font-size: 1.15rem; font-weight: 750; letter-spacing: -0.01em; color: var(--text-1); }
   .setting-deadline { color: var(--text-3); margin: 6px 0 0; font-size: 0.8rem; }
   .status-pill { flex: none; font-size: 0.66rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; align-self: start; border: 1px solid transparent; }
   .status-pill.open { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
-  .status-pill.closed { background: var(--line-light); border-color: var(--line); color: var(--muted); }
+  /* --muted on --line-light is 4.2:1, under AA for a small pill label. */
+  .status-pill.closed { background: var(--line-light); border-color: var(--line-2); color: var(--muted-2); }
   .setting-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 22px 24px; }
   .setting-form label { font-size: 0.76rem; font-weight: 700; color: var(--text-3); }
   .setting-form input { display: block; width: 100%; margin-top: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; font: inherit; font-size: 0.86rem; background: var(--bg-input); color: var(--text-1); box-sizing: border-box; box-shadow: var(--shadow-xs); transition: border-color 0.13s ease, box-shadow 0.13s ease; }

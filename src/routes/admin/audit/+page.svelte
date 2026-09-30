@@ -86,8 +86,8 @@
     {/snippet}
   </PageHeader>
   <form class="filter-bar" method="GET" action="/admin/audit" bind:this={formEl}>
-    <input class="filter-search" type="search" name="q" placeholder="Search actor…" value={data.filters.q} oninput={onSearchInput} />
-    <select class="filter-select" name="action" value={data.filters.action} onchange={submit}>
+    <input class="filter-search" type="search" name="q" aria-label="Search audit history by actor or entity" placeholder="Search actor…" value={data.filters.q} oninput={onSearchInput} />
+    <select class="filter-select" name="action" aria-label="Filter audit history by action" value={data.filters.action} onchange={submit}>
       <option value="">All actions</option>
       {#each ACTIONS as a}
         <option value={a}>{actionLabel(a)}</option>

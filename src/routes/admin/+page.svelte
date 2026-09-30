@@ -216,7 +216,7 @@
   .dash-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
   .dash-metrics.wide { grid-template-columns: repeat(4, 1fr); }
   .dash-metrics > div { background: var(--panel); padding: 20px 22px; border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
-  .dash-metrics > div::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--blue-border)); opacity: 0.7; }
+  .dash-metrics > div::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); opacity: 0.7; }
   .dash-metrics span:first-child { display: block; color: var(--text-3); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 800; margin-bottom: 8px; }
   .dash-metrics strong { display: block; font-size: 1.8rem; letter-spacing: -0.04em; line-height: 1.1; color: var(--text-1); font-weight: 750; }
   .dash-metrics small { display: block; color: var(--muted-3); font-size: 0.72rem; margin-top: 5px; }
@@ -231,7 +231,7 @@
   .head-tag { font-size: 0.68rem; color: var(--muted-2); background: var(--bg-hover); border: 1px solid var(--line); padding: 3px 8px; border-radius: 999px; font-weight: 700; white-space: nowrap; }
   .admin-row { display: flex; align-items: center; gap: 12px; padding: 14px 22px; border-bottom: 1px solid var(--line-2); text-decoration: none; transition: background 0.1s; }
   .admin-row:last-child { border-bottom: 0; }
-  .admin-row:hover { background: #f6f9fc; }
+  .admin-row:hover { background: var(--head); }
   .admin-row.static:hover { background: transparent; }
   .row-name { min-width: 0; flex: 1; font-size: 0.84rem; color: var(--ink-2); }
   .row-name strong { display: block; font-weight: 700; }
@@ -241,20 +241,20 @@
   .report-pill { flex: none; font-size: 0.66rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.02em; border: 1px solid transparent; white-space: nowrap; }
   .r-sub { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue-dark); }
   .r-ok { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
-  .r-chg { background: var(--red-soft); border-color: var(--red-border); color: var(--red-dark); }
-  .r-drf { background: var(--line-light); border-color: var(--line); color: var(--gray); }
+  .r-chg { background: var(--red-bg); border-color: var(--red-border); color: var(--red-dark); }
+  .r-drf { background: var(--line-light); border-color: var(--line-2); color: var(--muted-2); }
   .empty-state { padding: 26px 20px; color: var(--muted-2); font-size: 0.82rem; text-align: center; }
-  .missing-note { padding: 12px 22px; margin: 0; color: var(--muted-2); font-size: 0.76rem; border-top: 1px solid var(--line-2); background: rgba(248,250,252,0.5); }
+  .missing-note { padding: 12px 22px; margin: 0; color: var(--muted-2); font-size: 0.76rem; border-top: 1px solid var(--line-2); background: var(--head); }
   .trends-section { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); margin-top: 24px; box-shadow: var(--shadow-sm); overflow: hidden; }
   .trends-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
-  .trends-table th { text-align: left; padding: 13px 22px; background: rgba(248,250,252,0.7); color: var(--text-3); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .trends-table th { text-align: left; padding: 13px 22px; background: var(--head); color: var(--text-2); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 1px solid var(--line); white-space: nowrap; }
   .trends-table td { padding: 14px 22px; border-bottom: 1px solid var(--line-2); color: var(--ink-2); }
-  .trends-table tbody tr:hover td { background: #f6f9fc; }
+  .trends-table tbody tr:hover td { background: var(--head); }
   .trends-table tr:last-child td { border-bottom: 0; }
   .trend-pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; border: 1px solid transparent; }
   .trend-pill.trend-ok { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
   .trend-pill.trend-mid { background: var(--draft-bg); border-color: var(--draft-border); color: var(--warn-dark); }
-  .trend-pill.trend-low { background: var(--red-soft); border-color: var(--red-border); color: var(--red-dark); }
+  .trend-pill.trend-low { background: var(--red-bg); border-color: var(--red-border); color: var(--red-dark); }
   .audit-card { margin-top: 24px; }
   @media (max-width: 900px) {
     .dash-metrics.wide { grid-template-columns: repeat(2, 1fr); }

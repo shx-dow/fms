@@ -9,7 +9,7 @@
   <div class="login-card">
     <div class="card-header">
       <img src="/icfaitech_jaipur_cover.webp" alt="IcfaiTech" class="login-logo" />
-      <span class="card-sub">Faculty Reporting System</span>
+      <h1 class="card-sub">Faculty Reporting System</h1>
     </div>
     <div class="card-divider"></div>
     <form method="POST" onsubmit={() => (submitting = true)}>
@@ -44,7 +44,7 @@
 <footer class="login-footer">Internal university application · Academic year 2026–27</footer>
 
 <style>
-  :global(body) { background: radial-gradient(1000px 380px at 50% -120px, rgba(79, 109, 155, 0.12), transparent 60%), #f7f9f8; color: var(--navy); }
+  :global(body) { background: radial-gradient(1000px 380px at 50% -120px, var(--bg-hover), transparent 60%), var(--paper); color: var(--navy); }
   .login-shell {
     position: fixed;
     inset: 0;
@@ -63,7 +63,7 @@
   }
   .card-header { text-align: center; margin-bottom: 26px; }
   .login-logo { display: block; max-width: 176px; height: auto; margin: 0 auto 12px; }
-  .card-sub { display: block; color: var(--text-3); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.01em; }
+  .card-sub { display: block; margin: 0; color: var(--text-3); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.01em; }
   .card-divider { height: 1px; background: var(--line-2); margin: 0 -38px 28px; }
   form { display: grid; gap: 16px; }
   label {
@@ -89,7 +89,7 @@
     padding: 13px; font: inherit; font-size: 0.84rem; font-weight: 800;
     cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.15s;
   }
-  button:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  button:hover { background: var(--accent-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
   .login-error {
     background: var(--red-bg-alt); border: 1px solid var(--red-border); border-radius: 8px;

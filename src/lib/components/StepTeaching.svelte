@@ -78,7 +78,7 @@
   .section-top h2 { font-size: 1.18rem; margin: 0; letter-spacing: -0.02em; font-weight: 750; color: var(--text-1); }
   .metric-badge { margin-left: auto; font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; background: var(--blue-soft); color: var(--blue-dark); }
   .section-hint { margin: -10px 0 18px; color: var(--muted-2); font-size: 0.82rem; line-height: 1.5; }
-  .start-helper { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px 18px; margin-bottom: 18px; border-radius: var(--radius-md); border: 1px dashed var(--blue-border); background: #f4f8fd; }
+  .start-helper { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px 18px; margin-bottom: 18px; border-radius: var(--radius-md); border: 1px dashed var(--blue-border); background: var(--info-bg); }
   .start-helper strong { display: block; font-size: 0.84rem; color: var(--text-1); margin-bottom: 3px; }
   .start-helper p { margin: 0; font-size: 0.78rem; color: var(--muted-2); }
   .start-acts { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -93,8 +93,9 @@
   .course-card input:focus, .course-card select:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
   .course-card input::placeholder { color: var(--muted-3); }
   .missed-label { display: block; color: var(--muted); font-size: 0.72rem; font-weight: 700; }
-  .act-add { border: 1px dashed var(--blue-border); background: #f4f8fd; color: var(--blue-dark); border-radius: var(--radius-md); padding: 11px; font: inherit; font-size: 0.8rem; font-weight: 750; cursor: pointer; transition: background 0.12s ease; }
-  .act-add:hover { background: #e9f1fb; }
-  .act-remove { border: 1px solid transparent; background: transparent; color: var(--red); font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; padding: 3px 8px; border-radius: 6px; }
+  .act-add { border: 1px dashed var(--blue-border); background: var(--info-bg); color: var(--blue-dark); border-radius: var(--radius-md); padding: 11px; font: inherit; font-size: 0.8rem; font-weight: 750; cursor: pointer; transition: background 0.12s ease; }
+  .act-add:hover { background: var(--info-bg); }
+  /* min-height keeps this a 24px target; 3px padding left it at 21px. */
+  .act-remove { border: 1px solid transparent; background: transparent; color: var(--red); font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; padding: 5px 8px; min-height: 24px; border-radius: 6px; }
   .act-remove:hover { background: var(--red-bg-alt); border-color: var(--red-border); }
 </style>

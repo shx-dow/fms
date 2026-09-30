@@ -22,7 +22,7 @@
     position: fixed;
     bottom: 18px;
     right: 18px;
-    z-index: 9999;
+    z-index: var(--z-toast);
     display: grid;
     gap: 8px;
     max-width: 360px;
@@ -52,9 +52,9 @@
     opacity: 0;
     transform: translateX(30px);
   }
-  .toast-ok { background: #f2f9f4; border-color: var(--success-border); color: var(--green); }
+  .toast-ok { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
   .toast-err { background: var(--red-bg-alt); border-color: var(--red-border); color: var(--red-dark); }
-  .toast-info { background: #eff4fb; border-color: var(--blue-border); color: var(--blue-dark); }
+  .toast-info { background: var(--info-bg); border-color: var(--blue-border); color: var(--blue-dark); }
   @keyframes toast-in {
     from { opacity: 0; transform: translateX(30px); }
     to { opacity: 1; transform: translateX(0); }

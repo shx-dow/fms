@@ -63,9 +63,10 @@
   .attach-acts { display: flex; align-items: center; gap: 8px; flex: none; }
   .attach-acts a { font-size: 0.76rem; font-weight: 700; color: var(--blue); text-decoration: none; }
   .attach-acts a:hover { text-decoration: underline; }
-  .act-remove { border: 1px solid transparent; background: transparent; color: var(--red); font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; padding: 3px 8px; border-radius: 6px; }
+  /* min-height keeps this a 24px target; 3px padding left it at 21px. */
+  .act-remove { border: 1px solid transparent; background: transparent; color: var(--red); font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; padding: 5px 8px; min-height: 24px; border-radius: 6px; }
   .act-remove:hover { background: var(--red-bg-alt); border-color: var(--red-border); }
-  .upload-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px dashed var(--blue-border); background: #f4f8fd; color: var(--blue-dark); border-radius: var(--radius-md); padding: 11px 16px; font-size: 0.8rem; font-weight: 750; cursor: pointer; }
+  .upload-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px dashed var(--blue-border); background: var(--info-bg); color: var(--blue-dark); border-radius: var(--radius-md); padding: 11px 16px; font-size: 0.8rem; font-weight: 750; cursor: pointer; }
   .upload-btn input { display: none; }
   .empty { color: var(--muted-2); font-size: 0.82rem; margin: 0; }
 </style>

@@ -21,10 +21,13 @@
 <span class={cls}>{label}{detail ? ` · ${detail}` : ''}</span>
 
 <style>
-  .pill { display: inline-flex; align-items: center; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.02em; padding: 4px 11px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+  /* The shared .pill rules live in layout.css. They are declared here only to
+     add the status modifier, and they match layout.css exactly: the earlier
+     --red-soft background here gave 4.4:1, below AA, and --gray on the neutral
+     chip gave 4.2:1. */
   .pill-approved { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
-  .pill-changes { background: var(--red-soft); border-color: var(--red-border); color: var(--red-dark); }
+  .pill-changes { background: var(--red-bg); border-color: var(--red-border); color: var(--red-dark); }
   .pill-draft { background: var(--draft-bg); border-color: var(--draft-border); color: var(--warn-dark); }
-  .pill-submitted { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue-dark); }
-  .pill-none { background: var(--line-light); border-color: var(--line); color: var(--gray); }
+  .pill-submitted { background: var(--info-bg); border-color: var(--blue-border); color: var(--blue-dark); }
+  .pill-none { background: var(--line-light); border-color: var(--line-2); color: var(--muted-2); }
 </style>

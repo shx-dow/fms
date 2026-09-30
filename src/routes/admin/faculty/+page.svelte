@@ -44,7 +44,7 @@
       <NotificationBell /><button class="btn btn-primary" onclick={openCreate}>+ Add user</button>
     {/snippet}
   </PageHeader>
-  <div class="search-bar"><input type="search" placeholder="Search by name or email…" bind:value={search} /></div>
+  <div class="search-bar"><input type="search" name="q" aria-label="Search faculty by name or email" placeholder="Search by name or email…" bind:value={search} /></div>
     <section class="table-card">
       <table>
         <thead><tr><th>Name</th><th>Login</th><th>Employee code</th><th>Specialization</th><th>Role</th><th>Status</th><th></th></tr></thead>
@@ -98,7 +98,7 @@
   .td-acts { text-align: right; white-space: nowrap; }
   .confirm-group { display: inline-flex; gap: 6px; align-items: center; }
   .btn-confirm { border: 1px solid var(--navy); border-radius: 6px; padding: 6px 11px; font: inherit; font-size: 0.7rem; font-weight: 800; cursor: pointer; background: var(--navy); color: var(--paper); }
-  .btn-confirm:hover { background: var(--blue-hover); }
+  .btn-confirm:hover { background: var(--accent-hover); }
   .btn-cancel { border: 1px solid var(--line); border-radius: 6px; padding: 6px 11px; font: inherit; font-size: 0.7rem; font-weight: 800; cursor: pointer; background: var(--panel); color: var(--muted); }
   .btn-cancel:hover { background: var(--bg-hover); }
   .empty-row { text-align: center; padding: 28px; color: var(--muted-2); font-size: 0.82rem; }

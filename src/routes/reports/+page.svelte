@@ -119,7 +119,7 @@
   .hist-search::placeholder { color: var(--muted-3); }
   .report-row-link { display: flex; align-items: center; gap: 14px; padding: 15px 22px; border-bottom: 1px solid var(--line-2); text-decoration: none; transition: background 0.1s ease; }
   .report-row-link:last-child { border-bottom: 0; }
-  .report-row-link:hover { background: #f6f9fc; }
+  .report-row-link:hover { background: var(--head); }
   .report-meta { min-width: 0; flex: 1; }
   .report-period { display: block; font-size: 0.86rem; color: var(--text-1); margin-bottom: 2px; font-weight: 700; }
   .report-date { display: block; font-size: 0.72rem; color: var(--text-3); }
