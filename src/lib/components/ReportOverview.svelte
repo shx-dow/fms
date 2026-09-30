@@ -1,6 +1,7 @@
 <script lang="ts">
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import StatusPill from '$lib/components/StatusPill.svelte';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import {
     groupWeeksByMonth,
     weekCellClass,
@@ -11,10 +12,11 @@
   import type { DashboardReportData } from '$lib/dashboard-types';
 
 
-  let { name, report, weeks: initialWeeks }: {
+  let { name, report, weeks: initialWeeks, showWeeksCalendar = true }: {
     name: string;
     report: DashboardReportData | null;
     weeks: Week[];
+    showWeeksCalendar?: boolean;
   } = $props();
 
   const completion = $derived(report?.completion ?? 0);
@@ -125,12 +127,14 @@
         </div>
       </div>
 
-      <ul class="chips">
-        {#each chips as c}
+      <ul class="sections">
+        {#each chips as c, i}
           <li>
             <a href="/reports/current?step={c.step}" class:done={c.done}>
-              <span class="chip-label">{c.label}</span>
-              <span class="chip-value">{c.value}</span>
+              <span class="sec-index">0{i + 1}</span>
+              <span class="sec-label">{c.label}</span>
+              <span class="sec-value">{c.value}</span>
+              <span class="sec-go"><ChevronRight size={16} /></span>
             </a>
           </li>
         {/each}
@@ -143,8 +147,10 @@
     </div>
   </section>
 
-  <!-- Supporting: the year, and what has been filed. -->
+  <!-- Supporting: the year, and what has been filed. A reviewer already gets a
+       department calendar below, so a second one would just repeat it. -->
   <div class="side-col">
+    {#if showWeeksCalendar}
     <section class="card" aria-labelledby="prog-title">
       <div class="panel-head">
         <h2 id="prog-title">Your weeks</h2>
@@ -187,6 +193,7 @@
         <p class="empty">No reporting weeks yet. Ask your HOD or admin to open a period.</p>
       {/if}
     </section>
+    {/if}
 
     <section class="card" aria-labelledby="hist-title">
       <div class="panel-head"><h2 id="hist-title">Recent reports</h2></div>
@@ -215,10 +222,10 @@
   .ov-head-acts { margin-left: auto; display: flex; align-items: center; gap: var(--sp-3); }
 
   /* One dominant column, one supporting. Stacks on narrow screens. */
-  .ov-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: var(--sp-4); align-items: start; }
-  .side-col { display: grid; gap: var(--sp-4); align-content: start; }
+  .ov-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); gap: var(--sp-5); align-items: start; }
+  .side-col { display: grid; gap: var(--sp-5); align-content: start; }
 
-  .now-body { padding: var(--sp-5); display: grid; gap: var(--sp-5); }
+  .now-body { padding: var(--sp-6); display: grid; gap: var(--sp-6); }
   .now-top { display: flex; align-items: center; gap: var(--sp-6); }
   .now-facts { min-width: 0; }
   .now-deadline { margin: 0; font-size: var(--fs-lg); font-weight: 650; color: var(--text-1); }
@@ -226,28 +233,37 @@
   .now-deadline.passed { color: var(--red); }
   .now-progress { margin: 3px 0 0; font-size: var(--fs-md); color: var(--text-3); }
 
-  .ring { position: relative; width: 64px; height: 64px; flex: none; }
+  .ring { position: relative; width: 72px; height: 72px; flex: none; }
   .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
   .ring circle { fill: none; stroke-width: 7; }
   .ring .ring-bg { stroke: var(--line-2); }
   .ring .ring-fg { stroke: var(--blue); transition: stroke-dashoffset 0.4s ease; }
   .ring.done .ring-fg { stroke: var(--green); }
-  .ring strong { position: absolute; inset: 0; display: grid; place-items: center; font-size: var(--fs-base); font-weight: 700; color: var(--text-1); }
+  .ring strong { position: absolute; inset: 0; display: grid; place-items: center; font-size: var(--fs-lg); font-weight: 700; color: var(--text-1); }
 
-  /* The five sections as one line of counts, each still a link. */
-  .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2); }
-  .chips a {
-    display: inline-flex; align-items: baseline; gap: 6px;
-    padding: 5px 10px; border-radius: 999px;
-    border: 1px solid var(--line); background: var(--paper);
-    text-decoration: none; color: var(--text-2);
-    transition: border-color 0.12s ease, background 0.12s ease;
+  /* The five sections as a full-height checklist. One wrapped line of pills left
+     the card short and pushed the rest of the page into empty space. */
+  .sections { list-style: none; margin: 0; padding: 0; display: grid; }
+  .sections li + li { border-top: 1px solid var(--line); }
+  .sections a {
+    display: flex; align-items: center; gap: var(--sp-4);
+    padding: 13px var(--sp-2); text-decoration: none; color: var(--text-2);
+    transition: background 0.12s ease;
   }
-  .chips a:hover { border-color: var(--muted-3); background: var(--bg-hover); }
-  .chips a.done { border-color: var(--success-border); background: var(--success-bg); }
-  .chip-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
-  .chip-value { font-size: var(--fs-sm); font-weight: 700; color: var(--text-1); }
-  .chips a.done .chip-label { color: var(--green); }
+  .sections a:hover { background: var(--bg-hover); }
+  .sec-index {
+    width: 26px; height: 26px; border-radius: 999px; flex: none;
+    display: grid; place-items: center;
+    /* --text-3 on --line-light is 3:1, below AA for a 11px numeral. */
+    background: var(--line-light); color: var(--text-2);
+    font-size: var(--fs-xs); font-weight: 700;
+  }
+  .sections a.done .sec-index { background: var(--success-bg); color: var(--green); }
+  .sec-label { font-size: var(--fs-md); font-weight: 600; color: var(--text-1); }
+  .sec-value { margin-left: auto; font-size: var(--fs-md); color: var(--text-3); }
+  .sections a.done .sec-value { color: var(--green); font-weight: 600; }
+  .sec-go { display: grid; color: var(--muted-3); flex: none; }
+  .sections a:hover .sec-go { color: var(--blue); }
 
   .now-acts { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
 
@@ -257,7 +273,11 @@
     color: var(--text-3); font-size: var(--fs-xs); font-weight: 700;
     letter-spacing: 0.1em; text-transform: uppercase;
   }
-  .graph-cells { display: flex; flex-wrap: wrap; gap: 5px; }
+  /* 18px cells stay 18px, but a 6px gap puts adjacent targets 24px apart,
+     which is what WCAG 2.2 actually requires for targets this size. */
+  .graph-cells { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* 18px reads as a calendar cell; the 24px floor is a tap target, so the
+     extra space comes from the gap rather than from the swatch itself. */
   .cell {
     width: 18px; height: 18px; border-radius: 5px; border: 1px solid var(--line-2);
     display: block; transition: transform 0.12s ease;

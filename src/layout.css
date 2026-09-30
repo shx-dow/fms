@@ -28,14 +28,14 @@
   --bg-input: #ffffff;
   --head: #fafafa;
 
-  /* ---- Accent: one colour, used for actions, focus and links only ---- */
+  /* ---- Accent: one colour, used for actions, focus and links only ----
+     --accent-hover is the accent darkened to ink. It was called --blue-hover,
+     which promised a blue and delivered black; the name was the bug. */
   --blue: #1d4ed8;
-  --blue-2: #1e40af;
   --blue-dark: #1e40af;
-  --blue-hover: #0a0a0a;
+  --accent-hover: #0a0a0a;
   --blue-soft: #e8eefc;
   --blue-border: #a9c0f5;
-  --blue-icon: #8a8a8a;
   --accent: #1d4ed8;
   --accent-strong: #0a0a0a;
 
@@ -56,12 +56,14 @@
   --info-bg: #e8eefc;
   --text-1: #0a0a0a;
   --text-2: #404040;
-  --text-3: #8a8a8a;
+  /* Was #8a8a8a, which is 3.0:1 on --line-light and 3.3:1 on white — below AA
+     for the small secondary text this token is used for. #6b6b6b is 4.7:1 on
+     the darkest light surface and still reads as quiet text. */
+  --text-3: #6b6b6b;
 
   /* ---- Sidebar ---- */
   --sidebar-text: #d4d4d4;
   --sidebar-text-2: #a3a3a3;
-  --sidebar-text-3: #ffffff;
   --sidebar-toggle: #8a8a8a;
   --sidebar-hover: #262626;
   --sidebar-line: #2b2b2b;
@@ -95,15 +97,21 @@
   --fs-md: 0.82rem;
   --fs-base: 0.875rem;
   --fs-lg: 1rem;
-  --fs-xl: 1.15rem;
   --fs-2xl: 1.35rem;
   --fs-3xl: 1.6rem;
 
-  /* ---- Stacking ---- */
-  --z-sticky: 20;
+  /* ---- Stacking ----
+     Four components reached for z-index: 9999 to escape a stacking context they
+     had not diagnosed. Everything above the page now has a named step. */
+  --z-raised: 40;
   --z-sidebar: 100;
-  --z-popover: 200;
+  --z-tooltip: 150;
   --z-modal: 300;
+  --z-toast: 400;
+
+  /* The dim behind a modal or a phone drawer. It was written out twice, in
+     Modal.svelte and here, and drifted. */
+  --scrim: rgb(0 0 0 / 0.45);
 }
 
 /* ---- Base ---- */
@@ -187,7 +195,8 @@ body {
 .pill-submitted { background: var(--info-bg); border-color: var(--blue-border); color: var(--blue-dark); }
 .pill-approved { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
 .pill-changes { background: var(--red-bg); border-color: var(--red-border); color: var(--red-dark); }
-.pill-none { background: var(--line-light); border-color: var(--line-2); color: var(--muted); }
+/* --muted on --line-light is 4.2:1, under AA for a small pill label. */
+.pill-none { background: var(--line-light); border-color: var(--line-2); color: var(--muted-2); }
 
 /* ---- Banners ---- */
 .banner {
@@ -214,7 +223,8 @@ body {
 .table-card table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: var(--fs-md); }
 .table-card th, .table-card td { padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--line-2); }
 .table-card th {
-  text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-3);
+  /* --text-3 is 3.3:1 on white, which fails AA at this size. */
+  text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-2);
   font-size: var(--fs-xs); font-weight: 700; background: var(--head);
   white-space: nowrap; position: sticky; top: 0;
 }
@@ -230,8 +240,10 @@ body {
   padding: 11px 14px; border-bottom: 1px solid var(--line-2); background: var(--head);
 }
 .panel-head h2 { font-size: var(--fs-md); margin: 0; font-weight: 650; color: var(--text-1); }
-.panel-head a { color: var(--blue); text-decoration: none; font-size: var(--fs-sm); font-weight: 600; }
-.panel-head a:hover { text-decoration: underline; }
+/* :not(.btn) matters: `.panel-head a` outranks `.btn-primary`, so without this
+   a primary button placed in a panel head would take the link colour. */
+.panel-head a:not(.btn) { color: var(--blue); text-decoration: none; font-size: var(--fs-sm); font-weight: 600; display: inline-flex; align-items: center; min-height: 24px; }
+.panel-head a:not(.btn):hover { text-decoration: underline; }
 
 /* ---- Forms: one input recipe for the whole app ---- */
 .field { display: block; }
@@ -332,6 +344,13 @@ body {
   padding: 0 7px; flex: none;
 }
 .sidebar-logo-img { max-width: 104px; height: auto; }
+/* A shrunken wordmark logo is unreadable, so the rails show a monogram instead.
+   Declared here so the cascade order is: base hidden, then each rail shows it. */
+.sidebar-monogram {
+  display: none; width: 34px; height: 34px; border-radius: var(--radius-md);
+  background: var(--navy-3); color: #fff; font-size: var(--fs-lg); font-weight: 700;
+  place-items: center; letter-spacing: 0.02em;
+}
 .sidebar-toggle-top {
   border: 0; background: transparent; color: var(--sidebar-toggle);
   cursor: pointer; padding: 5px; border-radius: var(--radius-sm);
@@ -386,20 +405,30 @@ body {
   min-width: 0; flex: 1; margin-left: 236px;
   transition: margin-left 0.18s ease; position: relative; background: var(--paper);
 }
-.app-main > .shell { max-width: 1280px; padding: var(--sp-8) var(--sp-9) 64px; }
+.app-main > .shell { max-width: 1440px; margin-inline: auto; padding: var(--sp-8) var(--sp-9) 64px; }
 
 /* ---- Responsive: full sidebar, then a rail, then a drawer ---- */
 @media (max-width: 1200px) {
   .app-main > .shell { padding: var(--sp-7) var(--sp-7) 56px; }
 }
 @media (max-width: 900px) {
-  .app-sidebar { width: 62px; padding-inline: 0; }
-  .app-main { margin-left: 62px; }
+  .app-sidebar { width: 68px; padding-inline: 0; }
+  .app-main { margin-left: 68px; }
   .sidebar-nav a { justify-content: center; padding-inline: 0; }
-  .sidebar-nav a .nav-label, .sidebar-user-info, .logout-link .nav-label { display: none; }
+  .sidebar-nav a .nav-label, .sidebar-user-info, .logout-link .nav-label { position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); white-space: nowrap; padding: 5px 10px; border-radius: var(--radius-sm); background: var(--ink); color: #fff; font-size: var(--fs-sm); font-weight: 600; box-shadow: var(--shadow-md); opacity: 0; pointer-events: none; transition: opacity 0.12s ease; }
+  .sidebar-nav a, .logout-link, .sidebar-user { position: relative; }
+  .sidebar-nav a:hover .nav-label, .sidebar-nav a:focus-visible .nav-label, .logout-link:hover .nav-label, .logout-link:focus-visible .nav-label, .sidebar-user:hover .sidebar-user-info, .sidebar-user:focus-visible .sidebar-user-info { opacity: 1; }
+  /* Same reason as the manual rail: keep the tooltip text off the ink chip. */
+  .sidebar-nav a .nav-label, .logout-link .nav-label, .sidebar-user .sidebar-user-info { color: #fff; }
+  .sidebar-nav a:focus-visible, .logout-link:focus-visible, .sidebar-user:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   .sidebar-logo { padding-inline: 0; justify-content: center; }
-  .sidebar-logo-img { max-width: 34px; }
+  /* Same reason as the manual rail: a shrunken wordmark is not legible. */
+  .sidebar-logo-img { display: none; }
+  .sidebar-monogram { display: grid; }
   .sidebar-label { height: 1px; margin: 14px 12px; padding: 0; background: var(--sidebar-line); overflow: hidden; text-indent: -999px; }
+  /* The rail is automatic in this band, so a collapse toggle would be a dead
+     control. Below 620px the drawer and its open button take over. */
+  .sidebar-toggle-top, .sidebar-collapsed .sidebar-toggle-top { display: none; }
   .sidebar-user { justify-content: center; }
   .logout-link { padding: 6px; }
   .app-main > .shell { padding: var(--sp-6) var(--sp-5) 48px; }
@@ -426,33 +455,85 @@ body {
   .nav-open .app-sidebar .sidebar-logo-img { max-width: 104px; }
   .nav-open .app-sidebar .sidebar-label { height: auto; margin: 0; padding: 14px 10px 6px; background: none; text-indent: 0; }
   .nav-open .app-sidebar .sidebar-user { justify-content: flex-start; }
-  .nav-scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: calc(var(--z-sidebar) - 1); }
-  .nav-open-btn { display: none; }
+  .nav-scrim { position: fixed; inset: 0; background: var(--scrim); z-index: calc(var(--z-sidebar) - 1); }
   .app-main > .shell { padding: var(--sp-5) var(--sp-4) 40px; }
 }
 
 /* ---- Manually collapsed rail (desktop) ---- */
-.sidebar-collapsed .app-sidebar { width: 62px; overflow-x: hidden; }
-.sidebar-collapsed .app-main { margin-left: 62px; }
-.sidebar-collapsed .sidebar-top { position: relative; justify-content: center; }
-.sidebar-collapsed .sidebar-logo { padding-inline: 4px; }
-.sidebar-collapsed .sidebar-logo-img { max-width: 34px; }
-.sidebar-collapsed .sidebar-toggle-top {
-  display: none; position: absolute; top: 2px; left: 50%;
-  transform: translateX(-50%); width: 28px; height: 28px; padding: 0;
+/* The rail is a permanent state, not a hover state: the expand control must be
+   there when the mouse is elsewhere, and the logo must stay legible. Labels are
+   kept in the DOM as tooltips so an icon-only link is never unlabelled. */
+.sidebar-collapsed .app-sidebar { width: 68px; overflow-x: hidden; }
+.sidebar-collapsed .app-main { margin-left: 68px; }
+.sidebar-collapsed .sidebar-top { flex-direction: column; gap: 10px; justify-content: center; padding: 0 0 18px; }
+.sidebar-collapsed .sidebar-logo { padding-inline: 0; }
+/* A shrunken wordmark logo is unreadable, so the rail shows a monogram instead. */
+.sidebar-collapsed .sidebar-logo-img { display: none; }
+.sidebar-collapsed .sidebar-monogram { display: grid; }
+.sidebar-collapsed .sidebar-toggle-top { color: var(--sidebar-text-2); }
+.sidebar-collapsed .sidebar-toggle-top:hover { color: #fff; }
+.sidebar-collapsed .nav-label,
+.sidebar-collapsed .sidebar-user-info {
+  position: absolute; left: calc(100% + 10px); top: 50%; z-index: var(--z-sidebar);
+  transform: translateY(-50%); white-space: nowrap;
+  padding: 5px 10px; border-radius: var(--radius-sm);
+  background: var(--ink); font-size: var(--fs-sm); font-weight: 600;
+  box-shadow: var(--shadow-md);
+  opacity: 0; pointer-events: none; transition: opacity 0.12s ease;
 }
-.sidebar-collapsed .app-sidebar:hover .sidebar-logo { visibility: hidden; }
-.sidebar-collapsed .app-sidebar:hover .sidebar-toggle-top { display: grid; }
-.sidebar-collapsed .sidebar-nav a .nav-label { display: none; }
+/* The tooltip must outrank `.sidebar-nav a.active .nav-label`, which is more
+   specific and paints the label ink — black text on a black tooltip. */
+.sidebar-collapsed .sidebar-nav a .nav-label,
+.sidebar-collapsed .logout-link .nav-label,
+.sidebar-collapsed .sidebar-user .sidebar-user-info { color: #fff; }
+.sidebar-collapsed .sidebar-nav a:hover .nav-label,
+.sidebar-collapsed .sidebar-nav a:focus-visible .nav-label,
+.sidebar-collapsed .logout-link:hover .nav-label,
+.sidebar-collapsed .logout-link:focus-visible .nav-label,
+.sidebar-collapsed .sidebar-user:hover .sidebar-user-info,
+.sidebar-collapsed .sidebar-user:focus-visible .sidebar-user-info { opacity: 1; }
+.sidebar-collapsed .sidebar-user-info { text-align: left; }
+.sidebar-collapsed .sidebar-user-info strong { color: #fff; }
+.sidebar-collapsed .sidebar-user-info small { color: var(--sidebar-text-2); }
 .sidebar-collapsed .sidebar-label {
   height: 1px; margin: 14px 12px; padding: 0;
   background: var(--sidebar-line); overflow: hidden; text-indent: -999px;
 }
 .sidebar-collapsed .sidebar-label-admin { margin-top: 14px; }
 .sidebar-collapsed .sidebar-nav a { justify-content: center; padding-inline: 0; }
+.sidebar-collapsed .sidebar-nav a,
+.sidebar-collapsed .logout-link,
+.sidebar-collapsed .sidebar-user { position: relative; }
 .sidebar-collapsed .sidebar-footer { padding-inline: 0; display: flex; flex-direction: column; align-items: center; }
 .sidebar-collapsed .sidebar-user { justify-content: center; }
 .sidebar-collapsed .logout-link { justify-content: center; padding: 6px; }
 .sidebar-collapsed .logout-link:hover { background: var(--red-bg); }
-.sidebar-collapsed .logout-link .nav-label,
-.sidebar-collapsed .sidebar-user-info { display: none; }
+/* Focus must still be visible on the icon-only targets. */
+.sidebar-collapsed .sidebar-nav a:focus-visible,
+.sidebar-collapsed .logout-link:focus-visible,
+.sidebar-collapsed .sidebar-user:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* ---- Phone drawer overrides the rail ----
+   Declared last on purpose: a collapse flag saved on a desktop must not turn
+   the drawer into an unlabelled icon rail, and these rules have the same
+   specificity as the rail rules above. */
+@media (max-width: 620px) {
+  .sidebar-collapsed .app-sidebar { width: 236px; overflow-x: visible; }
+  .sidebar-collapsed .app-main { margin-left: 0; }
+  .sidebar-collapsed .sidebar-nav a .nav-label,
+  .sidebar-collapsed .logout-link .nav-label,
+  .sidebar-collapsed .sidebar-user .sidebar-user-info {
+    position: static; transform: none; opacity: 1; padding: 0;
+    background: none; box-shadow: none; white-space: normal;
+  }
+  .sidebar-collapsed .sidebar-nav a:hover .nav-label,
+  .sidebar-collapsed .sidebar-nav a:focus-visible .nav-label,
+  .sidebar-collapsed .logout-link:hover .nav-label,
+  .sidebar-collapsed .logout-link:focus-visible .nav-label,
+  .sidebar-collapsed .sidebar-user:hover .sidebar-user-info,
+  .sidebar-collapsed .sidebar-user:focus-visible .sidebar-user-info { opacity: 1; }
+  .sidebar-collapsed .sidebar-logo-img { display: block; }
+  .sidebar-collapsed .sidebar-monogram { display: none; }
+  .sidebar-collapsed .sidebar-top { flex-direction: row; gap: 0; padding: 0 4px 22px; }
+  .sidebar-collapsed .sidebar-user-info { display: block; }
+}
