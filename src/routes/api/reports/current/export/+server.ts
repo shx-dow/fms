@@ -1,6 +1,5 @@
 import { error } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { requireUser } from '$lib/server/api';
+import { api, requireUser} from '$lib/server/api';
 import { csvCell } from '$lib/server/csv';
 import {
   MAX_EXPORT_TEACHING_ROWS,
@@ -9,7 +8,7 @@ import {
   listExportTeaching,
 } from '$lib/server/db/repositories/reports';
 
-export const GET: RequestHandler = ({ locals, url }) => {
+export const GET = api(({ locals, url }) => {
   const user = requireUser(locals);
   const statusParam = url.searchParams.get('status');
   const submittedParam = url.searchParams.get('submitted');
@@ -51,4 +50,4 @@ export const GET: RequestHandler = ({ locals, url }) => {
       'content-disposition': 'attachment; filename="faculty-weekly-report.csv"',
     },
   });
-};
+});

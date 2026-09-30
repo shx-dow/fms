@@ -1,7 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { computeWeekLabel } from '$lib/week-label';
-import { reviewScope } from '$lib/server/api';
 import { ensureCurrentPeriod } from '$lib/server/db/repositories/periods';
 import { listMissing, listReviewQueue, type MissingFacultyRow, type ReviewQueueRow } from '$lib/server/db/repositories/report-review';
 import {
@@ -33,16 +32,18 @@ export const load = (({ locals }: Parameters<PageServerLoad>[0]): AdminOverviewD
   if (!user) throw error(401, 'Sign in required');
   if (user.role !== 'ADMIN' && user.role !== 'HOD') throw error(403, 'Only HOD or Admin may view this page.');
 
-  const scope = reviewScope(user);
+  // Reviewing is institute-wide for an HOD; chasing missing forms stays a
+  // department job, so that list keeps its own department scope.
+  const departmentScope = { departmentId: user.departmentId ?? '' };
   const period = ensureCurrentPeriod();
   const periodLabel = computeWeekLabel(String(period.starts_on));
 
-  const trends = listTrends(scope).map((t) => ({ ...t, period: computeWeekLabel(String(t.starts_on)) }));
+  const trends = listTrends({}).map((t) => ({ ...t, period: computeWeekLabel(String(t.starts_on)) }));
 
-  const [current] = getCurrentPeriodStats(scope);
+  const [current] = getCurrentPeriodStats({});
   if (current) current.period = computeWeekLabel(String(current.starts_on));
 
-  const queue = listReviewQueue(scope).map((row) => ({
+  const queue = listReviewQueue().map((row) => ({
     ...row,
     period_label: computeWeekLabel(String(row.period_starts_on)),
   }));
@@ -53,7 +54,7 @@ export const load = (({ locals }: Parameters<PageServerLoad>[0]): AdminOverviewD
     facultyCount: current?.faculty_count ?? 0,
     submittedCount: current?.submitted_count ?? 0,
     queue,
-    missing: listMissing(period.id, scope),
+    missing: listMissing(period.id, departmentScope),
     trends,
     rateDelta:
       trends.length >= RATE_DELTA_WINDOW

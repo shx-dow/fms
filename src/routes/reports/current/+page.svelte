@@ -143,7 +143,6 @@
     else show('Upload failed', 'err');
   }
   async function deleteAttachment(id: string) { await fetch(`/api/attachments/${id}`, { method: 'DELETE' }); loadAttachments(); }
-  function formatSize(b: number) { if (b < 1024) return b + ' B'; if (b < 1048576) return (b / 1024).toFixed(1) + ' KB'; return (b / 1048576).toFixed(1) + ' MB'; }
   const fileName = (n: string) => (n.length > 40 ? n.slice(0, 37) + '...' : n);
   async function saveDraft(status = 'DRAFT') {
     if (!canEdit || saving) return false;
@@ -422,7 +421,6 @@
         <StepTeaching
           bind:teaching
           {deliveryRate}
-          {hasValidTeaching}
           {isReadonly}
           {hasTemplate}
           {prevReportLabel}
@@ -476,7 +474,6 @@
         {#if !isReadonly}
           <div class="speed-row">
             {#if prevReport}<button class="btn" onclick={() => (confirmCopy = true)} title={`Fill this report from ${prevReportLabel}`}>Copy from {prevReportLabel}</button>{/if}
-            <button class="btn" onclick={() => (confirmTemplate = true)} title="Replace this report with your recurring template">Load recurring template</button>
             <a class="btn" href="/api/reports/{reportId}/pdf" target="_blank">PDF</a>
             <a class="btn" href="/api/reports/current/export">CSV</a>
           </div>

@@ -23,6 +23,12 @@ export function getPeriod(id: string, db: Db = defaultDb): ReportingPeriod | und
   return db.get(sql`SELECT * FROM reporting_periods WHERE id = ${id}`) as ReportingPeriod | undefined;
 }
 
+const pad = (n: number) => String(n).padStart(2, '0');
+
+function isoDate(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function currentOpenPeriod(db: Db = defaultDb): ReportingPeriod | undefined {
   // SAFETY: SELECT * from reporting_periods matches ReportingPeriod; columns come from sqlite-schema.ts.
   return db.get(sql`
@@ -31,16 +37,20 @@ function currentOpenPeriod(db: Db = defaultDb): ReportingPeriod | undefined {
 }
 
 export function ensureCurrentPeriod(db: Db = defaultDb): ReportingPeriod {
+  const today = isoDate(new Date());
   const existing = currentOpenPeriod(db);
-  if (existing) return existing;
+  // An open period that has not ended stays open. This keeps a period an admin
+  // moved, or pre-opened for a coming week, in charge of its own dates. Only an
+  // elapsed period rolls over, so a missed week cannot strand every faculty
+  // member on a closed report forever.
+  if (existing && existing.ends_on >= today) return existing;
 
   const now = new Date();
   const monday = getMonday(now);
   const friday = new Date(monday);
   friday.setDate(monday.getDate() + 4);
 
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const dateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const dateStr = isoDate;
 
   const id = `week-${dateStr(monday)}`;
   const startsOn = dateStr(monday);

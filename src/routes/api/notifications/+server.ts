@@ -1,6 +1,5 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { requireUser } from '$lib/server/api';
+import { api, requireUser} from '$lib/server/api';
 import { notificationUpdateSchema } from '$lib/server/validation';
 import {
   listNotifications,
@@ -9,13 +8,13 @@ import {
   markAllNotificationsRead,
 } from '$lib/server/db/repositories/audit';
 
-export const GET: RequestHandler = ({ locals }) => {
+export const GET = api(({ locals }) => {
   const user = requireUser(locals);
   const { id, role, departmentId } = user;
   return json({ notifications: listNotifications({ userId: id, role, departmentId }) });
-};
+});
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST = api(async ({ request, locals }) => {
   const user = requireUser(locals);
   let body: unknown;
   try {
@@ -38,4 +37,4 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     markAllNotificationsRead(user.id);
   }
   return json({ ok: true });
-};
+});

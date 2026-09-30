@@ -3,8 +3,7 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { env } from '$env/dynamic/private';
-import type { RequestHandler } from './$types';
-import { forbidden, requireUser } from '$lib/server/api';
+import { api, forbidden, requireUser} from '$lib/server/api';
 import { canAccessReport, canWriteReport } from '$lib/server/report-policy';
 import { MAX_FILE_BYTES, ALLOWED_MIMES } from '$lib/constants';
 import { insertAttachment, listAttachments } from '$lib/server/db/repositories/attachments';
@@ -16,7 +15,7 @@ function ensureUploadDir() {
   return uploadDir;
 }
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST = api(async ({ request, locals }) => {
   const user = requireUser(locals);
   const data = await request.formData();
   const reportId = String(data.get('reportId') ?? '');
@@ -43,9 +42,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     createdAt: new Date().toISOString(),
   });
   return json({ ok: true, id, filename: file.name });
-};
+});
 
-export const GET: RequestHandler = ({ url, locals }) => {
+export const GET = api(({ url, locals }) => {
   const user = requireUser(locals);
   const reportId = url.searchParams.get('reportId');
   if (!reportId) return json({ ok: false, error: 'reportId is required.' }, { status: 400 });
@@ -53,4 +52,4 @@ export const GET: RequestHandler = ({ url, locals }) => {
   const owner = getOwnerContext(reportId);
   if (!owner) return json({ ok: false, error: 'Report not found.' }, { status: 404 });
   return json({ attachments: listAttachments(reportId, owner.faculty_id) });
-};
+});

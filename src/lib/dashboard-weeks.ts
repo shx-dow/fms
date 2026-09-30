@@ -1,4 +1,3 @@
-import { reviewScope } from '$lib/server/api';
 import { listWeeksAggregate, listWeeksForFaculty } from '$lib/server/db/repositories/report-weeks';
 import { computeWeekLabel } from '$lib/week-label';
 import type { Week } from '$lib/weeks';
@@ -17,9 +16,14 @@ export function facultyWeeks(facultyId: string): Week[] {
   }));
 }
 
-/** Department-wide weeks with a 0-4 completion level and an overdue flag. */
+/** Department-wide weeks with a 0-4 completion level and an overdue flag.
+ *
+ * An HOD's timeline covers their own department, because that panel is headed
+ * "Your department". ADMIN has no department of their own, so it covers the
+ * whole institute. */
 export function aggregateWeeks(user: UserScope, now = new Date()): Week[] {
-  return listWeeksAggregate(reviewScope(user)).map((w) => {
+  const scope = user.role === 'HOD' ? { departmentId: user.departmentId ?? '' } : {};
+  return listWeeksAggregate(scope).map((w) => {
     const total = Number(w.total) || 1;
     const ratio = (Number(w.submitted) + Number(w.approved)) / total;
     return {

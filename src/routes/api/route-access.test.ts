@@ -1,11 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import type { RequestEvent } from '@sveltejs/kit';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { User } from '$lib/domain';
 import { upsertDepartment } from '$lib/server/db/repositories/departments';
 import { createUser } from '$lib/server/db/repositories/users';
 import { upsertPeriod } from '$lib/server/db/repositories/periods';
-import { insertReportOrIgnore, getReportForPeriod } from '$lib/server/db/repositories/reports';
+import { insertReportOrIgnore, getReportForPeriod, setReportStatus } from '$lib/server/db/repositories/reports';
 import { insertAttachment } from '$lib/server/db/repositories/attachments';
 import { GET as reportsGET, POST as reportsPOST } from './reports/+server';
 import { GET as reportGET } from './reports/[id]/+server';
@@ -21,6 +22,7 @@ const NOW = '2099-01-06T10:00:00Z';
 const PERIOD = 'matrix-week-1';
 const REPORT_OWN = 'matrix-report-own'; // matrix-fac-1, dept matrix-cse
 const REPORT_OTHER = 'matrix-report-other'; // matrix-fac-2, dept matrix-eee
+const REPORT_HOD = 'matrix-report-hod'; // matrix-hod-1, dept matrix-cse
 
 const faculty1: User = { id: 'matrix-fac-1', name: 'Matrix Fac One', email: 'matrix-fac-1@example.edu', role: 'FACULTY', departmentId: 'matrix-cse' };
 const faculty2: User = { id: 'matrix-fac-2', name: 'Matrix Fac Two', email: 'matrix-fac-2@example.edu', role: 'FACULTY', departmentId: 'matrix-eee' };
@@ -28,11 +30,14 @@ const hodCse: User = { id: 'matrix-hod-cse', name: 'Matrix HOD CSE', email: 'mat
 const hodEee: User = { id: 'matrix-hod-eee', name: 'Matrix HOD EEE', email: 'matrix-hod-eee@example.edu', role: 'HOD', departmentId: 'matrix-eee' };
 const admin: User = { id: 'matrix-admin', name: 'Matrix Admin', email: 'matrix-admin@example.edu', role: 'ADMIN' };
 
-type ReportsEvent = Parameters<typeof reportsGET>[0];
-type ReportEvent = Parameters<typeof reportGET>[0];
-type ReviewsEvent = Parameters<typeof reviewsGET>[0];
-type AttachmentsEvent = Parameters<typeof attachmentsGET>[0];
-type AttachmentDownloadEvent = Parameters<typeof attachmentDownloadGET>[0];
+// Handlers are wrapped by api(), so their event parameter is the generic
+// RequestEvent rather than the route-specific generated one. The fabricated
+// events below are declared per route to match what each handler accepts.
+type ReportsEvent = RequestEvent<Record<string, string>, '/api/reports'>;
+type ReportEvent = RequestEvent<{ id: string }, '/api/reports/[id]'>;
+type ReviewsEvent = RequestEvent<Record<string, string>, '/api/reviews'>;
+type AttachmentsEvent = RequestEvent<Record<string, string>, '/api/attachments'>;
+type AttachmentDownloadEvent = RequestEvent<{ id: string }, '/api/attachments/[id]'>;
 
 interface MatrixBody {
   reportId?: string;
@@ -72,19 +77,12 @@ const attachmentsEvent = (user: User | null, reportId: string) =>
 const attachmentDownloadEvent = (user: User | null, id: string) =>
   ({ locals: { user }, params: { id } }) as AttachmentDownloadEvent;
 
-// Auth guards (requireUser/requireRole) throw their Response instead of
-// returning it, so every invocation goes through call().
-async function call(fn: () => Response | Promise<Response>): Promise<Response> {
-  try {
-    return await fn();
-  } catch (e) {
-    if (e instanceof Response) return e;
-    throw e;
-  }
-}
-
+// Every handler under test is wrapped by api(), which turns a guard rejection
+// into the response it describes. Calling the handler directly therefore
+// exercises the same conversion a real request goes through, so these
+// assertions cannot pass on a status the server would never actually send.
 async function shows(fn: () => Response | Promise<Response>, expected: number): Promise<Response> {
-  const res = await call(fn);
+  const res = await fn();
   expect(res.status).toBe(expected);
   return res;
 }
@@ -98,6 +96,8 @@ beforeAll(() => {
   upsertPeriod({ id: PERIOD, label: 'Matrix Week', startsOn: '2099-01-05', endsOn: '2099-01-09', dueOn: '2099-01-09T18:00:00+05:30', isOpen: true });
   insertReportOrIgnore({ id: REPORT_OWN, facultyId: faculty1.id, periodId: PERIOD, createdAt: NOW, updatedAt: NOW });
   insertReportOrIgnore({ id: REPORT_OTHER, facultyId: faculty2.id, periodId: PERIOD, createdAt: NOW, updatedAt: NOW });
+  insertReportOrIgnore({ id: REPORT_HOD, facultyId: hodCse.id, periodId: PERIOD, createdAt: NOW, updatedAt: NOW });
+  setReportStatus(REPORT_HOD, 'SUBMITTED', NOW);
   const uploadDir = process.env.UPLOAD_DIR ?? 'data/uploads';
   fs.mkdirSync(uploadDir, { recursive: true });
   fs.writeFileSync(path.join(uploadDir, 'matrix-file.bin'), 'matrix-bytes');
@@ -156,22 +156,42 @@ describe('HOD in department scope', () => {
   });
 });
 
-describe('HOD outside department scope', () => {
-  it('cannot read or review out-of-scope reports', async () => {
+describe('HOD and another department', () => {
+  // Reviewing is institute-wide, but reading one report still follows the
+  // department, so a head does not browse another department's file.
+  it('cannot read an out-of-scope report', async () => {
     await shows(() => reportGET(reportEvent(hodEee, REPORT_OWN)), 403);
-    await shows(() => reviewsPOST(reviewsPostEvent(hodEee, { reportId: REPORT_OWN, decision: 'APPROVED' })), 403);
+  });
+
+  it('can still review it, because the queue is not department-scoped', async () => {
+    const res = await shows(() => reviewsPOST(reviewsPostEvent(hodEee, { reportId: REPORT_OWN, decision: 'APPROVED' })), 200);
+    expect(await res.json()).toMatchObject({ ok: true });
+  });
+});
+
+describe('HOD reviewing their own report', () => {
+  // An HOD may review any report, including their own.
+  it('is allowed, and appears in their own queue', async () => {
+    const res = await shows(() => reviewsPOST(reviewsPostEvent(hodCse, { reportId: REPORT_HOD, decision: 'APPROVED', remarks: 'HOD self review.' })), 200);
+    expect(await res.json()).toMatchObject({ ok: true });
+
+    const queue = await shows(() => reviewsGET(reviewsGetEvent(hodCse)), 200);
+    // SAFETY: the review queue endpoint always returns a reports array of rows.
+    const { reports } = (await queue.json()) as { reports: { id: string }[] };
+    expect(reports.map((r) => r.id)).toContain(REPORT_HOD);
   });
 });
 
 describe('admin', () => {
-  it('reads any report and the review queue', async () => {
+  // ADMIN manages the system and stays out of the reporting flow: it can read a
+  // report to diagnose a problem, but it never reviews one.
+  it('reads any report for troubleshooting', async () => {
     await shows(() => reportGET(reportEvent(admin, REPORT_OWN)), 200);
-    await shows(() => reviewsGET(reviewsGetEvent(admin)), 200);
   });
 
-  it('reviews any report', async () => {
-    const res = await shows(() => reviewsPOST(reviewsPostEvent(admin, { reportId: REPORT_OTHER, decision: 'APPROVED', remarks: 'Matrix admin review.' })), 200);
-    expect(await res.json()).toMatchObject({ ok: true });
+  it('cannot reach the review queue or review anything', async () => {
+    await shows(() => reviewsGET(reviewsGetEvent(admin)), 403);
+    await shows(() => reviewsPOST(reviewsPostEvent(admin, { reportId: REPORT_OTHER, decision: 'APPROVED' })), 403);
   });
 });
 
@@ -190,17 +210,38 @@ describe('attachment download follows report scope', () => {
   });
 });
 
-describe('report endpoints are faculty-only', () => {
-  it('rejects HOD readers without creating a report', async () => {
-    await shows(() => reportsGET(getEvent(hodCse, '/api/reports')), 403);
-    expect(getReportForPeriod(hodCse.id, PERIOD)).toBeUndefined();
+describe('report endpoints are open to every teaching role', () => {
+  // A department head teaches, so they file a report like anyone else.
+  it('lets an HOD read and write their own report', async () => {
+    const res = await shows(() => reportsGET(getEvent(hodCse, '/api/reports')), 200);
+    expect(res.headers.get('content-type')).toContain('application/json');
+    expect(getReportForPeriod(hodCse.id, PERIOD)).toBeDefined();
   });
 
-  it('rejects HOD writers without creating a report', async () => {
-    await shows(() => reportsPOST(reportsPostEvent(hodCse, { reportId: 'matrix-hod-stray', completion: 0, status: 'DRAFT' })), 403);
-    expect(getReportForPeriod(hodCse.id, PERIOD)).toBeUndefined();
+  it('locks an HOD out of editing their own submitted report', async () => {
+    // REPORT_HOD is seeded SUBMITTED, and a submitted report is locked for
+    // everyone, including the head of the department who filed it.
+    await shows(() => reportsGET(getEvent(hodCse, '/api/reports')), 200);
+    await shows(
+      () => reportsPOST(reportsPostEvent(hodCse, { reportId: REPORT_HOD, completion: 25, status: 'DRAFT' })),
+      403,
+    );
   });
 
+  it('lets an HOD save their own draft', async () => {
+    setReportStatus(REPORT_HOD, 'DRAFT', NOW);
+    const loaded = await shows(() => reportsGET(getEvent(hodCse, '/api/reports')), 200);
+    // SAFETY: the reports endpoint always returns an object with a report object
+    // holding the row's string id, so the assertion matches the known shape.
+    const body = (await loaded.json()) as { report: { id: string } };
+    const res = await shows(
+      () => reportsPOST(reportsPostEvent(hodCse, { reportId: body.report.id, completion: 25, status: 'DRAFT' })),
+      200,
+    );
+    expect(await res.json()).toMatchObject({ ok: true, reportId: body.report.id });
+  });
+
+  // ADMIN is the director or dean: they review, and do not file a report.
   it('rejects admins', async () => {
     await shows(() => reportsGET(getEvent(admin, '/api/reports')), 403);
     await shows(() => reportsPOST(reportsPostEvent(admin, { reportId: 'matrix-admin-stray', completion: 0, status: 'DRAFT' })), 403);

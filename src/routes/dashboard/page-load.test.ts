@@ -14,13 +14,14 @@ const NOW = '2099-08-06T10:00:00Z';
 const faculty: User = { id: 'd-fac', name: 'D Fac', email: 'd-fac@example.edu', role: 'FACULTY', departmentId: 'd-cse' };
 const faculty2: User = { id: 'd-fac-2', name: 'D Fac Two', email: 'd-fac-2@example.edu', role: 'FACULTY', departmentId: 'd-cse' };
 const hod: User = { id: 'd-hod', name: 'D HOD', email: 'd-hod@example.edu', role: 'HOD', departmentId: 'd-cse' };
+const admin: User = { id: 'd-admin', name: 'D Admin', email: 'd-admin@example.edu', role: 'ADMIN' };
 
 // SAFETY: the load reads only locals.user; nothing else on the event is used.
 const event = (user: User | null) => ({ locals: { user } }) as Parameters<typeof load>[0];
 
 function seed() {
   upsertDepartment('d-cse', 'D-CSE', 'Dash CSE');
-  for (const u of [faculty, faculty2, hod]) {
+  for (const u of [faculty, faculty2, hod, admin]) {
     try {
       createUser({ id: u.id, name: u.name, email: u.email, role: u.role, departmentId: u.departmentId ?? null });
     } catch {
@@ -36,7 +37,7 @@ describe('dashboard load for faculty', () => {
     expect(getReportForPeriod(faculty.id, PERIOD)).toBeUndefined();
 
     const data = load(event(faculty));
-    expect(data.isFaculty).toBe(true);
+    expect(data.isReporter).toBe(true);
     expect(data.report).not.toBeNull();
     expect(getReportForPeriod(faculty.id, PERIOD)).toBeDefined();
     expect(data.report?.reportId).toBeTruthy();
@@ -87,14 +88,30 @@ describe('dashboard load for faculty', () => {
   });
 });
 
-describe('dashboard load for reviewers', () => {
-  it('gives an HOD aggregate weeks and no report', () => {
+describe('dashboard load for an HOD', () => {
+  // A department head teaches as well as managing, so they get the same report
+  // view as a faculty member plus the department view underneath it.
+  it('files its own report and also shows department weeks', () => {
     seed();
     const data = load(event(hod));
-    expect(data.isFaculty).toBe(false);
-    expect(data.report).toBeNull();
+    expect(data.isReporter).toBe(true);
+    expect(data.report).not.toBeNull();
+    expect(data.report?.status).toBe('Draft');
+    expect(getReportForPeriod(hod.id, PERIOD)).toBeDefined();
     expect(data.weeks.length).toBeGreaterThan(0);
-    expect(data.weeks[0].week_label).toMatch(/^Week \d+ of /);
+    expect(data.departmentWeeks.length).toBeGreaterThan(0);
+    expect(data.departmentWeeks[0].week_label).toMatch(/^Week \d+ of /);
+  });
+});
+
+describe('dashboard load for an admin', () => {
+  // ADMIN is the director or dean: they review, and do not file a report.
+  it('has no report of their own', () => {
+    seed();
+    const data = load(event(admin));
+    expect(data.isReporter).toBe(false);
+    expect(data.report).toBeNull();
+    expect(data.weeks).toEqual([]);
   });
 });
 

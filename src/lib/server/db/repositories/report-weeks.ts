@@ -61,7 +61,7 @@ export function listWeeksAggregate(opts: { departmentId?: string }, db: Db = def
     FROM reporting_periods p
     CROSS JOIN users u
     LEFT JOIN reports r ON r.period_id = p.id AND r.faculty_id = u.id
-    WHERE u.role = 'FACULTY' AND u.is_active = 1 ${dept}
+    WHERE u.role IN ('FACULTY','HOD') AND u.is_active = 1 ${dept}
     GROUP BY p.id
     ORDER BY p.starts_on ASC
   `) as WeekAggregateRow[];

@@ -2,14 +2,13 @@ import { json } from '@sveltejs/kit';
 import fs from 'node:fs';
 import path from 'node:path';
 import { env } from '$env/dynamic/private';
-import type { RequestHandler } from './$types';
-import { forbidden, requireUser } from '$lib/server/api';
+import { api, forbidden, requireUser} from '$lib/server/api';
 import { canAccessReport, canWriteReport } from '$lib/server/report-policy';
 import { getAttachmentById, deleteAttachment } from '$lib/server/db/repositories/attachments';
 
 const uploadDir = env.UPLOAD_DIR || 'data/uploads';
 
-export const GET: RequestHandler = ({ locals, params }) => {
+export const GET = api(({ locals, params }) => {
   const user = requireUser(locals);
   const row = getAttachmentById(params.id);
   if (!row) return new Response('Not found', { status: 404 });
@@ -22,9 +21,9 @@ export const GET: RequestHandler = ({ locals, params }) => {
       'content-disposition': `attachment; filename="${row.filename}"`,
     },
   });
-};
+});
 
-export const DELETE: RequestHandler = ({ locals, params }) => {
+export const DELETE = api(({ locals, params }) => {
   const user = requireUser(locals);
   const row = getAttachmentById(params.id);
   if (!row) return json({ ok: false, error: 'Not found' }, { status: 404 });
@@ -40,4 +39,4 @@ export const DELETE: RequestHandler = ({ locals, params }) => {
   } catch {}
   deleteAttachment(params.id);
   return json({ ok: true });
-};
+});

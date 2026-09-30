@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { computeWeekLabel } from '$lib/week-label';
-import { reportStatusLabel } from '$lib/domain';
+import { isReporter, reportStatusLabel } from '$lib/domain';
 import { ensureCurrentPeriod } from '$lib/server/db/repositories/periods';
 import { getReportForPeriod, listReportHistory, type ReportHistoryRow } from '$lib/server/db/repositories/reports';
 
@@ -15,7 +15,7 @@ export const load = (( { locals }: Parameters<PageServerLoad>[0]): ReportHistory
   // The route guard already redirects non-faculty; this keeps the page's own contract explicit.
   const user = locals.user;
   if (!user) throw error(401, 'Sign in required');
-  if (user.role !== 'FACULTY') throw error(403, 'Only faculty can view their report history.');
+  if (!isReporter(user.role)) throw error(403, 'Only teaching staff can view their report history.');
 
   const period = ensureCurrentPeriod();
   const current = getReportForPeriod(user.id, period.id);

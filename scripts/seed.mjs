@@ -21,7 +21,15 @@ fs.mkdirSync(path.dirname(filename), { recursive: true });
 const sqlite = new Database(filename);
 sqlite.pragma('journal_mode = WAL');
 migrate(drizzle(sqlite), { migrationsFolder: path.resolve('drizzle') });
-seedDatabase(sqlite);
+seedDatabase(sqlite, process.env.DEMO_PASSWORD || undefined);
 sqlite.close();
 
 console.log(`Seeded dev data into ${filename}`);
+if (process.env.DEMO_PASSWORD) {
+  console.log('Demo accounts use the DEMO_PASSWORD value for faculty1/2/3, hod.cse and admin.');
+} else {
+  console.log(
+    'Demo account passwords are the hashes checked into seed.ts, whose plaintext is not published.\n' +
+      'Set DEMO_PASSWORD=<value> and re-seed if you need to log in as a demo account.',
+  );
+}

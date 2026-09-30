@@ -1,11 +1,10 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { requireRole, requireUser } from '$lib/server/api';
+import { api, requireRole, requireUser} from '$lib/server/api';
 import { listAuditEvents } from '$lib/server/db/repositories/audit';
 
 const PAGE_SIZE = 50;
 
-export const GET: RequestHandler = ({ locals, url }) => {
+export const GET = api(({ locals, url }) => {
   requireRole(requireUser(locals), 'ADMIN');
   const rawPage = Number(url.searchParams.get('page') ?? '1');
   const page = Number.isFinite(rawPage) ? Math.max(1, Math.floor(rawPage)) : 1;
@@ -20,4 +19,4 @@ export const GET: RequestHandler = ({ locals, url }) => {
     },
   );
   return json({ events, total, page, limit: PAGE_SIZE });
-};
+});

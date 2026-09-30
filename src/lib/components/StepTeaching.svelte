@@ -4,7 +4,6 @@
   let {
     teaching = $bindable(),
     deliveryRate,
-    hasValidTeaching,
     isReadonly,
     hasTemplate,
     prevReportLabel,
@@ -16,7 +15,6 @@
   }: {
     teaching: TeachingRecord[];
     deliveryRate: number;
-    hasValidTeaching: boolean;
     isReadonly: boolean;
     hasTemplate: boolean;
     prevReportLabel: string;
@@ -33,7 +31,10 @@
   <span class="metric-badge">{deliveryRate}% delivery</span>
 </div>
 <p class="section-hint">Course details and scheduled classes come from your recurring profile. Update the weekly delivery values below.</p>
-{#if !hasValidTeaching && !isReadonly}
+<!-- The template is the starting point for the week, so it is offered first
+     rather than at the end. It stays visible once the week has content because
+     you may still want to pull in last week's courses. -->
+{#if (hasTemplate || prevReportLabel) && !isReadonly}
   <div class="start-helper">
     <div>
       <strong>Starting from a blank week?</strong>

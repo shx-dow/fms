@@ -48,7 +48,7 @@
   {/each}
 </div>
 {#if canEdit}
-  <label class="upload-btn">+ Upload file<input disabled={!canEdit} type="file" accept="application/pdf,image/png,image/jpeg" onchange={onupload} /></label>
+  <label class="upload-btn">+ Upload file<input type="file" accept="application/pdf,image/png,image/jpeg" onchange={onupload} /></label>
 {/if}
 
 <style>

@@ -8,9 +8,6 @@ export interface AuditFilters {
   to: string;
 }
 
-export const AUDIT_DATE_INPUT_MIN = '0001-01-01';
-export const AUDIT_DATE_INPUT_MAX = '9999-12-31';
-
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
 /** A date input can only hold a real calendar date; reject the rest. */

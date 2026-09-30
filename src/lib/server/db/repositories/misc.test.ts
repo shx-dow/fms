@@ -8,10 +8,13 @@ import { listDepartments, upsertDepartment } from './departments';
 import { insertAttachment, listAttachments, getAttachmentById, deleteAttachment } from './attachments';
 import { insertReview, listReviewsForReport } from './reviews';
 import { reopenReport, insertException } from './exceptions';
+import { seededPeriods } from '../../../../test/seeded-periods';
 
 function makeDb(): Db {
   return drizzle(createDatabase({ filename: ':memory:', seed: true }));
 }
+
+const periods = seededPeriods();
 
 const now = '2026-07-28T12:00:00Z';
 
@@ -19,7 +22,7 @@ describe('periods', () => {
   it('lists seeded periods and returns the open one', () => {
     const db = makeDb();
     expect(listPeriods(db)).toHaveLength(3);
-    expect(ensureCurrentPeriod(db)?.id).toBe('week-2026-07-27');
+    expect(ensureCurrentPeriod(db)?.id).toBe(periods.current);
   });
 
   it('upserts a period and closes the others when opened', () => {
@@ -33,13 +36,13 @@ describe('periods', () => {
 
   it('blocks deleting a period that has reports', () => {
     const db = makeDb();
-    expect(() => deletePeriod('week-2026-07-20', db)).toThrow(/reports/);
+    expect(() => deletePeriod(periods.previous, db)).toThrow(/reports/);
   });
 
   it('deletes a period with no reports', () => {
     const db = makeDb();
-    deletePeriod('week-2026-08-03', db);
-    expect(listPeriods(db).map((p) => p.id)).not.toContain('week-2026-08-03');
+    deletePeriod(periods.next, db);
+    expect(listPeriods(db).map((p) => p.id)).not.toContain(periods.next);
   });
 });
 

@@ -19,6 +19,7 @@ import { onDestroy, onMount } from 'svelte';
   import LogOut from '@lucide/svelte/icons/log-out';
   import KeyRound from '@lucide/svelte/icons/key-round';
   import Repeat2 from '@lucide/svelte/icons/repeat-2';
+  import { isReporter } from '$lib/domain';
   import { setNotificationUser } from '$lib/stores/notifications.svelte';
   let { data, children } = $props();
   let sidebarCollapsed = $state(browser ? localStorage.getItem('sidebarCollapsed') === 'true' : false);
@@ -152,7 +153,7 @@ import { onDestroy, onMount } from 'svelte';
             <a href="/dashboard" class:active={page.url.pathname === '/dashboard'}
               ><LayoutDashboard size={18} /><span class="nav-label">Dashboard</span></a
             >
-            {#if user?.role === 'FACULTY'}
+            {#if isReporter(user?.role)}
               <a href="/reports" class:active={page.url.pathname.startsWith('/reports')}
                 ><FileText size={18} /><span class="nav-label">My reports</span></a
               >
@@ -160,7 +161,7 @@ import { onDestroy, onMount } from 'svelte';
           </nav>
         {/if}
         {#if user?.role === 'HOD' || user?.role === 'ADMIN'}
-          <div class="sidebar-label sidebar-label-admin">Administration</div>
+          <div class="sidebar-label sidebar-label-admin">{user?.role === 'HOD' ? 'Department' : 'Administration'}</div>
           <nav class="sidebar-nav">
             <a href="/admin" class:active={page.url.pathname === '/admin'}
               ><Building2 size={18} /><span class="nav-label">Department overview</span></a
@@ -170,9 +171,12 @@ import { onDestroy, onMount } from 'svelte';
                 ><Users size={18} /><span class="nav-label">Faculty directory</span></a
               >
             {/if}
-            <a href="/admin/reports" class:active={page.url.pathname.startsWith('/admin/reports')}
-              ><ClipboardCheck size={18} /><span class="nav-label">Review queue</span></a
-            >
+            {#if user?.role === 'HOD'}
+              <!-- Reviewing is a teaching-side job, so ADMIN has no queue. -->
+              <a href="/admin/reports" class:active={page.url.pathname.startsWith('/admin/reports')}
+                ><ClipboardCheck size={18} /><span class="nav-label">Review queue</span></a
+              >
+            {/if}
             {#if user?.role === 'ADMIN'}
               <a href="/admin/settings" class:active={page.url.pathname.startsWith('/admin/settings')}
                 ><Cog size={18} /><span class="nav-label">Reporting periods</span></a

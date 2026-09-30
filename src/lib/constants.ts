@@ -6,6 +6,3 @@ export const LOGIN_WINDOW_MS = 60_000;
 export const LOGIN_MAX_ATTEMPTS = 10;
 export const NOTIFICATION_POLL_MS = 30_000;
 export const TOAST_DURATION_MS = 3000;
-
-export const newId = () => crypto.randomUUID();
-export const nowIso = () => new Date().toISOString();
