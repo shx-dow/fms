@@ -2,6 +2,7 @@
   import '../app.css';
   import '../layout.css';
 import { page } from '$app/state';
+import { afterNavigate } from '$app/navigation';
 import { browser } from '$app/environment';
 import Toast from '$lib/components/Toast.svelte';
 import Modal from '$lib/components/Modal.svelte';
@@ -17,12 +18,15 @@ import { onDestroy, onMount } from 'svelte';
   import PanelLeftClose from '@lucide/svelte/icons/panel-left-close';
   import PanelLeftOpen from '@lucide/svelte/icons/panel-left-open';
   import LogOut from '@lucide/svelte/icons/log-out';
+  import Menu from '@lucide/svelte/icons/menu';
   import KeyRound from '@lucide/svelte/icons/key-round';
   import Repeat2 from '@lucide/svelte/icons/repeat-2';
   import { isReporter } from '$lib/domain';
   import { setNotificationUser } from '$lib/stores/notifications.svelte';
   let { data, children } = $props();
   let sidebarCollapsed = $state(browser ? localStorage.getItem('sidebarCollapsed') === 'true' : false);
+  // Below 620px the sidebar is a drawer, so the only way in is this button.
+  let navOpen = $state(false);
   let showProfileMenu = $state(false);
   let showPasswordModal = $state(false);
   let showProfileModal = $state(false);
@@ -52,14 +56,24 @@ import { onDestroy, onMount } from 'svelte';
   $effect(() => {
     if (user) setNotificationUser(user.id);
   });
+  function onKeydown(e: KeyboardEvent) {
+    if (e.key !== 'Escape') return;
+    navOpen = false;
+    showProfileMenu = false;
+  }
   onMount(() => {
     if (browser) {
       document.addEventListener('click', closeMenus);
+      document.addEventListener('keydown', onKeydown);
     }
+    // Following a link in the drawer should close it, or the next page is hidden
+    // behind the drawer on a phone.
+    return afterNavigate(() => (navOpen = false));
   });
   onDestroy(() => {
     if (browser) {
       document.removeEventListener('click', closeMenus);
+      document.removeEventListener('keydown', onKeydown);
     }
   });
   function openPasswordModal() {
@@ -127,7 +141,21 @@ import { onDestroy, onMount } from 'svelte';
 {#if page.url.pathname === '/login' || page.url.pathname === '/change-password' || page.url.pathname.includes('/print')}
   {@render children()}
 {:else}
-  <div class="app-frame" class:sidebar-collapsed={sidebarCollapsed}>
+  <div class="app-frame" class:sidebar-collapsed={sidebarCollapsed} class:nav-open={navOpen}>
+    <button
+      class="nav-open-btn"
+      type="button"
+      aria-label="Open navigation"
+      aria-expanded={navOpen}
+      onclick={() => (navOpen = true)}
+    >
+      <Menu size={17} />
+    </button>
+    {#if navOpen}
+      <!-- The scrim is the close affordance on a phone, where there is no room
+           for a close button inside the drawer. -->
+      <button class="nav-scrim" type="button" aria-label="Close navigation" onclick={() => (navOpen = false)}></button>
+    {/if}
     <aside class="app-sidebar">
       <div class="sidebar-top">
         <a class="sidebar-logo" href={user?.role === 'ADMIN' ? '/admin' : '/dashboard'}>
@@ -299,7 +327,7 @@ import { onDestroy, onMount } from 'svelte';
     border: 1px solid var(--navy-3);
     border-radius: 8px;
     padding: 6px;
-    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 -6px 24px var(--shadow-lg);
     z-index: 130;
   }
   .profile-email {
@@ -342,7 +370,7 @@ import { onDestroy, onMount } from 'svelte';
     font: inherit;
     font-size: 0.84rem;
   }
-  .pw-field input:focus { outline: 2px solid rgba(59, 130, 246, 0.15); border-color: var(--blue-icon); }
+  .pw-field input:focus { outline: 2px solid var(--blue-soft); border-color: var(--blue-icon); }
   .pw-error { margin: 0 0 12px; color: var(--red); font-size: 0.76rem; font-weight: 700; }
   .profile-tip { margin: 15px 0 0; padding: 11px 0 14px; border-bottom: 1px solid var(--line-2); color: var(--muted); font-size: 0.72rem; }
   .profile-section { border-bottom: 1px solid var(--line-2); padding: 19px 0 20px; margin-top: 0; }
