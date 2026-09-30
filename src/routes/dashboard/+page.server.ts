@@ -8,7 +8,7 @@ import { countActive } from '$lib/report-progress';
 import { listTeaching, listResearch, listDuties, listOutreach } from '$lib/server/db/repositories/activity';
 import { listAttachments } from '$lib/server/db/repositories/attachments';
 import { ensureCurrentPeriod } from '$lib/server/db/repositories/periods';
-import { getReportForPeriod, insertReportOrIgnore, listReportHistory } from '$lib/server/db/repositories/reports';
+import { getReportForPeriod, insertReportOrIgnore, listReportHistory, listReportsForPeriod } from '$lib/server/db/repositories/reports';
 import type { Week } from '$lib/weeks';
 
 export interface DashboardData {
@@ -18,6 +18,8 @@ export interface DashboardData {
   weeks: Week[];
   /** Department-level weeks, for a reviewer who also files a report. */
   departmentWeeks: Week[];
+  /** The open week's department counts, so they are right on first paint. */
+  departmentCounts: { awaiting: number; changes: number; approved: number };
 }
 
 const HISTORY_PREVIEW = 5;
@@ -29,7 +31,24 @@ export const load = (({ locals }: Parameters<PageServerLoad>[0]): DashboardData 
   // Only a department head has a department to review; faculty do not.
   const departmentWeeks = user?.role === 'HOD' ? aggregateWeeks(user) : [];
 
-  return { isReporter: Boolean(files), report: files, weeks, departmentWeeks };
+  // The reviewer counts used to arrive from a fetch after hydration, so they
+  // rendered as zero until JavaScript ran.
+  const openPeriod = ensureCurrentPeriod();
+  const departmentReports = departmentWeeks.length
+    ? listReportsForPeriod(openPeriod.id, { departmentId: user!.departmentId ?? '' })
+    : [];
+
+  return {
+    isReporter: Boolean(files),
+    report: files,
+    weeks,
+    departmentWeeks,
+    departmentCounts: {
+      awaiting: departmentReports.filter((r) => r.status === 'SUBMITTED').length,
+      changes: departmentReports.filter((r) => r.status === 'CHANGES_REQUIRED').length,
+      approved: departmentReports.filter((r) => r.status === 'APPROVED').length,
+    },
+  };
 }) satisfies PageServerLoad;
 
 /** The signed-in user's own report for the open period, created if absent.

@@ -164,9 +164,10 @@
   .record-card input:focus, .record-card select:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
   .record-card input::placeholder { color: var(--muted-3); }
   .record-acts { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
-  .act-add { border: 1px dashed var(--blue-border); background: #f4f8fd; color: var(--blue-dark); border-radius: var(--radius-md); padding: 11px; font: inherit; font-size: 0.8rem; font-weight: 750; cursor: pointer; }
-  .act-add:hover { background: #e9f1fb; }
-  .act-remove { border: 1px solid transparent; background: transparent; color: var(--red); font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; padding: 3px 8px; border-radius: 6px; }
+  .act-add { border: 1px dashed var(--blue-border); background: var(--info-bg); color: var(--blue-dark); border-radius: var(--radius-md); padding: 11px; font: inherit; font-size: 0.8rem; font-weight: 750; cursor: pointer; }
+  .act-add:hover { background: var(--info-bg); }
+  /* min-height keeps this a 24px target; 3px padding left it at 21px. */
+  .act-remove { border: 1px solid transparent; background: transparent; color: var(--red); font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; padding: 5px 8px; min-height: 24px; border-radius: 6px; }
   .act-remove:hover { background: var(--red-bg-alt); border-color: var(--red-border); }
   @media (max-width: 700px) { .field-grid { grid-template-columns: 1fr; } }
 </style>

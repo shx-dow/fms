@@ -126,7 +126,7 @@
     {/if}
     <div class="weeks-legend">
       <span class="legend-dot" style="background:var(--line-light)"></span><span>No report</span>
-      <span class="legend-dot" style="background:var(--warn-soft)"></span><span>Draft</span>
+      <span class="legend-dot" style="background:var(--draft-bg)"></span><span>Draft</span>
       <span class="legend-dot" style="background:var(--blue-soft)"></span><span>Submitted</span>
       <span class="legend-dot" style="background:var(--green-soft)"></span><span>Approved</span>
       <span class="legend-dot" style="background:var(--red-soft)"></span><span>Changes</span>
@@ -194,18 +194,18 @@
 
 <style>
   .weeks-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); min-width: 0; overflow: hidden; box-shadow: var(--shadow-sm); }
-  .weeks-head { display: flex; justify-content: space-between; align-items: center; padding: 17px 22px; border-bottom: 1px solid var(--line); background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent); gap: 14px; flex-wrap: wrap; overflow: hidden; border-radius: 8px 8px 0 0; }
+  .weeks-head { display: flex; justify-content: space-between; align-items: center; padding: 17px 22px; border-bottom: 1px solid var(--line); background: var(--head); gap: 14px; flex-wrap: wrap; overflow: hidden; border-radius: 8px 8px 0 0; }
   .weeks-title { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
   .weeks-title h2 { white-space: nowrap; }
   .weeks-count { font-size: 0.68rem; font-weight: 600; color: var(--muted-2); white-space: nowrap; }
-  .weeks-years { display: flex; align-items: center; gap: 2px; padding: 2px; background: #eef1f2; border: 1px solid var(--line); border-radius: 7px; flex: none; }
+  .weeks-years { display: flex; align-items: center; gap: 2px; padding: 2px; background: var(--bg-hover); border: 1px solid var(--line); border-radius: 7px; flex: none; }
   .year-pill { border: 0; background: transparent; font: inherit; font-size: 0.7rem; font-weight: 700; color: var(--muted); cursor: pointer; padding: 3px 11px; border-radius: 5px; transition: background 0.12s ease, color 0.12s ease; }
   .year-pill:hover { color: var(--navy); }
   .year-pill.active { background: var(--navy); color: var(--paper); }
   .weeks-legend { display: flex; align-items: center; gap: 4px 10px; font-size: 0.62rem; color: var(--muted-2); margin-left: auto; white-space: nowrap; }
   .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; border: 1px solid var(--line); }
   .weeks-empty { padding: 28px 20px; display: flex; align-items: center; gap: 12px; color: var(--muted-2); font-size: 0.8rem; justify-content: center; }
-  .weeks-body { padding: 18px 24px 22px; background: #fbfcfb; min-width: 0; display: flex; flex-direction: column; }
+  .weeks-body { padding: 18px 24px 22px; background: var(--paper); min-width: 0; display: flex; flex-direction: column; }
   .weeks-timeline-row { display: flex; align-items: center; gap: 6px; position: relative; }
   .scroll-arrow { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 50%; background: var(--panel); color: var(--muted); cursor: pointer; flex: none; transition: opacity 0.15s ease, background 0.12s ease, color 0.12s ease, border-color 0.12s ease; }
   .scroll-arrow.hidden { opacity: 0; pointer-events: none; }
@@ -217,7 +217,8 @@
   .week-strip { display: flex; gap: 10px; }
   .week-cell { width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 10px; padding: 0; cursor: pointer; position: relative; color: var(--muted); font: inherit; font-size: 0.78rem; font-weight: 800; box-shadow: var(--shadow-xs); transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease; }
   .week-cell:hover { transform: translateY(-2px); border-color: var(--blue-border); box-shadow: var(--shadow-sm); z-index: 2; }
-  .week-cell.c-none { background: #eef2f6; color: var(--gray); }
+  /* --gray on --line-light is 4.2:1, under AA for the day number. */
+  .week-cell.c-none { background: var(--line-light); color: var(--muted-2); }
   .week-cell.c-draft { background: var(--draft-bg); border-color: var(--draft-border); color: var(--warn-dark); }
   .week-cell.c-submitted { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue-dark); }
   .week-cell.c-approved { background: var(--success-bg); border-color: var(--success-border); color: var(--green); }
@@ -228,7 +229,7 @@
   .week-cell.sel.current { box-shadow: 0 0 0 2px var(--navy); }
   .selected-status { display: flex; align-items: center; gap: 8px; padding-top: 12px; margin-left: auto; }
   .wp-none { background: var(--line-light); color: var(--gray); font-size: 0.63rem; font-weight: 800; padding: 3px 7px; border-radius: 4px; }
-  .weeks-reports-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid #eef2f3; font-size: 0.74rem; color: var(--muted); }
+  .weeks-reports-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid var(--line-2); font-size: 0.74rem; color: var(--muted); }
   .weeks-reports-summary a { color: var(--blue); text-decoration: none; font-weight: 700; font-size: 0.73rem; }
   .week-tooltip {
     position: fixed;
@@ -242,8 +243,8 @@
     padding: 6px 10px;
     border-radius: 6px;
     pointer-events: none;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: var(--z-tooltip);
+    box-shadow: var(--shadow-md);
   }
   @media (max-width: 600px) {
     .weeks-timeline-row { flex-direction: column; align-items: stretch; gap: 10px; }

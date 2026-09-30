@@ -23,7 +23,7 @@
   .error-screen {
     position: fixed;
     inset: 0;
-    z-index: 9999;
+    z-index: var(--z-toast);
     display: grid;
     place-items: center;
     background: var(--paper);
@@ -44,7 +44,7 @@
     font-weight: 800;
     letter-spacing: 0.1em;
     color: var(--blue-dark);
-    background: #eff4fb;
+    background: var(--info-bg);
     border: 1px solid var(--blue-border);
     padding: 5px 12px;
     border-radius: 999px;
@@ -66,7 +66,7 @@
   .error-detail {
     text-align: left;
     background: var(--navy);
-    color: #cbd5e1;
+    color: var(--sidebar-text);
     font-size: 0.72rem;
     padding: 12px;
     border-radius: 7px;
@@ -87,5 +87,5 @@
     box-shadow: var(--shadow-sm);
     transition: all 0.14s ease;
   }
-  .error-home:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .error-home:hover { background: var(--accent-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
 </style>

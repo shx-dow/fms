@@ -75,7 +75,7 @@
 </div>
 
 <style>
-  .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.35); backdrop-filter: blur(2px); display: grid; place-items: center; z-index: 200; }
+  .modal-overlay { position: fixed; inset: 0; background: var(--scrim); backdrop-filter: blur(2px); display: grid; place-items: center; z-index: var(--z-modal); }
   .modal-box { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 28px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
   .modal-sm { max-width: 400px; }
   .modal-md { max-width: 460px; }

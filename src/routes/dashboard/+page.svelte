@@ -39,7 +39,12 @@
 <svelte:head><title>Dashboard · Faculty Reporting System</title></svelte:head>
 <main class="shell app-shell">
   {#if showOverview}
-    <ReportOverview name={greetingName(data.user?.name)} report={data.report} weeks={data.weeks} />
+    <ReportOverview
+      name={greetingName(data.user?.name)}
+      report={data.report}
+      weeks={data.weeks}
+      showWeeksCalendar={!showDepartment}
+    />
   {/if}
 
   {#if showDepartment}
@@ -48,6 +53,7 @@
       {weekDetail}
       {currentPeriodId}
       weeks={data.departmentWeeks}
+      counts={data.departmentCounts}
       onselect={selectWeek}
     />
   {/if}

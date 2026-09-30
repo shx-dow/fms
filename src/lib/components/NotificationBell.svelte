@@ -139,7 +139,7 @@ import { NOTIFICATION_POLL_MS } from '$lib/constants';
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
     color: var(--navy);
-    z-index: 120;
+    z-index: var(--z-tooltip);
     overflow: hidden;
   }
   .notif-head {
@@ -148,7 +148,7 @@ import { NOTIFICATION_POLL_MS } from '$lib/constants';
     align-items: center;
     padding: 14px 16px;
     border-bottom: 1px solid var(--line);
-    background: linear-gradient(to bottom, rgba(248,250,252,0.6), transparent);
+    background: var(--head);
   }
   .notif-head strong { font-size: 0.84rem; font-weight: 750; color: var(--text-1); }
   .notif-markall {
@@ -175,8 +175,8 @@ import { NOTIFICATION_POLL_MS } from '$lib/constants';
     border-left: 3px solid transparent;
     transition: background 0.1s;
   }
-  .notif-row:hover { background: #f6f9fc; }
-  .notif-row.unread { background: #eff4fb; border-left-color: var(--accent); }
+  .notif-row:hover { background: var(--head); }
+  .notif-row.unread { background: var(--info-bg); border-left-color: var(--accent); }
   .notif-body { min-width: 0; flex: 1; }
   .notif-body strong {
     display: block;

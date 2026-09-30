@@ -2,6 +2,7 @@
   import '../app.css';
   import '../layout.css';
 import { page } from '$app/state';
+import { afterNavigate } from '$app/navigation';
 import { browser } from '$app/environment';
 import Toast from '$lib/components/Toast.svelte';
 import Modal from '$lib/components/Modal.svelte';
@@ -17,12 +18,15 @@ import { onDestroy, onMount } from 'svelte';
   import PanelLeftClose from '@lucide/svelte/icons/panel-left-close';
   import PanelLeftOpen from '@lucide/svelte/icons/panel-left-open';
   import LogOut from '@lucide/svelte/icons/log-out';
+  import Menu from '@lucide/svelte/icons/menu';
   import KeyRound from '@lucide/svelte/icons/key-round';
   import Repeat2 from '@lucide/svelte/icons/repeat-2';
   import { isReporter } from '$lib/domain';
   import { setNotificationUser } from '$lib/stores/notifications.svelte';
   let { data, children } = $props();
   let sidebarCollapsed = $state(browser ? localStorage.getItem('sidebarCollapsed') === 'true' : false);
+  // Below 620px the sidebar is a drawer, so the only way in is this button.
+  let navOpen = $state(false);
   let showProfileMenu = $state(false);
   let showPasswordModal = $state(false);
   let showProfileModal = $state(false);
@@ -52,14 +56,24 @@ import { onDestroy, onMount } from 'svelte';
   $effect(() => {
     if (user) setNotificationUser(user.id);
   });
+  function onKeydown(e: KeyboardEvent) {
+    if (e.key !== 'Escape') return;
+    navOpen = false;
+    showProfileMenu = false;
+  }
   onMount(() => {
     if (browser) {
       document.addEventListener('click', closeMenus);
+      document.addEventListener('keydown', onKeydown);
     }
+    // Following a link in the drawer should close it, or the next page is hidden
+    // behind the drawer on a phone.
+    return afterNavigate(() => (navOpen = false));
   });
   onDestroy(() => {
     if (browser) {
       document.removeEventListener('click', closeMenus);
+      document.removeEventListener('keydown', onKeydown);
     }
   });
   function openPasswordModal() {
@@ -127,11 +141,26 @@ import { onDestroy, onMount } from 'svelte';
 {#if page.url.pathname === '/login' || page.url.pathname === '/change-password' || page.url.pathname.includes('/print')}
   {@render children()}
 {:else}
-  <div class="app-frame" class:sidebar-collapsed={sidebarCollapsed}>
+  <div class="app-frame" class:sidebar-collapsed={sidebarCollapsed} class:nav-open={navOpen}>
+    <button
+      class="nav-open-btn"
+      type="button"
+      aria-label="Open navigation"
+      aria-expanded={navOpen}
+      onclick={() => (navOpen = true)}
+    >
+      <Menu size={17} />
+    </button>
+    {#if navOpen}
+      <!-- The scrim is the close affordance on a phone, where there is no room
+           for a close button inside the drawer. -->
+      <button class="nav-scrim" type="button" aria-label="Close navigation" onclick={() => (navOpen = false)}></button>
+    {/if}
     <aside class="app-sidebar">
       <div class="sidebar-top">
         <a class="sidebar-logo" href={user?.role === 'ADMIN' ? '/admin' : '/dashboard'}>
           <img src="/icfaitech_jaipur_cover.webp" alt="IcfaiTech" class="sidebar-logo-img" />
+          <span class="sidebar-monogram" aria-hidden="true">F</span>
         </a>
         <button
           class="sidebar-toggle-top"
@@ -151,10 +180,12 @@ import { onDestroy, onMount } from 'svelte';
           <div class="sidebar-label">Workspace</div>
           <nav class="sidebar-nav">
             <a href="/dashboard" class:active={page.url.pathname === '/dashboard'}
+              aria-label="Dashboard"
               ><LayoutDashboard size={18} /><span class="nav-label">Dashboard</span></a
             >
             {#if isReporter(user?.role)}
               <a href="/reports" class:active={page.url.pathname.startsWith('/reports')}
+                aria-label="My reports"
                 ><FileText size={18} /><span class="nav-label">My reports</span></a
               >
             {/if}
@@ -164,24 +195,29 @@ import { onDestroy, onMount } from 'svelte';
           <div class="sidebar-label sidebar-label-admin">{user?.role === 'HOD' ? 'Department' : 'Administration'}</div>
           <nav class="sidebar-nav">
             <a href="/admin" class:active={page.url.pathname === '/admin'}
+              aria-label="Department overview"
               ><Building2 size={18} /><span class="nav-label">Department overview</span></a
             >
             {#if user?.role === 'ADMIN'}
               <a href="/admin/faculty" class:active={page.url.pathname.startsWith('/admin/faculty')}
+                aria-label="Faculty directory"
                 ><Users size={18} /><span class="nav-label">Faculty directory</span></a
               >
             {/if}
             {#if user?.role === 'HOD'}
               <!-- Reviewing is a teaching-side job, so ADMIN has no queue. -->
               <a href="/admin/reports" class:active={page.url.pathname.startsWith('/admin/reports')}
+                aria-label="Review queue"
                 ><ClipboardCheck size={18} /><span class="nav-label">Review queue</span></a
               >
             {/if}
             {#if user?.role === 'ADMIN'}
               <a href="/admin/settings" class:active={page.url.pathname.startsWith('/admin/settings')}
+                aria-label="Reporting periods"
                 ><Cog size={18} /><span class="nav-label">Reporting periods</span></a
               >
               <a href="/admin/audit" class:active={page.url.pathname.startsWith('/admin/audit')}
+                aria-label="Audit history"
                 ><History size={18} /><span class="nav-label">Audit history</span></a
               >
             {/if}
@@ -195,6 +231,7 @@ import { onDestroy, onMount } from 'svelte';
             onclick={() => (showProfileMenu = !showProfileMenu)}
             aria-haspopup="menu"
             aria-expanded={showProfileMenu}
+            aria-label="{user?.name ?? 'User'}, {roleLabel}"
           >
             <span class="sidebar-user-avatar">{avatarLetter}</span>
             <span class="sidebar-user-info"
@@ -217,7 +254,8 @@ import { onDestroy, onMount } from 'svelte';
             </div>
           {/if}
         </div>
-        <a class="logout-link" href="/logout"><LogOut size={16} /><span class="nav-label">Sign out</span></a>
+        <a class="logout-link" href="/logout" aria-label="Sign out"
+          ><LogOut size={16} /><span class="nav-label">Sign out</span></a>
       </div>
       </aside>
     <div class="app-main">
@@ -270,14 +308,6 @@ import { onDestroy, onMount } from 'svelte';
 
 <style>
   .modal-acts { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-  @media (max-width: 680px) {
-    .sidebar-collapsed .app-sidebar {
-      display: none;
-    }
-    .sidebar-collapsed .app-main {
-      margin-left: 0;
-    }
-  }
   .profile-wrap { position: relative; }
   .sidebar-user {
     width: 100%;
@@ -299,8 +329,8 @@ import { onDestroy, onMount } from 'svelte';
     border: 1px solid var(--navy-3);
     border-radius: 8px;
     padding: 6px;
-    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.35);
-    z-index: 130;
+    box-shadow: 0 -6px 24px var(--shadow-lg);
+    z-index: var(--z-tooltip);
   }
   .profile-email {
     font-size: 0.7rem;
@@ -342,7 +372,7 @@ import { onDestroy, onMount } from 'svelte';
     font: inherit;
     font-size: 0.84rem;
   }
-  .pw-field input:focus { outline: 2px solid rgba(59, 130, 246, 0.15); border-color: var(--blue-icon); }
+  .pw-field input:focus { outline: 2px solid var(--blue-soft); border-color: var(--muted-3); }
   .pw-error { margin: 0 0 12px; color: var(--red); font-size: 0.76rem; font-weight: 700; }
   .profile-tip { margin: 15px 0 0; padding: 11px 0 14px; border-bottom: 1px solid var(--line-2); color: var(--muted); font-size: 0.72rem; }
   .profile-section { border-bottom: 1px solid var(--line-2); padding: 19px 0 20px; margin-top: 0; }

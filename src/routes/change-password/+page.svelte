@@ -64,7 +64,7 @@
 <footer class="login-footer">Internal university application · Academic year 2026–27</footer>
 
 <style>
-  :global(body) { background: radial-gradient(1000px 380px at 50% -120px, rgba(79, 109, 155, 0.12), transparent 60%), #f7f9f8; color: var(--navy); }
+  :global(body) { background: radial-gradient(1000px 380px at 50% -120px, var(--bg-hover), transparent 60%), var(--paper); color: var(--navy); }
   .login-shell { position: fixed; inset: 0; display: grid; place-items: center; padding: 32px 24px; overflow-y: auto; }
   .login-card { width: 100%; max-width: 410px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 42px 38px 34px; box-shadow: var(--shadow-lg); margin: auto; }
   .card-header { text-align: center; margin-bottom: 26px; }
@@ -79,7 +79,7 @@
   input::placeholder { color: var(--muted-3); }
   input:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
   button { margin-top: 4px; border: 1px solid var(--navy); border-radius: 8px; background: var(--navy); color: var(--paper); padding: 13px; font: inherit; font-size: 0.84rem; font-weight: 800; cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.15s; }
-  button:hover { background: var(--blue-hover); box-shadow: var(--shadow-md); }
+  button:hover { background: var(--accent-hover); box-shadow: var(--shadow-md); }
   button:disabled { opacity: 0.55; cursor: not-allowed; }
   .login-error { background: var(--red-bg-alt); border: 1px solid var(--red-border); border-radius: 8px; color: var(--red-dark); padding: 10px 12px; font-size: 0.78rem; font-weight: 600; }
   .login-footer { position: fixed; bottom: 22px; left: 0; right: 0; text-align: center; color: var(--muted-3); font-size: 0.68rem; }
