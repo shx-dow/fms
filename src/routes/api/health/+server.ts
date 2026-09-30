@@ -30,9 +30,15 @@ export const GET: RequestHandler = async () => {
       percentFree: total ? Math.round((free / total) * 100) : 0,
       warn: free < WARN_MIN_FREE || free / total < WARN_FREE_PCT,
     };
+    if (disk.warn) {
+      console.warn(`[health] low disk in ${dir}: ${Math.round(free / 1e6)}MB free of ${Math.round(total / 1e6)}MB`);
+    }
   } catch (error) {
     console.error('[health] disk check failed:', error);
   }
 
-  return json({ ok: true, db: true, disk });
+  // This route is public and unauthenticated, so the response carries only a
+  // verdict. The directory path and the byte counts stay in the log, where an
+  // operator can act on them, instead of being published to any caller.
+  return json({ ok: true, db: true, diskOk: disk ? !disk.warn : null });
 };

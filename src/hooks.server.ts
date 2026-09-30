@@ -1,10 +1,21 @@
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { getUserFromSession } from '$lib/server/auth';
-import { computeRouteRedirect } from '$lib/server/route-guard';
+import { computeRouteRedirect, isBlockedDuringPasswordReset } from '$lib/server/route-guard';
 
 export const handle: Handle = async ({ event, resolve }) => {
   const start = performance.now();
   event.locals.user = getUserFromSession(event.cookies.get('session')) ?? null;
+  // A temporary password blocks the whole API surface. This is checked before
+  // the redirect pass because an API route has to be answered with a status.
+  if (isBlockedDuringPasswordReset(event.url.pathname, event.locals.user)) {
+    const res = new Response(JSON.stringify({ ok: false, error: 'Password change required.' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+    applySecurityHeaders(event, res);
+    logRequest(event, res.status, start);
+    return res;
+  }
   const redirectTo = computeRouteRedirect(event.url.pathname, event.locals.user);
   if (redirectTo) {
     const res = new Response(null, {

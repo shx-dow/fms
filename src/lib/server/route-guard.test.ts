@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeRouteRedirect } from './route-guard';
+import { computeRouteRedirect, isBlockedDuringPasswordReset } from './route-guard';
 
 describe('computeRouteRedirect', () => {
   it('lets anonymous users reach public paths', () => {
@@ -58,5 +58,42 @@ describe('computeRouteRedirect', () => {
     expect(computeRouteRedirect('/logout', forced)).toBeNull();
     expect(computeRouteRedirect('/api/me/password', forced)).toBeNull();
     expect(computeRouteRedirect('/dashboard', { role: 'FACULTY' as const })).toBeNull();
+  });
+
+  it('sends ADMIN to the administration overview instead of the empty reporter dashboard', () => {
+    // ADMIN files no report, so /dashboard would render no cards at all.
+    expect(computeRouteRedirect('/dashboard', { role: 'ADMIN' })).toBe('/admin');
+    expect(computeRouteRedirect('/dashboard/weeks', { role: 'ADMIN' })).toBe('/admin');
+    expect(computeRouteRedirect('/dashboard', { role: 'HOD' })).toBeNull();
+  });
+});
+
+describe('isBlockedDuringPasswordReset', () => {
+  const forced = { role: 'FACULTY' as const, mustChangePassword: true };
+
+  it('refuses the API surface while a temporary password is in force', () => {
+    // The API used to be waved through wholesale, which let a temporary-password
+    // holder reach every data route. It has to be answered with 403, not a redirect.
+    for (const path of [
+      '/api/periods',
+      '/api/reports',
+      '/api/reviews',
+      '/api/dashboard/weeks',
+      '/api/attachments',
+    ]) {
+      expect(isBlockedDuringPasswordReset(path, forced)).toBe(true);
+    }
+  });
+
+  it('still allows the calls needed to clear the temporary password', () => {
+    for (const path of ['/api/me/password', '/api/me/profile', '/api/notifications', '/api/health']) {
+      expect(isBlockedDuringPasswordReset(path, forced)).toBe(false);
+    }
+  });
+
+  it('never blocks pages, and never blocks an account with no forced reset', () => {
+    expect(isBlockedDuringPasswordReset('/dashboard', forced)).toBe(false);
+    expect(isBlockedDuringPasswordReset('/api/reports', { role: 'FACULTY' })).toBe(false);
+    expect(isBlockedDuringPasswordReset('/api/reports', null)).toBe(false);
   });
 });
