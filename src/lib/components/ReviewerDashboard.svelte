@@ -25,9 +25,10 @@
 </script>
 
 <!--
-  Same card, header and row vocabulary as the report overview, so the department
-  view reads as part of the same page rather than a second design. The week
-  calendar carries the status on hover instead of a hint banner.
+  One card, one job: show what the department still owes this week and link to
+  the queue. The counts and the calendar used to restate the same three states
+  side by side, so the panel read as duplicated. The legend now belongs to the
+  calendar only, and the counts answer a different question.
 -->
 <section class="card" aria-labelledby="dept-title">
   <div class="panel-head">
@@ -36,55 +37,55 @@
   </div>
 
   <div class="dept-body">
-    <WeeksTimeline
-      mode="reviewer"
-      {weeks}
-      {selectedPeriod}
-      {weekDetail}
-      {currentPeriodId}
-      {onselect}
-    />
-
-    <dl class="counts">
-      <div class="count">
+    <div class="dept-counts">
+      <a class="count count-pending" class:quiet={!counts.awaiting} href="/admin/reports?status=SUBMITTED">
         <dt>Awaiting review</dt>
         <dd>{counts.awaiting}</dd>
-      </div>
-      <div class="count">
+      </a>
+      <a class="count count-changes" class:quiet={!counts.changes} href="/admin/reports?status=CHANGES_REQUIRED">
         <dt>Changes requested</dt>
         <dd>{counts.changes}</dd>
-      </div>
-      <div class="count">
+      </a>
+      <a class="count count-approved" class:quiet={!counts.approved} href="/admin/reports?status=APPROVED">
         <dt>Approved</dt>
         <dd>{counts.approved}</dd>
-      </div>
-    </dl>
-  </div>
+      </a>
+    </div>
 
-  <p class="dept-note">
-    Hover a week to see what was submitted. Your own report is reviewed by the
-    director or dean, so it never appears in this queue.
-  </p>
+    <div class="dept-cal">
+      <WeeksTimeline
+        mode="reviewer"
+        {weeks}
+        {selectedPeriod}
+        {weekDetail}
+        {currentPeriodId}
+        {onselect}
+      />
+    </div>
+  </div>
 </section>
 
 <style>
-  .dept-body { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: var(--sp-5); padding: var(--sp-5); align-items: start; }
-  .counts { margin: 0; display: grid; gap: var(--sp-3); }
-  .count { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
+  .dept-body { display: grid; gap: var(--sp-5); padding: var(--sp-5); }
+  /* Three counters lead: they are what the HOD acts on. */
+  .dept-counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4); }
+  .count {
+    display: flex; flex-direction: column; gap: 2px; text-decoration: none;
+    padding: var(--sp-4); border: 1px solid var(--line); border-radius: var(--radius-md);
+    background: var(--paper); transition: border-color 0.12s ease, background 0.12s ease;
+  }
+  .count:hover { border-color: var(--muted-3); background: var(--bg-hover); }
+  /* A zero is not a call to action, so it steps back instead of shouting. */
+  .count.quiet { opacity: 0.55; }
   .count dt { font-size: var(--fs-sm); color: var(--text-3); }
   .count dd {
-    margin: 0; font-size: var(--fs-xl); font-weight: 700; color: var(--text-1);
+    margin: 0; font-size: var(--fs-2xl); font-weight: 700; color: var(--text-1);
     font-variant-numeric: tabular-nums;
   }
-  .dept-note {
-    margin: 0; padding: 0 var(--sp-5) var(--sp-5);
-    font-size: var(--fs-sm); color: var(--text-3); line-height: 1.5;
-  }
-  @media (max-width: 1080px) {
-    .dept-body { grid-template-columns: 1fr; }
-    .counts { grid-template-columns: repeat(3, 1fr); }
-  }
+  .count-pending dd { color: var(--blue); }
+  .count-changes dd { color: var(--red); }
+  .count-approved dd { color: var(--green); }
   @media (max-width: 620px) {
-    .counts { grid-template-columns: 1fr; }
+    .dept-counts { grid-template-columns: 1fr; }
   }
 </style>
