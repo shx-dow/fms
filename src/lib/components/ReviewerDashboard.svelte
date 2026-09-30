@@ -12,30 +12,30 @@
     selectedPeriod,
     weekDetail,
     currentPeriodId,
+    counts,
     onselect,
   }: {
     weeks: Week[];
     selectedPeriod: string | null;
     weekDetail: PeriodDetail | null;
     currentPeriodId: string | null;
+    counts: { awaiting: number; changes: number; approved: number };
     onselect: (periodId: string) => void;
   } = $props();
-
-  const reports = $derived(weekDetail?.reports ?? []);
-  const awaiting = $derived(reports.filter((r) => r.status === 'SUBMITTED').length);
-  const changes = $derived(reports.filter((r) => r.status === 'CHANGES_REQUIRED').length);
-  const approved = $derived(reports.filter((r) => r.status === 'APPROVED').length);
 </script>
 
-<!-- The department view keeps the same card language as the report overview, and
-     leans on the week calendar's hover status instead of hint banners. -->
-<section class="dept-section" aria-label="Department review">
+<!--
+  Same card, header and row vocabulary as the report overview, so the department
+  view reads as part of the same page rather than a second design. The week
+  calendar carries the status on hover instead of a hint banner.
+-->
+<section class="card" aria-labelledby="dept-title">
   <div class="panel-head">
-    <h2>Your department</h2>
-    <a href="/admin/reports" class="btn btn-primary">Review queue →</a>
+    <h2 id="dept-title">Your department</h2>
+    <a class="btn btn-primary" href="/admin/reports">Review queue →</a>
   </div>
 
-  <div class="dept-grid">
+  <div class="dept-body">
     <WeeksTimeline
       mode="reviewer"
       {weeks}
@@ -45,21 +45,20 @@
       {onselect}
     />
 
-    <div class="dept-counts">
-      <div class="count-row">
-        <span class="count-value">{awaiting}</span>
-        <span class="count-label">awaiting review</span>
+    <dl class="counts">
+      <div class="count">
+        <dt>Awaiting review</dt>
+        <dd>{counts.awaiting}</dd>
       </div>
-      <div class="count-row">
-        <span class="count-value">{changes}</span>
-        <span class="count-label">changes requested</span>
+      <div class="count">
+        <dt>Changes requested</dt>
+        <dd>{counts.changes}</dd>
       </div>
-      <div class="count-row">
-        <span class="count-value">{approved}</span>
-        <span class="count-label">approved</span>
+      <div class="count">
+        <dt>Approved</dt>
+        <dd>{counts.approved}</dd>
       </div>
-      <a href="/admin/reports" class="reports-viewall">Open review queue →</a>
-    </div>
+    </dl>
   </div>
 
   <p class="dept-note">
@@ -69,16 +68,23 @@
 </section>
 
 <style>
-  .dept-section { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
-  .dept-grid { display: grid; grid-template-columns: 1fr 220px; gap: 20px; padding: 18px 22px 20px; align-items: start; }
-  .dept-counts { border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; background: var(--panel); }
-  .count-row { display: flex; align-items: baseline; gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--line-2); }
-  .count-value { font-size: 1.05rem; font-weight: 800; color: var(--navy); min-width: 30px; }
-  .count-label { font-size: 0.78rem; color: var(--text-3); }
-  .reports-viewall { display: block; text-align: center; padding: 14px 20px; border-top: 1px solid var(--line); color: var(--blue); text-decoration: none; font-size: 0.78rem; font-weight: 700; transition: background 0.12s ease; }
-  .reports-viewall:hover { background: var(--paper); }
-  .dept-note { margin: 0; padding: 0 22px 18px; color: var(--muted-2); font-size: 0.76rem; line-height: 1.5; }
-  @media (max-width: 900px) {
-    .dept-grid { grid-template-columns: 1fr; }
+  .dept-body { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: var(--sp-5); padding: var(--sp-5); align-items: start; }
+  .counts { margin: 0; display: grid; gap: var(--sp-3); }
+  .count { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
+  .count dt { font-size: var(--fs-sm); color: var(--text-3); }
+  .count dd {
+    margin: 0; font-size: var(--fs-xl); font-weight: 700; color: var(--text-1);
+    font-variant-numeric: tabular-nums;
+  }
+  .dept-note {
+    margin: 0; padding: 0 var(--sp-5) var(--sp-5);
+    font-size: var(--fs-sm); color: var(--text-3); line-height: 1.5;
+  }
+  @media (max-width: 1080px) {
+    .dept-body { grid-template-columns: 1fr; }
+    .counts { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 620px) {
+    .counts { grid-template-columns: 1fr; }
   }
 </style>

@@ -48,6 +48,7 @@
       {weekDetail}
       {currentPeriodId}
       weeks={data.departmentWeeks}
+      counts={data.departmentCounts}
       onselect={selectWeek}
     />
   {/if}
